@@ -22,7 +22,8 @@ intercoder_1 <- sample_prelim %>%
   group_by(Publication.Year) %>%
   slice_sample(n = 7) %>%
   select(c(Author.Full.Names, Article.Title, Source.Title, Abstract,
-           Publication.Year, Volume, Issue))
+           Publication.Year, Volume, Issue)) %>%
+  sample_n(., 105)
 
 #write.csv2(intercoder_1, "data/intercoder_1.csv", row.names = FALSE)
 
