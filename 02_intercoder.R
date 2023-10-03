@@ -23,7 +23,7 @@ sample_prelim <- sample_prelim %>%
                filter(UT..Unique.WOS.ID. %in% sample_prelim$UT..Unique.WOS.ID.) %>%
                select(UT..Unique.WOS.ID., DOI.Link))
 
-# Intercodertest 1: 100 articles, stratified sample ---------------------------------------------------------------
+# Intercodertest 1: 105 articles, stratified sample ---------------------------------------------------------------
 
 intercoder_1 <- sample_prelim %>%
   group_by(Publication.Year) %>%
@@ -31,8 +31,29 @@ intercoder_1 <- sample_prelim %>%
   select(c(ID, Author.Full.Names, Article.Title, Source.Title, Abstract,
            Publication.Year, Volume, Issue, 
            UT..Unique.WOS.ID., DOI, DOI.Link)) %>%
+  ungroup() %>%
   sample_n(., 105)
 
 #write.csv2(intercoder_1, "data/intercoder_1.csv", row.names = FALSE)
 
+# Intercodertest 2: 105 articles, stratified sample, excluding articles from test 1---------------------------
+intercoder_1 <- read.csv2("data/intercoder_1.csv")
+intercoder_2 <- sample_prelim %>%
+  filter(UT..Unique.WOS.ID. %notin% intercoder_1$UT..Unique.WOS.ID.) %>%
+  group_by(Publication.Year) %>%
+  slice_sample(n = 7) %>%
+  select(c(ID, Author.Full.Names, Article.Title, Source.Title, Abstract,
+           Publication.Year, Volume, Issue, 
+           UT..Unique.WOS.ID., DOI, DOI.Link)) %>%
+  ungroup() %>%
+  sample_n(., 105) %>%
+  
+  #add Link to DOI where possible
+  mutate(DOI.Link = replace(DOI.Link,
+                            DOI.Link == 0,
+                            paste0("http://dx.doi.org/", 
+                                   intercoder_2 %>%
+                                     filter(DOI.Link == 0) %>%
+                                     pull(DOI))))
 
+#write.csv2(intercoder_2, "data/intercoder_2.csv", row.names = FALSE)
