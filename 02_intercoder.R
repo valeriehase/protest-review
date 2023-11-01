@@ -2,7 +2,7 @@
 #
 # Intercoder samples & tests for NW literature review
 # Author: Valerie Hase
-# Date: 2023-10-17
+# Date: 2023-11-01
 #
 ########################
 
@@ -116,6 +116,47 @@ full_paper_comp$abstract <- as.factor(full_paper_comp$CSS_VH)
 library("caret")
 result <- confusionMatrix(data = full_paper_comp$abstract, 
                           reference = full_paper_comp$full_paper, 
+                          mode = "prec_recall", 
+                          positive = "1")
+result
+
+####  Recall/Precision: Automated CSS (Dictionary Stephanie/Julia) vs. Manual (Merja, Valerie) #### 
+CSS_comp <- #read_xlsx(here("data", paste0("Inclusion_MerjaValerie_IR1_withCSSdict.xlsx"))) %>%
+
+  read_xlsx("H:/Projekte, Tagungen, Publikationen/2023/Protest-Lit Review/data/data/Inclusion_MerjaValerie_IR1_withCSSdict.xlsx") %>%
+  #only include those where we both coded 
+  filter(!is.na(full_paper)) %>%
+  
+  #change CSS codes to pure 0/1 coding
+  mutate(CSS_MM = substr(CSS_MM, 1, 1),
+         CSS_VH = substr(CSS_VH, 1, 1),
+         full_paper = substr(full_paper, 1, 1),
+         CSS_MM = replace(CSS_MM,
+                          CSS_MM == 2,
+                          1),
+         CSS_VH = replace(CSS_VH,
+                          CSS_VH == 2,
+                          1)) %>%
+  
+  #exclude empty
+  filter(full_paper != "N") %>%
+  
+  #create summary varuable for dictionary
+  mutate(CSS_automated = rowSums(across(computational:neuralnet), na.rm=TRUE),
+         CSS_automated = replace(CSS_automated,
+                                 CSS_automated > 1,
+                                 1)) %>%
+  
+  #reduce to relevant variables
+  select(CSS_automated, CSS_MM, CSS_VH, full_paper) %>%
+  
+  #transform to factor format for comparison with caret
+  mutate(across(everything(), as.factor))
+
+#calculate confusion matrix, change comparison however you like
+library("caret")
+result <- confusionMatrix(data = CSS_comp$CSS_automated, 
+                          reference = CSS_comp$CSS_VH, 
                           mode = "prec_recall", 
                           positive = "1")
 result
