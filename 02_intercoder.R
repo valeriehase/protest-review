@@ -1,6 +1,6 @@
 ########################
 #
-# Intercoder samples & tests for NW literature review
+# Intercoder samples & tests for literature review
 # Author: Valerie Hase
 # Date: 2023-11-01
 #
