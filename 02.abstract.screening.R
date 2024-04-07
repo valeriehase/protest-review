@@ -90,13 +90,18 @@ ggarrange(css.sample %>%
 #                        is.na(doi),
 #                        NA)) %>%
 #  
-#  select(id, authors, title, abstract, keywords, link) %>%
+#  select(id_unique, authors, title, abstract, keywords, link) %>%
 #  
 #  #add empty coding variables
 #  mutate(coder = NA,
 #         protest = NA,
-#         method = NA)
-#
+#         method = NA,
+#         type = NA) %>%
+#  
+#  #randomly sort rows
+#  slice_sample(n = 20)
+
+#write out for manual coding
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.ah.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv", row.names = FALSE)
