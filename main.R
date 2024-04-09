@@ -15,7 +15,7 @@ library("magrittr")
 library("tidycomm")
 library("ggpubr")
 library("PRISMAstatement")
-`%notin%` <- Negate(`%in%`)
+`%!in%` <- Negate(`%in%`)
 
 #### Step 1: Load & deduplicate raw Web of Science data ####
 # Loads data by Annett (Web of Science, 2019-2023, downloaded on 03.04.2024)

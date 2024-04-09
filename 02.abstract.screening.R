@@ -2,7 +2,7 @@
 #
 # Sort into CSS/non-CSS sample & abstract screening
 # Author: Valerie Hase
-# Date: 2024-04-06
+# Date: 2024-04-09
 #
 ########################
 
@@ -105,3 +105,45 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.ah.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv", row.names = FALSE)
+
+####  Intercodertest 2 Sample: N = 20 articles, stratified by CSS vs. non-CSS #### 
+
+#sample.abstracts.2 <- css.sample %>%
+#  
+#  #filter by articles from intercoder test 1
+#  filter(id_unique %notin% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#                              pull(id_unique))) %>%
+#
+#  #get 10 articles from CSS sample
+#  slice_sample(n = 10) %>%
+#  
+#  #add non-CSS articles
+#  rbind(non.css.sample %>%
+#          
+#          #filter by articles from intercoder test 1
+#          filter(id_unique %notin% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#                                      pull(id_unique))) %>%
+#          
+#          slice_sample(n = 10)) %>%
+#  
+#  #create link, replace with NA if doi missing
+#  mutate(link = paste0("https://doi.org/", doi),
+#         link = replace(link,
+#                        is.na(doi),
+#                        NA)) %>%
+#  
+#  select(id_unique, authors, title, abstract, keywords, link) %>%
+#  
+#  #add empty coding variables
+#  mutate(coder = NA,
+#         protest = NA,
+#         method = NA,
+#         type = NA) %>%
+#  
+#  #randomly sort rows
+#  slice_sample(n = 20)
+
+#write out for manual coding
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv", row.names = FALSE)
