@@ -2,7 +2,7 @@
 #
 # Main Script for Lit Review Protest
 # Author: Valerie Hase
-# Date: 2024-04-06
+# Date: 2024-04-19
 #
 ########################
 
@@ -15,6 +15,7 @@ library("magrittr")
 library("tidycomm")
 library("ggpubr")
 library("PRISMAstatement")
+library("caret")
 `%!in%` <- Negate(`%in%`)
 
 #### Step 1: Load & deduplicate raw Web of Science data ####

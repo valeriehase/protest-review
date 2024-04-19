@@ -39,6 +39,9 @@ wos.abstracts <- wos.abstracts %>%
          issue = Issue,
          doi = DOI) %>%
   
+  #filter out non-English abstracts not idenfied as such
+  filter(id_wos != "WOS:000338130200005") %>%
+  
   #create placeholder for unique, shorter id
   mutate(id_unique = NA) %>%
 
