@@ -52,7 +52,9 @@ nrow(coding_abstracts) #tbd
 intercoder
 
 #number of relevant studies
-nrow(coding_abstracts_relevant) #tbd
+coding_abstracts_relevant %>%
+  filter(method == 0) %>%
+  nrow()
 
 #distribution of CSS vs. non-CSS over time
 ggarrange(coding_abstracts_relevant %>%
