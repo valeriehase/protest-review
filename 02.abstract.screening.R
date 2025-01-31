@@ -2,7 +2,7 @@
 #
 # Sort into CSS/non-CSS sample & abstract screening
 # Author: Valerie Hase
-# Date: 2024-06-24
+# Date: 2024-10-03
 #
 ########################
 
@@ -573,12 +573,6 @@ coding_abstracts <- coding_abstracts %>%
                              protest == 1 & type == 1,
                              1))
 
-#identify inaccessible studies
-n_inaccessible <- coding_abstracts %>%
-  
-  filter(is.na(protest) & is.na(method) & is.na(type)) %>%
-  nrow()
-
 #identify relevant sample
 coding_abstracts_relevant <- coding_abstracts %>%
   
@@ -626,4 +620,43 @@ coding_abstracts_relevant <- coding_abstracts %>%
 #write out for manual coding
 #write.csv2(coding_abstracts_added, "codings/abstract_screening_ah_mm_vh/coding.mm.added.csv", row.names = FALSE)
 
+coding_abstracts_2 <- read_xlsx("codings/abstract_screening_ah_mm_vh/coding.mm.added.xlsx") %>%
+  
+  #reduce to relevant variables & cases
+  select(id_unique:type) %>%
+  filter(coder != "NA") %>%
+  
+  #reformat
+  mutate_at(c("coder", "protest", "method", "type"), as.numeric) %>%
+  
+  #create overarching inclusion criterion
+  mutate(inclusion = 0,
+         inclusion = replace(inclusion,
+                             protest == 1 & type == 1,
+                             1))
+
+#identify relevant sample from additionally coded abstracts
+coding_abstracts_2_relevant <- coding_abstracts_2 %>%
+  
+  #identify relevance
+  filter(inclusion == 1) %>%
+  
+  #add other meta data
+  left_join(wos.abstracts %>%
+              select(id_unique, source.title, source.type, source.conference,
+                     author.addresses, author.affiliations, year))
+
 ####  Step 2.11 Create final sample #### 
+sample_relevant <- rbind(coding_abstracts_relevant,
+                         coding_abstracts_2_relevant) %>%
+  
+  #remove by chance identified oversampled "0" (non-CSS observation)
+  filter(id_unique != "ID2218")
+
+#write out for manual coding
+#write.csv2(sample_relevant, "codings/full_paper/full_paper_sample.csv", row.names = FALSE)
+
+#identify inaccessible studies
+n_inaccessible <- rbind(coding_abstracts, coding_abstracts_2) %>%
+  filter(is.na(protest) & is.na(method) & is.na(type)) %>%
+  nrow()

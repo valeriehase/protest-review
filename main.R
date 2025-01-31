@@ -2,7 +2,7 @@
 #
 # Main Script for Lit Review Protest
 # Author: Valerie Hase
-# Date: 2024-06-24
+# Date: 2025-01-27
 #
 ########################
 
@@ -25,7 +25,7 @@ library("caret")
 #source("01.load.wos.data.R")
 #save.image("working_spaces/01.load.data.RDATA")
 
-#### Step 2: Abstract screening ####
+#### Step 2: Screening ####
 
 #samples sample 1 (CSS) and sample 2 (non-CSS) based on search terms
 #draws sample for intercoder tests & coding of abstracts
@@ -41,34 +41,48 @@ n_deduplicated
 #validation of search string
 validation
 
+#reliability
+intercoder
+
 #initial sample of CSS vs. non-CSS studies
 nrow(css.sample)
 nrow(non.css.sample)
 
-#coded sample of CSS vs. non-CSS studies for abstracts
-nrow(coding_abstracts) #tbd
-
-#reliability
-intercoder
-
-#number of relevant studies
-coding_abstracts_relevant %>%
-  filter(method == 0) %>%
+#coded articles until we had identified equally large CSS and non-CSS samples
+rbind(coding_abstracts, coding_abstracts_2) %>%
+  filter(!is.na(protest) & !is.na(method) & !is.na(type)) %>%
   nrow()
 
+#inaccessible studies per sample
+
+#CSS
+rbind(coding_abstracts, coding_abstracts_2) %>%
+  filter(is.na(protest) & is.na(method) & is.na(type)) %>%
+  filter(id_unique %in% css.sample$id_unique)
+
+#non-CSS
+rbind(coding_abstracts, coding_abstracts_2) %>%
+  filter(is.na(protest) & is.na(method) & is.na(type)) %>%
+  filter(id_unique %in% non.css.sample$id_unique)
+
+#final sample of of CSS vs. non-CSS studies
+sample_relevant %>%
+  group_by(method) %>%
+  count(protest)
+
 #distribution of CSS vs. non-CSS over time
-ggarrange(coding_abstracts_relevant %>%
+ggarrange(sample_relevant %>%
             filter(method == 1) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
             ggtitle(paste0("CSS Sample (N = ", nrow(css.sample), ")")) + theme_bw(),
-          coding_abstracts_relevant %>%
+          sample_relevant %>%
             filter(method == 0) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
             ggtitle(paste0("Non CSS Sample (N = ", nrow(non.css.sample), ")")) + theme_bw())
 
-coding_abstracts_relevant %>%
+sample_relevant %>%
   group_by(method) %>%
   count(year) %>%
   ungroup %>%
@@ -81,14 +95,13 @@ coding_abstracts_relevant %>%
   pivot_wider(names_from = c(method), values_from = c(n)) %>%
   arrange(as.numeric(year))
 
-##### 2.1 report details for method/appendix section #####
+##### 2.2 flow chart #####
 
 flow.chart <- flow_exclusions(
   incl_counts = c(nrow(wos.abstracts), 
-                  nrow(coding_abstracts), 
-                  nrow(coding_abstracts %>%
-                         filter(!is.na(protest) & !is.na(method) & !is.na(type))),
-                  nrow(coding_abstracts_relevant)),
+                  nrow(coding_abstracts) + nrow(coding_abstracts_2), 
+                  nrow(coding_abstracts) + nrow(coding_abstracts_2) - n_inaccessible,
+                  nrow(sample_relevant)),
   total_label = "Deduplicated articles from WoS",
   incl_labels = c("By-method stratified sample", 
                   "Accessible full papers",
@@ -102,3 +115,5 @@ flow.chart <- flow_exclusions(
 flow.chart
 
 #save.image("working_spaces/02.abstract.screening.RDATA")
+
+#### Step 3: Full-paper coding ####
