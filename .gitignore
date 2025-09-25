@@ -10,17 +10,18 @@ data/*
 
 # R-related stuff
 *.Rproj
-.Rproj.user
+*.Rproj.user
 *.rds
+*.Rhistory
 .Rhistory
-.Renviron
-.Rapp.history
-.RData
-.RDataTmp
-.Ruserdata
+*.Renviron
+*.Rapp.history
+*.RData
+*.RDataTmp
+*.Ruserdata
 *-Ex.R
-/*.tar.gz
-/*.Rcheck/
+*.tar.gz
+*.Rcheck/
 .Rproj.user/
 
 # OAuth2 token

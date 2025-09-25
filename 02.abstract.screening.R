@@ -660,3 +660,5 @@ sample_relevant <- rbind(coding_abstracts_relevant,
 n_inaccessible <- rbind(coding_abstracts, coding_abstracts_2) %>%
   filter(is.na(protest) & is.na(method) & is.na(type)) %>%
   nrow()
+
+#todo: Check for duplicates and remove them, see comment Miriam!
