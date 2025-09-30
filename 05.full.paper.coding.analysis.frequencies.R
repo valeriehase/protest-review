@@ -324,6 +324,5 @@ for (i in seq_along(apa_tables)) {
 }
 
 
-print(doc, target = "All_Tables_and_Figures.docx")
-
+print(doc, target = "output/All_Tables_and_Figures.docx")
 

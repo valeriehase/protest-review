@@ -2,6 +2,7 @@
 raw_data_wos/*
 working_spaces/*
 codings/*
+output/*
 
 #virtual environment 
 venv/*
