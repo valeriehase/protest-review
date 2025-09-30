@@ -17,7 +17,7 @@ suppressPackageStartupMessages({
 
 # === Prepare Data =======================================================
 
-df_full_sample_coded <- read_excel("df_full_sample_coded.xlsx")
+df_full_sample_coded <- read_excel("data/df_full_sample_coded.xlsx")
 
 df <- df_full_sample_coded %>%
   rename_with(
