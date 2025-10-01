@@ -79,7 +79,8 @@ df_V10agg <- df %>%
   dplyr::mutate(V10 = stringr::str_trim(as.character(V10))) %>%
   dplyr::mutate(
     V10_agg = dplyr::case_when(
-      V10 %in% c("100","110","111","112","113","114") ~ "100",
+      V10 == "100" ~ "100",
+      V10 %in% c("110","111","112","113","114") ~ "110",
       V10 %in% c("120","121","122","124") ~ "120",
       V10 %in% c("130","131","132","133","134") ~ "130",
       V10 %in% c("140","141","142") ~ "140",
@@ -95,9 +96,10 @@ df_V10agg <- df %>%
   dplyr::mutate(V10_agg = as.character(V10_agg))
 
 levels_V10_agg <- tibble(
-  V10_agg = c("100", "120", "130", "140", "150", "160", "200", "300", "400", "NA"),
+  V10_agg = c("100", "110", "120", "130", "140", "150", "160", "200", "300", "400", "NA"),
   V10_agg_label = c(
     "Internet / online / social media (general)",
+    "Websites generally",
     "Knowledge communities & discussion",
     "Social networking sites",
     "Microblogs",
@@ -186,9 +188,9 @@ make_complete_table <- function(df, var, levels_df,
     dplyr::rename(
       Code = !!var_sym,
       Category = paste0(var, "_label"),
-      !!paste0("Non-CSS n (N=", totals$N_0, ")") := n_0,
+      !!paste0("Non-CSS n (n=", totals$N_0, ")") := n_0,
       "Non-CSS %" = pct_0,
-      !!paste0("CSS n (N=", totals$N_1, ")") := n_1,
+      !!paste0("CSS n (n=", totals$N_1, ")") := n_1,
       "CSS %" = pct_1
     ) %>%
     dplyr::select(Code, Category, tidyselect::everything())
@@ -266,7 +268,7 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
 
 apa_note <- "Note. CSS = computational social science; n = frequency; % = percentage. 
 Percentages are calculated within each method group. 
-N = 164 studies."
+N = 354 studies."
 
 table_specs <- list(
   V7  = "Frequencies of Regions",
