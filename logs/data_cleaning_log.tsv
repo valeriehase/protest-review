@@ -1,0 +1,8 @@
+timestamp	step	action	note
+2025-10-20 20:52:20	01_import	read_excel	Comment column manually standardized to format 'Vxx: text; Vyy: text' before import
+2025-10-20 20:52:23	02_duplicates	export_duplicates	Duplikate in id_unique gefunden: 19 IDs, 38 Zeilen exportiert nach data/processed/duplicates.xlsx, um sie manuell zu inspizieren
+2025-10-20 20:52:28	02_deduplication	remove_duplicates_by_decision	Gesamt entfernt: 19 Zeilen (row_ids: 25, 31, 50, 93, 136, 151, 161, 174, 179, 219, 234, 307, 310, 318, 334, 377, 399, 425, 442) | Ergebnis: data/processed/df_deduplicated.xlsx und data/processed/duplicates_removed.xlsx
+2025-10-20 20:52:32	03_V7_fix	manual_edit	id_unique ID366: V7 geändert von '1.3' zu '1; 3'
+2025-10-20 20:52:34	03_V10_fix	manual_edit	id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)
+2025-10-20 20:52:35	03_V10_fix	manual_edit	id_unique ID822: V10 geändert von '' zu '300; 113; 112; 111; 100; 110' (mehrere Medientypen)
+2025-10-20 20:52:35	03_V10_fix	manual_edit	id_unique ID98: V10 geändert von '' zu '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)
