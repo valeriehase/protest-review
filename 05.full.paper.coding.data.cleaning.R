@@ -12,7 +12,7 @@
 #   → DO NOT edit the 'Comment' column format manually anymore unless
 #     the same pattern (Vxx: text; Vyy: text) is preserved.
 #
-# === Packages =================================================================
+# Packages -----------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(readxl)
@@ -26,5 +26,8 @@ suppressPackageStartupMessages({
 })
 
 
+# Path -----------------------------------------------------------------
 
+raw_data <- "data/raw/df_full_sample_coded.xlsx"
+d_raw <- readxl::read_excel(raw_path)
 

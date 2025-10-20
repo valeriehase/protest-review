@@ -1,27 +1,33 @@
-# ---------------------------------------------------------------
-# CODING MASKS: Protest Review 
-# ---------------------------------------------------------------
+########################
+#
+# Construct Coding Masks for Final Coding 
 # Author: Miriam Milzner
 # Date: 2025-09-11
 #
-# === Packages =================================================================
+########################
+
+#
+# Packages ---------------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(readxl)
   library(dplyr)
 })
 
-# === Path =====================================================================
+# Path -------------------------------------------------------------------------
 
-path <- "C:/Users/miriam57/Documents/WIP_Protest_Review"
+path <- "data"
 
-# === Create Coding Masks =================================================================
-# Remove the cases used for reliability testing, 
+# Step 1: Create Coding Masks  -------------------------------------------------
+#
+# Remove the cases used for pretests and reliability testing, 
 # then draw two random samples of 150 cases each for the two coders.  
 # The remaining cases will be coded by MM.
 
-df <- read_excel("full_paper_sample.xlsx")
-coded_reli <- read_excel("df_sample_coded_RELI.xlsx")
+input_file <- file.path(path, "raw/full_paper_sample.xlsx")
+df <- read_excel(input_file)
+
+coded_reli <- read_excel("data/raw/df_sample_coded_PRETEST_RELI.xlsx")
 
 df_reduced <- df %>%
   filter(!(id_unique %in% coded_reli$id_unique))
@@ -41,18 +47,18 @@ df_sample1 <- df_labeled %>% filter(group == "sample1")
 df_sample2 <- df_labeled %>% filter(group == "sample2")
 df_rest    <- df_labeled %>% filter(group == "rest")
 
-write.xlsx(df_sample1, "df_sample_clean_AZ.xlsx")
-write.xlsx(df_sample2, "df_sample_clean_VK.xlsx")
-write.xlsx(df_rest,    "df_sample_clean_MM.xlsx")
+write.xlsx(df_sample1, "data/raw/df_sample_clean_AZ_.xlsx")
+write.xlsx(df_sample2, "data/raw/df_sample_clean_VK.xlsx")
+write.xlsx(df_rest,    "data/raw/df_sample_clean_MM.xlsx")
 
 
 # === Check the final coding masks ===============================================
 
-df_sample_clean_AZ   <- read_excel("df_sample_clean_AZ.xlsx")
-df_sample_clean_VK   <- read_excel("df_sample_clean_VK.xlsx")
-df_sample_clean_MM   <- read_excel("df_sample_clean_MM.xlsx")
-df_sample_coded_RELI <- read_excel("df_sample_coded_RELI.xlsx")
-df_full_paper_sample <- read_excel("full_paper_sample.xlsx")
+df_sample_clean_AZ   <- read_excel("data/raw/df_sample_clean_AZ.xlsx")
+df_sample_clean_VK   <- read_excel("data/raw/df_sample_clean_VK.xlsx")
+df_sample_clean_MM   <- read_excel("data/raw/df_sample_clean_MM.xlsx")
+df_sample_coded_RELI <- read_excel("data/raw/df_sample_coded_PRETEST_RELI.xlsx")
+df_full_paper_sample <- read_excel("data/raw/full_paper_sample.xlsx")
 
 # Extracting IDs
 ids_full <- df_full_paper_sample$id_unique

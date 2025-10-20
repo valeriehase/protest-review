@@ -1,8 +1,12 @@
-# ---------------------------------------------------------------
-# RELIABILITY TESTING: Protest Review 
-# ---------------------------------------------------------------
+########################
 #
-# === Packages =================================================================
+# Reliability Testing
+# Author: Miriam Milzner
+# Date: 2025-08-15
+#
+########################
+
+# Packages ---------------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(readxl)
@@ -13,13 +17,13 @@ suppressPackageStartupMessages({
   library(openxlsx)
 })
 
-# === Path =====================================================================
+# Path ------------------------------------------------------------------------
 
-path <- "C:/Users/miriam57/Documents/WIP_Protest_Review"
+path <- "data"
 
-# === Sample ===================================================================
+# Step 1: Construct Reliability Test Samples -----------------------------------
 
-input_file <- file.path(path, "full_paper_sample.xlsx")
+input_file <- file.path(path, "raw/full_paper_sample.xlsx")
 df <- read_excel(input_file)
 
 set.seed(123)  
@@ -27,16 +31,16 @@ sample_total <- df %>% sample_n(92)
 sample1 <- sample_total[1:46, ]
 sample2 <- sample_total[47:92, ]
 
-output_file1 <- file.path(path, "relitest_full_paper_codebook_R1_clean.xlsx")
-output_file2 <- file.path(path, "relitest_full_paper_codebook_R2_clean.xlsx")
+output_file1 <- file.path(path, "reliability/relitest_full_paper_codebook_R1.xlsx")
+output_file2 <- file.path(path, "reliability/relitest_full_paper_codebook_R2.xlsx")
 
 write.xlsx(sample1, output_file1)
 write.xlsx(sample2, output_file2)
 
-# === Read Coded Masks =========================================================
+# Step 2: Read Coded Reliability Test Samples ----------------------------------
 
 files <- list.files(
-  path = path,
+  path = "data/reliability",
   pattern = "^relitest_full_paper_codebook_R\\d+_.+\\.xlsx$",
   full.names = TRUE
 )
@@ -66,14 +70,14 @@ df_all <- df_all %>%
   select(-c(source, authors, title, abstract, keywords, link, method, Comments))
 
 
-# === Reli Testing per variable =======================================================
+# Step 3: Calculate reliability values  ----------------------------------------
 
 # Reliability statistics (Krippendorff’s α) require the data to be in the format:
-# coding unit × coder × code. This allows direct comparison across coders.  
+# coding unit × coder × code to allow direct comparison across coders.  
 # For variables V10 and V11, a dummy (0/1) matrix is constructed before running
 # the reliability tests.
 
-###V10 Platform
+### V10 Platform
 
 df_v10_long <- df_all %>%
   select(id_unique, V5, V10) %>%
@@ -116,7 +120,7 @@ icr_v10 <- test_icr(
   holsti = TRUE
 )
 
-###V11 Methods
+### V11 Methods
 
 df_v11_long <- df_all %>%
   select(id_unique, V5, V11) %>%
@@ -158,7 +162,7 @@ icr_v11 <- test_icr(
   holsti = TRUE
 )
 
-###V12-V16
+### V12-V16
 
 icr_v7v16 <- test_icr(
   data = df_all,
@@ -173,7 +177,7 @@ icr_v7v16 <- test_icr(
 
 icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
-file_name <- paste0("reliwerte_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx")
-write.xlsx(icr, file_name)
+file_name <- paste0("data/reliability/reliwerte_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx")
+write.xlsx(path = "data/reliability", icr, file_name)
 
 
