@@ -8,11 +8,25 @@
 #
 # Notes:
 # - Input file: data/raw/df_full_sample_coded.xlsx
-# - The 'Comment' column was **manually standardized** to the format:
-#       e.g. V10: no method section; V11: unclear coding
-#   → This allows consistent parsing of multiple comments per variable
-#   → DO NOT edit the 'Comment' column format manually anymore unless
-#     the same pattern (Vxx: text; Vyy: text) is preserved.
+# - Comment-Spalte wurde vor Upload manuell vereinheitlicht (Format: "Vxx: Text; Vyy: Text")
+# - Schritte im Skripts:
+#   1. Vergibt eindeutige row_id (1:n)
+#   2. Identifiziert doppelte id_unique 
+#      → manuelle Entscheidung in duplicates_check.xlsx (Spalte 'decision')
+#      → entfernt Duplikate anhand row_id
+#   3. Validiert Variablenwerte (V7, V10, V11, V12, V13)
+#      → prüft pro Variable nur gültige Codes laut Codebuch
+#      → zeigt ungültige Werte in der Konsole
+#      → keine automatischen Korrekturen, nur gezielte manuelle Fixes
+#   4. Loggt alle manuellen Änderungen einzeln mit Zeitstempel
+#
+# - Log:
+#   → Format: TSV (Tab-separiert)
+#   → Pfad: logs/data_cleaning_log.tsv
+#   → Enthält: timestamp | step | action | note
+#
+# - Alle Ausgaben liegen unter data/processed/
+# - Skript ist deterministisch und reproduzierbar
 #
 # Packages -----------------------------------------------------------------
 
@@ -30,7 +44,7 @@ suppressPackageStartupMessages({
   library(readr)
 })
 
-# Simple Log System ------------------------------------------------------------
+# Simple Log System for Documentation ------------------------------------------
 
 # empty log table
 log_df <- tibble::tibble(
@@ -54,9 +68,9 @@ log_event <- function(step, action, note = "") {
 }
 
 # save logs
-write_log <- function(path = "logs/data_cleaning_log.csv") {
+write_log <- function(path = "logs/data_cleaning_log.tsv") {
   fs::dir_create(dirname(path))
-  readr::write_csv(log_df, path)
+  readr::write_tsv(log_df, path)
   message("Log saved: ", path)
 }
 
@@ -68,7 +82,7 @@ df_raw <- readxl::read_excel(raw_data)
 
 log_event(
   step = "01_import",
-  action = "read_excel",
+  action = "standardization",
   note = "Comment column manually standardized to format 'Vxx: text; Vyy: text' before import"
 )
 
@@ -86,7 +100,7 @@ dupes <- df_raw %>%
   filter(dup_count > 1) %>%
   arrange(id_unique, row_id)
 
-write.xlsx(dupes, "data/processed/duplicates.xlsx")
+# write.xlsx(dupes, "data/processed/duplicates.xlsx")
 
 log_event(
   step   = "02_duplicates",
@@ -112,23 +126,22 @@ df_deduplicated <- df_raw %>%
 removed_n <- nrow(df_raw) - nrow(df_deduplicated)
 
 # save deduplicated df
-write.xlsx(df_deduplicated, "data/processed/df_deduplicated.xlsx")
+# write.xlsx(df_deduplicated, "data/processed/df_deduplicated.xlsx")
 
 # save removed cases (documentation)
 removed_duplicates <- df_raw %>% filter(row_id %in% to_remove)
-write.xlsx(removed_duplicates, "data/processed/duplicates_removed.xlsx")
+# write.xlsx(removed_duplicates, "data/processed/duplicates_removed.xlsx")
 
 # log
 log_event(
   step   = "02_deduplication",
-  action = "remove_duplicates_by_decision",
+  action = "remove_duplicates_by_manual_decision",
   note   = paste0("Gesamt entfernt: ", removed_n,
-                  " Zeilen (IDs: ", length(ids_to_remove),
+                  " Zeilen (row_ids: ", toString(sort(unique(to_remove))),
                   ") | Ergebnis: data/processed/df_deduplicated.xlsx und data/processed/duplicates_removed.xlsx")
 )
 
-
-# Step 3: Basic Cleaning - Value Validation -----------------------------------
+# Step 3: Basic Cleaning - Value Validation ------------------------------------
 
 df_clean <- df_deduplicated %>%
   rename_with(
@@ -152,7 +165,7 @@ df_clean <- df_clean %>%
   mutate(V7 = if_else(id_unique == "ID366", "1; 3", V7))
 
 log_event(
-  step   = "03_V7_fix",
+  step   = "03_V7_value_fix",
   action = "manual_edit",
   note   = "id_unique ID366: V7 geändert von '1.3' zu '1; 3'"
 )
@@ -170,22 +183,166 @@ invalid_v10 <- df_clean %>%
 print(invalid_v10)
 
 df_clean <- df_clean %>% 
-  mutate(V10 = if_else(row_id == 142, "100", V10), # survey on use of ICT
-         V10 = if_else(row_id == 413, "300; 113; 112; 111; 100; 110", V10), # media types included traditional media (or affiliates), online partisan media, online nonpartisan media, activism/advocacy media, social media, and ephemeral websites
-         V10 = if_else(row_id == 458, "141; 131; 132; 124", V10)) # Twitter, Facebook, Instagram, and Reddit data were collected using Synthesio
-# log
+  mutate(V10 = if_else(id_unique == "ID1680", "100", V10), # survey on use of ICT
+         V10 = if_else(id_unique == "ID822", "300; 113; 112; 111; 100; 110", V10), # media types included traditional media (or affiliates), online partisan media, online nonpartisan media, activism/advocacy media, social media, and ephemeral websites
+         V10 = if_else(id_unique == "ID98", "141; 131; 132; 124", V10)) # Twitter, Facebook, Instagram, and Reddit data were collected using Synthesio
+
+#log
 log_event(
-  step   = "03_V10_fix",
-  action = "manual_edit_batch",
-  note   = paste(
-    "3 Änderungen an V10:",
-    "row_id 142 -> '100' (survey on use of ICT)",
-    "row_id 413 -> '300; 113; 112; 111; 100; 110' (mehrere Medientypen)",
-    "row_id 458 -> '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)",
-    sep = " | "
-  )
+  step   = "03_V10_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)"
 )
+log_event(
+  step   = "03_V10_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (mehrere Medientypen)"
+)
+log_event(
+  step   = "03_V10_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)"
+)
+
+
+### V11
+
+allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
+
+invalid_v11 <- df_clean %>%
+  filter(!is.na(V11)) %>%                 # echte NAs auch ok
+  separate_rows(V11, sep = ";\\s*") %>%   # mehrfachcodierung splitten
+  mutate(V11 = str_trim(V11)) %>%         
+  filter(!(V11 %in% allowed_v11))         
+
+print(invalid_v11)
+
+df_clean <- df_clean %>% 
+  mutate(V11 = if_else(id_unique == "ID1494", "24", V11), 
+         V11 = if_else(id_unique == "ID2437", "21; 22", V11),
+         V11 = if_else(id_unique == "ID83", "18; 12", V11)) 
+
+#log
+log_event(
+  step   = "03_V11_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID1494: V11 geändert von '24.' zu '24'"
+)
+log_event(
+  step   = "03_V11_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID2437: V11 geändert von ' ' zu '21; 22'"
+)
+log_event(
+  step   = "03_V11_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID83: V11 geändert von '18, 12' zu '18; 12'"
+)
+
+
+### V12
+
+allowed_v12 <- c("0", "1")
+
+invalid_v12 <- df_clean %>%
+  filter(!is.na(V12)) %>%               #  NAs sind nicht erlaubt
+  mutate(V12 = str_trim(as.character(V12))) %>%
+  filter(!(V12 %in% allowed_v12))       
+
+print(invalid_v12)
+
+### V13
+
+allowed_v13 <- c("0", "1")
+
+invalid_v13 <- df_clean %>%
+  filter(!is.na(V13)) %>%               #  NAs sind nicht erlaubt
+  mutate(V13 = str_trim(as.character(V13))) %>%
+  filter(!(V13 %in% allowed_v13))      
+
+print(invalid_v12)
+
+
+# Step 4: Konsistenzprüfung ----------------------------------------------------
+
+### Konsistenzprüfung: Wenn method == "0", dürfen in V11 keine 10:18 stehen
+
+method_col <- "method"
+
+invalid_v11_method0_ids <- df_clean %>%
+  filter(.data[[method_col]] == "0") %>%    
+  separate_rows(V11, sep = ";\\s*") %>%                   
+  mutate(V11 = str_trim(V11)) %>%                         
+  filter(V11 %in% as.character(10:18)) %>%                
+  distinct(id_unique) %>%                                 
+  arrange(id_unique)
+
+invalid_v11_method0 <- df_clean %>%
+  filter(id_unique %in% invalid_v11_method0_ids$id_unique)
+
+print(invalid_v11_method0)
+
+# "ID1199", "12; 21"
+#"ID1462", "13; 21" 
+#"ID1656", "13; 21"
+#"ID19", "21; 22; 18"
+#"ID1956", "17; 21"
+#"ID202", "24; 16"
+#"ID2152", "13; 99"
+#"ID2327", "21; 22; 18"
+#"ID239", "12; 24"
+#"ID267", "13; 16; 17; 26"
+#"ID366", "13; 21"
+#"ID413", "21;22;13;16;18"
+#"ID94", "12; 18; 24"
+
+
+# df_clean <- df_clean %>% 
+#  mutate(V11 = if_else(id_unique == "ID1199", "12; 21", V11), 
+#         V11 = if_else(id_unique == "ID1462", "13; 21", V11), 
+#         V11 = if_else(id_unique == "ID1656", "13; 21", V11),
+#         V11 = if_else(id_unique == "ID19", "21; 22; 18", V11),
+#         V11 = if_else(id_unique == "ID1956", "17; 21", V11),
+#         V11 = if_else(id_unique == "ID202", "24; 16", V11),
+#         V11 = if_else(id_unique == "ID2152", "13; 99", V11),
+#         V11 = if_else(id_unique == "ID2327", "21; 22; 18", V11),
+#        V11 = if_else(id_unique == "ID239", "12; 24", V11),
+#         V11 = if_else(id_unique == "ID267", "13; 16; 17; 26", V11),
+#         V11 = if_else(id_unique == "ID366", "13; 21", V11),
+#         V11 = if_else(id_unique == "ID413", "21;22;13;16;18", V11),
+#         V11 = if_else(id_unique == "ID94", "12; 18; 24", V11),
+#         ) 
+
+#log
+# log_event(
+#  step   = "04_consistency",
+#  action = "manual_edit",
+#  note   = "id_unique : V11 geändert von ' ' zu ' '")
+
+#tbc
+
+
+# Step 5: Kommentare -----------------------------------------------------------
+
+
+comments_long <- df_clean %>%
+  filter(!is.na(Comment_CODER)) %>%
+  mutate(Comment = str_squish(Comment_CODER)) %>%             
+  separate_rows(Comment, sep = ";\\s*") %>%               
+  extract(Comment, into = c("variable", "comment_text"),
+          regex = "^(V\\d{1,2}):\\s*(.*)$", remove = TRUE) %>% 
+  mutate(variable = str_trim(variable),
+         comment_text = str_trim(comment_text)) %>%
+  filter(!is.na(variable), variable != "")
+
+print(comments_long)
+
+# manually inspected all comments and resolved only the comments with active questions for now.
+# tbc
+
 
 # Write Log --------------------------------------------------------------------
 
 write_log()
+log <- readr::read_tsv("logs/data_cleaning_log.tsv")
+
