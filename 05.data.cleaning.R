@@ -7,26 +7,31 @@
 ########################
 #
 # Notes:
-# - Input file: data/raw/df_full_sample_coded.xlsx
+# - Input: data/raw/df_full_sample_coded.xlsx
 # - Comment-Spalte wurde vor Upload manuell vereinheitlicht (Format: "Vxx: Text; Vyy: Text")
-# - Schritte im Skripts:
+#
+# - Schritte im Skript:
 #   1. Vergibt eindeutige row_id (1:n)
-#   2. Identifiziert doppelte id_unique 
+#   2. Identifiziert doppelte id_unique
 #      → manuelle Entscheidung in duplicates_check.xlsx (Spalte 'decision')
 #      → entfernt Duplikate anhand row_id
-#   3. Validiert Variablenwerte (V7, V10, V11, V12, V13)
-#      → prüft pro Variable nur gültige Codes laut Codebuch
+#   3. Bereinigt und validiert Variablenwerte (V6–V13)
+#      → prüft gültige Codes laut Codebuch
+#      → erlaubt Mehrfachkodierungen mit "; "
 #      → zeigt ungültige Werte in der Konsole
-#      → keine automatischen Korrekturen, nur gezielte manuelle Fixes
-#   4. Loggt alle manuellen Änderungen einzeln mit Zeitstempel
+#      → führt gezielte manuelle Korrekturen durch (mutate + Log)
+#   4. Vereinheitlicht Textformatierung
+#      → lowercase, einheitliche Trennung mit "; "
+#      → entfernt führende und abschließende Semikolons
+#   5. Konsistenzprüfungen
+#      → z. B. keine CSS-Codes (10–18) bei method == 0
+#      → protokolliert alle Änderungen und Überprüfungen im Log
+#   6. Extrahiert und strukturiert Comments-Spalte für inhaltliche Nachprüfung
 #
-# - Log:
+# - Logging:
 #   → Format: TSV (Tab-separiert)
 #   → Pfad: logs/data_cleaning_log.tsv
 #   → Enthält: timestamp | step | action | note
-#
-# - Alle Ausgaben liegen unter data/processed/
-# - Skript ist deterministisch und reproduzierbar
 #
 # Packages -----------------------------------------------------------------
 
@@ -148,12 +153,55 @@ df_clean <- df_deduplicated %>%
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
 
-### V7
+### V6 ------------------------------------
+
+v6_long <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  filter(!is.na(V6)) %>%
+  tidyr::separate_rows(V6, sep = ";\\s*") %>%
+  mutate(V6 = stringr::str_trim(V6))
+
+# maximal 3 Tokens pro Zeile
+v6_counts <- v6_long %>% count(.row, name = "n_tokens")
+# leere Tokens
+v6_empty <- v6_long %>% filter(V6 == "")
+# „komische“ numerische Tokens: nur Ziffern und ungleich "1"
+v6_num_weird <- v6_long %>%
+  filter(stringr::str_detect(V6, "^[0-9]+$"), V6 != "1")
+
+invalid_v6_ids <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  left_join(v6_counts, by = ".row") %>%
+  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%  # NA -> 0 (wenn ganze Zeile NA war)
+  filter(n_tokens > 3) %>%                               # zu viele Tokens
+  select(id_unique) %>%
+  bind_rows(v6_empty %>% select(id_unique)) %>%
+  bind_rows(v6_num_weird %>% select(id_unique)) %>%
+  distinct() %>%
+  arrange(id_unique)
+
+invalid_v6 <- df_clean %>%
+  filter(id_unique %in% invalid_v6_ids$id_unique)
+
+df_clean <- df_clean %>%
+  mutate(V6 = if_else(id_unique == "ID413", "18 Million Rising (18MR); Asian American Feminist Collective (AAFC); Black Women Radicals (BWR)", V6), # too many strings, reduced to first three
+         V6 = if_else(id_unique == "ID44", "Euromaidan; Occupy Wall Street (OWS; unionsq); Gezi park", V6), # too many strings, reduced to first three  
+         V6 = if_else(id_unique == "ID94", "1", V6), # protest general coded as protest cases
+         V6 = if_else(!is.na(V6), str_to_lower(V6), V6)) # all to lower case 
+
+log_event(
+  step   = "03_V6_value_fix",
+  action = "manual_edit_and_lowercase",
+  note   = "id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend in lowercase konvertiert"
+)
+
+
+### V7 ------------------------------------
 
 allowed_v7 <- as.character(1:10) |> c("NA")  
 
 invalid_v7 <- df_clean %>%
-  filter(!is.na(V7)) %>%                        # "echte" NAs sind auch ok
+  filter(!is.na(V7)) %>%                        # NAs sind auch ok
   separate_rows(V7, sep = ";\\s*") %>%          # mehrfachcodierungen splitten
   mutate(V7 = str_trim(V7)) %>%
   filter(!(V7 %in% allowed_v7))  
@@ -170,7 +218,109 @@ log_event(
   note   = "id_unique ID366: V7 geändert von '1.3' zu '1; 3'"
 )
 
-### V10
+### V8 ------------------------------------
+
+v8_long <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  filter(!is.na(V8)) %>%
+  tidyr::separate_rows(V8, sep = ";\\s*") %>%
+  mutate(V8 = stringr::str_trim(V8))
+
+# maximal 3 Tokens pro Zeile
+v8_counts <- v8_long %>% count(.row, name = "n_tokens")
+# leere Tokens
+v8_empty <- v8_long %>% filter(V8 == "")
+# rein numerische Tokens (unerlaubt)
+v8_num_weird <- v8_long %>%
+  filter(stringr::str_detect(V8, "^[0-9]+$"), V8 != "NA")
+
+invalid_v8_ids <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  left_join(v8_counts, by = ".row") %>%
+  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%
+  filter(n_tokens > 3) %>%                        # zu viele Tokens
+  select(id_unique) %>%
+  bind_rows(v8_empty %>% select(id_unique)) %>%
+  bind_rows(v8_num_weird %>% select(id_unique)) %>%
+  distinct() %>%
+  arrange(id_unique)
+
+invalid_v8 <- df_clean %>%
+  filter(id_unique %in% invalid_v8_ids$id_unique) 
+
+
+print(invalid_v8)
+
+df_clean <- df_clean %>%
+  mutate(V8 = if_else(id_unique == "ID1224", "Iraq; Egypt; Yemen", V8), # too many strings, reduced to first three
+         V8 = if_else(id_unique == "ID202", "Ireland; Malta; Netherlands", V8), # too many strings, reduced to first three  
+         V8 = if_else(id_unique == "ID44", "Turkey; Ukraine; United States of America", V8) # too many strings, reduced to three
+         )  
+
+log_event(
+  step   = "03_V8_value_fix",
+  action = "manual_edit",
+  note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert)"
+)
+
+### V9 ------------------------------------
+
+v9_long <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  filter(!is.na(V9)) %>%
+  tidyr::separate_rows(V9, sep = ";\\s*") %>%
+  mutate(V9 = stringr::str_trim(V9))
+
+v9_counts <- v9_long %>% count(.row, name = "n_tokens")
+v9_empty  <- v9_long %>% filter(V9 == "")
+v9_num_weird <- v9_long %>%
+  filter(stringr::str_detect(V9, "^[0-9]+$"), V9 != "NA")
+
+invalid_v9_ids <- df_clean %>%
+  mutate(.row = dplyr::row_number()) %>%
+  left_join(v9_counts, by = ".row") %>%
+  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%
+  filter(n_tokens > 3) %>%
+  select(id_unique) %>%
+  bind_rows(v9_empty %>% select(id_unique)) %>%
+  bind_rows(v9_num_weird %>% select(id_unique)) %>%
+  distinct() %>%
+  arrange(id_unique)
+
+invalid_v9 <- df_clean %>%
+  filter(id_unique %in% invalid_v9_ids$id_unique) %>%
+  select(id_unique, V9, dplyr::everything())
+
+print(invalid_v9)
+
+
+df_clean <- df_clean %>%
+  mutate(
+    V9 = if_else(
+      is.na(V9), V9,
+      V9 %>%
+        str_squish() %>%                        # Mehrfach-Whitespaces zu einem
+        str_to_lower() %>%                      # alles lowercase
+        # andere Trenner zwischen Tokens → "; "
+        str_replace_all("\\s*[,/|]+\\s*", "; ") %>%
+        # Semikolon-Spaces vereinheitlichen
+        str_replace_all("\\s*;\\s*", "; ") %>%
+        # führende/trailing Semikolons entfernen
+        str_replace_all("^(;\\s*)+", "") %>%
+        str_replace_all("(;\\s*)+$", "") %>%
+        # doppelte Semikolons (z. B. durch fehlerhafte Eingaben) einkochen
+        str_replace_all("(;\\s*){2,}", "; ")
+    )
+  )
+
+log_event(
+  step   = "03_V9_normalize",
+  action = "format_standardization",
+  note   = "V9 automatisch normalisiert: lowercase, Trenner auf '; ' vereinheitlicht, führende/abschließende Semikolons entfernt"
+)
+
+
+### V10 ------------------------------------
 
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
 
@@ -205,7 +355,7 @@ log_event(
 )
 
 
-### V11
+### V11 ------------------------------------
 
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
 
@@ -240,7 +390,7 @@ log_event(
 )
 
 
-### V12
+### V12 ------------------------------------
 
 allowed_v12 <- c("0", "1")
 
@@ -251,7 +401,7 @@ invalid_v12 <- df_clean %>%
 
 print(invalid_v12)
 
-### V13
+### V13 ------------------------------------
 
 allowed_v13 <- c("0", "1")
 
@@ -282,44 +432,64 @@ invalid_v11_method0 <- df_clean %>%
 
 print(invalid_v11_method0)
 
-# "ID1199", "12; 21"
-#"ID1462", "13; 21" 
-#"ID1656", "13; 21"
-#"ID19", "21; 22; 18"
-#"ID1956", "17; 21"
-#"ID202", "24; 16"
-#"ID2152", "13; 99"
-#"ID2327", "21; 22; 18"
-#"ID239", "12; 24"
-#"ID267", "13; 16; 17; 26"
-#"ID366", "13; 21"
-#"ID413", "21;22;13;16;18"
-#"ID94", "12; 18; 24"
+df_clean <- df_clean %>% 
+  mutate(V11 = if_else(id_unique == "ID1462", "21", V11), 
+         V11 = if_else(id_unique == "ID1656", "21", V11),
+         V11 = if_else(id_unique == "ID19", "21; 22", V11),
+         V11 = if_else(id_unique == "ID1956", "21", V11),
+         V11 = if_else(id_unique == "ID2327", "21; 22", V11),
+         V11 = if_else(id_unique == "ID239", "24", V11),
+         V11 = if_else(id_unique == "ID413", "21", V11),
+         V11 = if_else(id_unique == "ID94", "24", V11)
+         ) 
 
 
-# df_clean <- df_clean %>% 
-#  mutate(V11 = if_else(id_unique == "ID1199", "12; 21", V11), 
-#         V11 = if_else(id_unique == "ID1462", "13; 21", V11), 
-#         V11 = if_else(id_unique == "ID1656", "13; 21", V11),
-#         V11 = if_else(id_unique == "ID19", "21; 22; 18", V11),
-#         V11 = if_else(id_unique == "ID1956", "17; 21", V11),
-#         V11 = if_else(id_unique == "ID202", "24; 16", V11),
-#         V11 = if_else(id_unique == "ID2152", "13; 99", V11),
-#         V11 = if_else(id_unique == "ID2327", "21; 22; 18", V11),
-#        V11 = if_else(id_unique == "ID239", "12; 24", V11),
-#         V11 = if_else(id_unique == "ID267", "13; 16; 17; 26", V11),
-#         V11 = if_else(id_unique == "ID366", "13; 21", V11),
-#         V11 = if_else(id_unique == "ID413", "21;22;13;16;18", V11),
-#         V11 = if_else(id_unique == "ID94", "12; 18; 24", V11),
-#         ) 
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "no_change_documented",
+  note   = "IDs ID1199, ID202, ID2152, ID267, ID366: V11 überprüft – keine Änderungen erforderlich; CSS-Methoden erscheinen hier fälschlich bei method == 0"
+)
 
-#log
-# log_event(
-#  step   = "04_consistency",
-#  action = "manual_edit",
-#  note   = "id_unique : V11 geändert von ' ' zu ' '")
-
-#tbc
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID1462: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID1656: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID19: V11 geändert von '21; 22; 18' zu '21; 22' (Datensammlung ohne Spezifikation; Code 18 entfernt)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID1956: V11 geändert von '17; 21' zu '21' (Tracking-Code missverstanden)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID2327: V11 geändert von '21; 22; 18' zu '21; 22' (kein Scraping belegt; Code 18 entfernt)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID239: V11 geändert von '12; 24' zu '24' (Archivnutzung; API nicht eigenständig; Code 12 entfernt)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID413: V11 geändert von '21; 22; 13; 16; 18' zu '21' (ausschließlich qualitative Instagram-Analyse; übrige Codes entfernt)"
+)
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)"
+)
 
 
 # Step 5: Kommentare -----------------------------------------------------------
@@ -338,7 +508,8 @@ comments_long <- df_clean %>%
 print(comments_long)
 
 # manually inspected all comments and resolved only the comments with active questions for now.
-# tbc
+
+# 
 
 
 # Write Log --------------------------------------------------------------------

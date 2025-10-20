@@ -1,11 +1,23 @@
 timestamp	step	action	note
-2025-10-20 22:19:44	01_import	standardization	Comment column manually standardized to format 'Vxx: text; Vyy: text' before import
-2025-10-20 22:19:45	02_duplicates	export_duplicates	Duplikate in id_unique gefunden: 19 IDs, 38 Zeilen exportiert nach data/processed/duplicates.xlsx, um sie manuell zu inspizieren
-2025-10-20 22:20:01	02_deduplication	remove_duplicates_by_manual_decision	Gesamt entfernt: 19 Zeilen (row_ids: 25, 31, 50, 93, 136, 151, 161, 174, 179, 219, 234, 307, 310, 318, 334, 377, 399, 425, 442) | Ergebnis: data/processed/df_deduplicated.xlsx und data/processed/duplicates_removed.xlsx
-2025-10-20 22:20:16	03_V7_value_fix	manual_edit	id_unique ID366: V7 geändert von '1.3' zu '1; 3'
-2025-10-20 22:20:23	03_V10_value_fix	manual_edit	id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)
-2025-10-20 22:20:24	03_V10_value_fix	manual_edit	id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (mehrere Medientypen)
-2025-10-20 22:20:25	03_V10_value_fix	manual_edit	id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)
-2025-10-20 22:20:30	03_V11_value_fix	manual_edit	id_unique ID1494: V11 geändert von '24.' zu '24'
-2025-10-20 22:20:31	03_V11_value_fix	manual_edit	id_unique ID2437: V11 geändert von ' ' zu '21; 22'
-2025-10-20 22:20:32	03_V11_value_fix	manual_edit	id_unique ID83: V11 geändert von '18, 12' zu '18; 12'
+2025-10-21 00:11:09	01_import	standardization	Comment column manually standardized to format 'Vxx: text; Vyy: text' before import
+2025-10-21 00:11:10	02_duplicates	export_duplicates	Duplikate in id_unique gefunden: 19 IDs, 38 Zeilen exportiert nach data/processed/duplicates.xlsx, um sie manuell zu inspizieren
+2025-10-21 00:11:11	02_deduplication	remove_duplicates_by_manual_decision	Gesamt entfernt: 19 Zeilen (row_ids: 25, 31, 50, 93, 136, 151, 161, 174, 179, 219, 234, 307, 310, 318, 334, 377, 399, 425, 442) | Ergebnis: data/processed/df_deduplicated.xlsx und data/processed/duplicates_removed.xlsx
+2025-10-21 00:11:14	03_V6_value_fix	manual_edit_and_lowercase	id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend in lowercase konvertiert
+2025-10-21 00:11:15	03_V7_value_fix	manual_edit	id_unique ID366: V7 geändert von '1.3' zu '1; 3'
+2025-10-21 00:11:17	03_V8_value_fix	manual_edit	id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert)
+2025-10-21 00:11:20	03_V9_normalize	format_standardization	V9 automatisch normalisiert: lowercase, Trenner auf '; ' vereinheitlicht, führende/abschließende Semikolons entfernt
+2025-10-21 00:11:21	03_V10_value_fix	manual_edit	id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)
+2025-10-21 00:11:21	03_V10_value_fix	manual_edit	id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (mehrere Medientypen)
+2025-10-21 00:11:21	03_V10_value_fix	manual_edit	id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)
+2025-10-21 00:11:22	03_V11_value_fix	manual_edit	id_unique ID1494: V11 geändert von '24.' zu '24'
+2025-10-21 00:11:23	03_V11_value_fix	manual_edit	id_unique ID2437: V11 geändert von ' ' zu '21; 22'
+2025-10-21 00:11:23	03_V11_value_fix	manual_edit	id_unique ID83: V11 geändert von '18, 12' zu '18; 12'
+2025-10-21 00:11:26	04_consistency_CSS_in_method0	no_change_documented	IDs ID1199, ID202, ID2152, ID267, ID366: V11 überprüft – keine Änderungen erforderlich; CSS-Methoden erscheinen hier fälschlich bei method == 0
+2025-10-21 00:11:26	04_consistency_CSS_in_method0	manual_edit	id_unique ID1462: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)
+2025-10-21 00:11:27	04_consistency_CSS_in_method0	manual_edit	id_unique ID1656: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)
+2025-10-21 00:11:27	04_consistency_CSS_in_method0	manual_edit	id_unique ID19: V11 geändert von '21; 22; 18' zu '21; 22' (Datensammlung ohne Spezifikation; Code 18 entfernt)
+2025-10-21 00:11:27	04_consistency_CSS_in_method0	manual_edit	id_unique ID1956: V11 geändert von '17; 21' zu '21' (Tracking-Code missverstanden)
+2025-10-21 00:11:27	04_consistency_CSS_in_method0	manual_edit	id_unique ID2327: V11 geändert von '21; 22; 18' zu '21; 22' (kein Scraping belegt; Code 18 entfernt)
+2025-10-21 00:11:28	04_consistency_CSS_in_method0	manual_edit	id_unique ID239: V11 geändert von '12; 24' zu '24' (Archivnutzung; API nicht eigenständig; Code 12 entfernt)
+2025-10-21 00:11:28	04_consistency_CSS_in_method0	manual_edit	id_unique ID413: V11 geändert von '21; 22; 13; 16; 18' zu '21' (ausschließlich qualitative Instagram-Analyse; übrige Codes entfernt)
+2025-10-21 00:11:28	04_consistency_CSS_in_method0	manual_edit	id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)
