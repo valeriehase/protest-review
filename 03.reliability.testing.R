@@ -177,7 +177,7 @@ icr_v7v16 <- test_icr(
 
 icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
-file_name <- paste0("data/reliability/reliwerte_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx")
-write.xlsx(path = "data/reliability", icr, file_name)
+file_name <- paste0("output/reliability/reliwerte_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx")
+write.xlsx(path = "output/reliability", icr, file_name)
 
 

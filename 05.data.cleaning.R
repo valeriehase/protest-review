@@ -1,8 +1,10 @@
-# ---------------------------------------------------------------
-# DATA CLEANING: Protest Review 
-# ---------------------------------------------------------------
+########################
+#
+# Data Cleaning of Final Coded Date
 # Author: Miriam Milzner
 # Date: 2025-10-20
+#
+########################
 #
 # Notes:
 # - Input file: data/raw/df_full_sample_coded.xlsx
