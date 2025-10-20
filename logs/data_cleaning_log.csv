@@ -1,0 +1,4 @@
+timestamp,step,action,note
+2025-10-20 19:29:04,01_import,read_excel,Comment column manually standardized to format 'Vxx: text; Vyy: text' before import
+2025-10-20 19:29:08,02_duplicates,export_duplicates,"Duplikate in id_unique gefunden: 19 IDs, 38 Zeilen exportiert nach data/processed/duplicates.xlsx, um sie manuell zu inspizieren"
+2025-10-20 19:36:14,02_deduplication,remove_duplicates_by_decision,Gesamt entfernt: 19 Zeilen (IDs: 19) | Ergebnis: data/processed/df_deduplicated.xlsx
