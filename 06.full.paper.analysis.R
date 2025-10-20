@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------
-# FREQUENCIES: Protest Review 
+# ANALYSIS: Protest Review 
 # ---------------------------------------------------------------
 #
 # === Packages =================================================================
@@ -33,7 +33,7 @@ df <- df %>%
   filter(method %in% c("0", "1")) %>%
   filter(!is.na(method)) %>%
   distinct(id_unique, .keep_all = TRUE) # remove duplicates. Note to self double check duplicates while cleaning the data
- 
+
 levels_V7 <- tibble(
   V7 = c(as.character(1:10), "NA"),
   V7_label = c(
@@ -149,7 +149,6 @@ levels_V13 <- tibble(
     "not experiment"
   )
 )
-
 
 # === Helper Functions =========================================================
 
@@ -327,4 +326,3 @@ for (i in seq_along(apa_tables)) {
 
 
 print(doc, target = "output/All_Tables_and_Figures.docx")
-
