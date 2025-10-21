@@ -381,7 +381,7 @@ doc <- doc %>%
 
 selected_platforms <- c("100","110","130","140")
 
-note_platforms <- "Note. Table limited to the four most frequently used platform types: 100 = Internet / online / social media (general); 110 = Websites; 130 = Social Networking Sites; 140 = Microblogs.
+note_platforms <- "Note. Table limited to the four most frequently used platform types: Internet / online / social media (general); Websites general; Social Networking Sites; Microblogs.
 Percentages are calculated within each platform column, separately for CSS and Non-CSS studies.
 CSS = computational social science."
 
@@ -516,7 +516,7 @@ ft_V11_platforms <- build_pct_table_both_methods(
   row_var = "V11", levels_row_df = levels_V11,
   col_var = "V10_agg", levels_col_df = levels_V10_agg,
   selected_cols = selected_platforms,
-  title = "Analysis Methods (V11) × Major Platform Types (V10_agg) — % within platform",
+  title = "Analysis Methods × Major Platform Types — % within platform",
   note  = note_platforms
 )
 
@@ -526,7 +526,7 @@ ft_V7_platforms <- build_pct_table_both_methods(
   row_var = "V7", levels_row_df = levels_V7,
   col_var = "V10_agg", levels_col_df = levels_V10_agg,
   selected_cols = selected_platforms,
-  title = "Regions (V7) × Major Platform Types (V10_agg) — % within platform",
+  title = "Regions × Major Platform Types — % within platform",
   note  = note_platforms
 )
 
@@ -536,7 +536,7 @@ ft_V12_platforms <- build_pct_table_both_methods(
   row_var = "V12", levels_row_df = levels_V12,
   col_var = "V10_agg", levels_col_df = levels_V10_agg,
   selected_cols = selected_platforms,
-  title = "Cross-National Designs (V12) × Major Platform Types (V10_agg) — % within platform",
+  title = "Cross-National Designs × Major Platform Types — % within platform",
   note  = note_platforms
 )
 
@@ -546,7 +546,7 @@ ft_V13_platforms <- build_pct_table_both_methods(
   row_var = "V13", levels_row_df = levels_V13,
   col_var = "V10_agg", levels_col_df = levels_V10_agg,
   selected_cols = selected_platforms,
-  title = "Experimental Designs (V13) × Major Platform Types (V10_agg) — % within platform",
+  title = "Experimental Designs × Major Platform Types — % within platform",
   note  = note_platforms
 )
 
@@ -556,7 +556,7 @@ ft_V11_V12 <- build_pct_table_both_methods(
   row_var = "V11", levels_row_df = levels_V11,
   col_var = "V12", levels_col_df = levels_V12,
   selected_cols = c("1","0"),     # Reihenfolge: cross-national, not cross-national
-  title = "Analysis Methods (V11) × Cross-National Design (V12) — % within design",
+  title = "Analysis Methods × Cross-National Design — % within design",
   note  = note_designs
 )
 
@@ -566,7 +566,7 @@ ft_V11_V13 <- build_pct_table_both_methods(
   row_var = "V11", levels_row_df = levels_V11,
   col_var = "V13", levels_col_df = levels_V13,
   selected_cols = c("1","0"),     # Reihenfolge: experiment, not experiment
-  title = "Analysis Methods (V11) × Experimental Design (V13) — % within design",
+  title = "Analysis Methods × Experimental Design — % within design",
   note  = note_designs
 )
 
