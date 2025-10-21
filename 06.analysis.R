@@ -1,10 +1,12 @@
-# ---------------------------------------------------------------
-# ANALYSIS: Protest Review 
-# ---------------------------------------------------------------
-# Author: Miriam Milzner
-# Date: 2025-10-01
+########################
 #
-# === Packages =================================================================
+# Analysis
+# Author: Miriam Milzner
+# Date: 2025-10-20
+#
+########################
+#
+# Packages ---------------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(readxl)
@@ -17,9 +19,9 @@ suppressPackageStartupMessages({
   library(officer)
 })
 
-# === Prepare Data =======================================================
+# Prepare Data -----------------------------------------------------------------
 
-df_full_sample_coded <- read_excel("data/df_full_sample_coded.xlsx")
+df_full_sample_coded <- read_excel("data/processed/full_paper_sample_coded_clean.xlsx")
 
 df <- df_full_sample_coded %>%
   rename_with(
@@ -152,7 +154,7 @@ levels_V13 <- tibble(
   )
 )
 
-# === Helper Functions =========================================================
+# Helper Functions  ------------------------------------------------------------
 
 make_complete_table <- function(df, var, levels_df, 
                                 apa = FALSE, title = NULL, note = NULL) {
@@ -265,11 +267,11 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
 
 
 
-# === Frequency Tables APA Export ========================================================
+# Frequency Tables APA Export  -------------------------------------------------
 
 apa_note <- "Note. CSS = computational social science; n = frequency; % = percentage. 
 Percentages are calculated within each method group. 
-N = 354 studies."
+N = 445 studies."
 
 table_specs <- list(
   V7  = "Frequencies of Regions",
@@ -294,7 +296,7 @@ apa_tables <- lapply(names(table_specs), function(var) {
 
 names(apa_tables) <- names(table_specs)
 
-# === Export to Word (Tables + Figures) ========================================
+# Export to Word (Tables + Figures)  -------------------------------------------
 
 landscape <- prop_section(
   page_size = page_size(orient = "landscape")
@@ -327,4 +329,59 @@ for (i in seq_along(apa_tables)) {
 }
 
 
-print(doc, target = "output/All_Tables_and_Figures.docx")
+
+# Combined figure: Cross-national & Experimental --------------------------------
+
+# helper to compute share of "1" within method group
+share_one <- function(.df, var) {
+  .df %>%
+    dplyr::mutate(val = as.character(.data[[var]])) %>%
+    dplyr::group_by(method) %>%
+    dplyr::summarise(
+      n_total = dplyr::n(),
+      n_one   = sum(val == "1", na.rm = TRUE),
+      pct_one = round(100 * n_one / n_total, 1),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(variable = var)
+}
+
+v12_share <- share_one(df, "V12")
+v13_share <- share_one(df, "V13")
+
+design_share <- dplyr::bind_rows(v12_share, v13_share) %>%
+  dplyr::mutate(
+    Design = dplyr::recode(variable,
+                           "V12" = "Cross-national",
+                           "V13" = "Experimental"),
+    Method = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS")
+  )
+
+p_design <- ggplot(design_share, aes(x = Design, y = pct_one, fill = Method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
+  scale_fill_manual(values = c("grey70","white")) +
+  labs(x = NULL, y = "Percentage", fill = "Method Group") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    plot.margin = margin(10, 10, 10, 10)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure (supplement): Cross-national and Experimental Designs", style = "Normal") %>%
+  body_add_par("Share of studies with cross-national and experimental research designs by method group (CSS vs. Non-CSS)", style = "Normal") %>%
+  body_add_gg(value = p_design, width = 9, height = 5) %>%
+  body_add_break()
+
+# Cross Tables ----------------------------------------------------------------
+#tbc
+
+
+# PRINT -----------------------------------------------------------------------
+
+print(doc, target = "output/tables/All_Tables_and_Figures.docx")
+

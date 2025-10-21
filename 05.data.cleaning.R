@@ -31,7 +31,7 @@
 #   → Pfad: logs/data_cleaning_log.tsv
 #   → Enthält: timestamp | step | action | note
 #
-# Packages -----------------------------------------------------------------
+# Packages -------------------------------------------------------------------
 
 suppressPackageStartupMessages({
   library(readxl)
