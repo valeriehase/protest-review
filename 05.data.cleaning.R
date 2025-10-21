@@ -20,11 +20,9 @@
 #      → erlaubt Mehrfachkodierungen mit "; "
 #      → zeigt ungültige Werte in der Konsole
 #      → führt gezielte manuelle Korrekturen durch (mutate + Log)
-#   4. Vereinheitlicht Textformatierung
-#      → lowercase, einheitliche Trennung mit "; "
-#      → entfernt führende und abschließende Semikolons
-#   5. Konsistenzprüfungen
-#      → z. B. keine CSS-Codes (10–18) bei method == 0
+#      → Vereinheitlicht Textformatierung: lowercase, einheitliche Trennung mit "; ", entfernt führende und abschließende Semikolons
+#   4. Konsistenzprüfungen
+#      → keine CSS-Codes (10–18) bei method == 0
 #      → protokolliert alle Änderungen und Überprüfungen im Log
 #   6. Extrahiert und strukturiert Comments-Spalte für inhaltliche Nachprüfung
 #
@@ -153,6 +151,9 @@ df_clean <- df_deduplicated %>%
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
 
+# sanity check
+n_distinct(df_clean$id_unique) == nrow(df_clean)
+
 ### V6 ------------------------------------
 
 v6_long <- df_clean %>%
@@ -161,19 +162,16 @@ v6_long <- df_clean %>%
   tidyr::separate_rows(V6, sep = ";\\s*") %>%
   mutate(V6 = stringr::str_trim(V6))
 
-# maximal 3 Tokens pro Zeile
 v6_counts <- v6_long %>% count(.row, name = "n_tokens")
-# leere Tokens
 v6_empty <- v6_long %>% filter(V6 == "")
-# „komische“ numerische Tokens: nur Ziffern und ungleich "1"
 v6_num_weird <- v6_long %>%
   filter(stringr::str_detect(V6, "^[0-9]+$"), V6 != "1")
 
 invalid_v6_ids <- df_clean %>%
   mutate(.row = dplyr::row_number()) %>%
   left_join(v6_counts, by = ".row") %>%
-  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%  # NA -> 0 (wenn ganze Zeile NA war)
-  filter(n_tokens > 3) %>%                               # zu viele Tokens
+  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%  
+  filter(n_tokens > 3) %>%                              
   select(id_unique) %>%
   bind_rows(v6_empty %>% select(id_unique)) %>%
   bind_rows(v6_num_weird %>% select(id_unique)) %>%
@@ -183,16 +181,27 @@ invalid_v6_ids <- df_clean %>%
 invalid_v6 <- df_clean %>%
   filter(id_unique %in% invalid_v6_ids$id_unique)
 
+invalid_v6
+
 df_clean <- df_clean %>%
   mutate(V6 = if_else(id_unique == "ID413", "18 Million Rising (18MR); Asian American Feminist Collective (AAFC); Black Women Radicals (BWR)", V6), # too many strings, reduced to first three
          V6 = if_else(id_unique == "ID44", "Euromaidan; Occupy Wall Street (OWS; unionsq); Gezi park", V6), # too many strings, reduced to first three  
          V6 = if_else(id_unique == "ID94", "1", V6), # protest general coded as protest cases
-         V6 = if_else(!is.na(V6), str_to_lower(V6), V6)) # all to lower case 
+         ) %>%
+  mutate(V6 = if_else(is.na(V6), V6, V6 %>%
+        str_squish() %>%                         
+        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # andere trenner
+        str_replace_all("\\s*;\\s*", "; ") %>%   # spaces
+        str_replace_all("^(;\\s*)+", "") %>%     # führende/trailing semikolons 
+        str_replace_all("(;\\s*)+$", "") %>% 
+        str_replace_all("(;\\s*){2,}", "; ")     # doppelte semikolons
+    )
+  )
 
 log_event(
   step   = "03_V6_value_fix",
-  action = "manual_edit_and_lowercase",
-  note   = "id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend in lowercase konvertiert"
+  action = "manual_edit_and_normalize",
+  note   = "id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
 )
 
 
@@ -201,7 +210,7 @@ log_event(
 allowed_v7 <- as.character(1:10) |> c("NA")  
 
 invalid_v7 <- df_clean %>%
-  filter(!is.na(V7)) %>%                        # NAs sind auch ok
+  filter(!is.na(V7)) %>%                        # NAs sind hier ok
   separate_rows(V7, sep = ";\\s*") %>%          # mehrfachcodierungen splitten
   mutate(V7 = str_trim(V7)) %>%
   filter(!(V7 %in% allowed_v7))  
@@ -226,11 +235,8 @@ v8_long <- df_clean %>%
   tidyr::separate_rows(V8, sep = ";\\s*") %>%
   mutate(V8 = stringr::str_trim(V8))
 
-# maximal 3 Tokens pro Zeile
 v8_counts <- v8_long %>% count(.row, name = "n_tokens")
-# leere Tokens
 v8_empty <- v8_long %>% filter(V8 == "")
-# rein numerische Tokens (unerlaubt)
 v8_num_weird <- v8_long %>%
   filter(stringr::str_detect(V8, "^[0-9]+$"), V8 != "NA")
 
@@ -238,7 +244,7 @@ invalid_v8_ids <- df_clean %>%
   mutate(.row = dplyr::row_number()) %>%
   left_join(v8_counts, by = ".row") %>%
   mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%
-  filter(n_tokens > 3) %>%                        # zu viele Tokens
+  filter(n_tokens > 3) %>%                        
   select(id_unique) %>%
   bind_rows(v8_empty %>% select(id_unique)) %>%
   bind_rows(v8_num_weird %>% select(id_unique)) %>%
@@ -248,19 +254,30 @@ invalid_v8_ids <- df_clean %>%
 invalid_v8 <- df_clean %>%
   filter(id_unique %in% invalid_v8_ids$id_unique) 
 
-
 print(invalid_v8)
 
 df_clean <- df_clean %>%
   mutate(V8 = if_else(id_unique == "ID1224", "Iraq; Egypt; Yemen", V8), # too many strings, reduced to first three
          V8 = if_else(id_unique == "ID202", "Ireland; Malta; Netherlands", V8), # too many strings, reduced to first three  
          V8 = if_else(id_unique == "ID44", "Turkey; Ukraine; United States of America", V8) # too many strings, reduced to three
-         )  
+         ) %>%
+  mutate(
+    V8 = if_else(
+      is.na(V8), V8,
+      V8 %>%
+        str_squish() %>%                         
+        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # alternative trenner
+        str_replace_all("\\s*;\\s*", "; ") %>%   # semikolons vereinheitlichen
+        str_replace_all("^(;\\s*)+", "") %>%     # führende/trailing semikolons 
+        str_replace_all("(;\\s*)+$", "") %>% 
+        str_replace_all("(;\\s*){2,}", "; ")     # doppelte semikolons 
+    )
+  )
 
 log_event(
   step   = "03_V8_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert)"
+  action = "manual_edit_and_normalize",
+  note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert); gesamte Spalte V8 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
 )
 
 ### V9 ------------------------------------
@@ -293,23 +310,18 @@ invalid_v9 <- df_clean %>%
 
 print(invalid_v9)
 
-
 df_clean <- df_clean %>%
   mutate(
     V9 = if_else(
       is.na(V9), V9,
       V9 %>%
-        str_squish() %>%                        # Mehrfach-Whitespaces zu einem
-        str_to_lower() %>%                      # alles lowercase
-        # andere Trenner zwischen Tokens → "; "
-        str_replace_all("\\s*[,/|]+\\s*", "; ") %>%
-        # Semikolon-Spaces vereinheitlichen
-        str_replace_all("\\s*;\\s*", "; ") %>%
-        # führende/trailing Semikolons entfernen
-        str_replace_all("^(;\\s*)+", "") %>%
-        str_replace_all("(;\\s*)+$", "") %>%
-        # doppelte Semikolons (z. B. durch fehlerhafte Eingaben) einkochen
-        str_replace_all("(;\\s*){2,}", "; ")
+        str_squish() %>%                        
+        str_to_lower() %>%                      
+        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # andere trenner zwischen strings
+        str_replace_all("\\s*;\\s*", "; ") %>% # semikolon spaces vereinheitlichen
+        str_replace_all("^(;\\s*)+", "") %>% # führende/trailing semikolons entfernen
+        str_replace_all("(;\\s*)+$", "") %>% 
+        str_replace_all("(;\\s*){2,}", "; ") # doppelte semikolons
     )
   )
 
@@ -325,7 +337,7 @@ log_event(
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
 
 invalid_v10 <- df_clean %>%
-  filter(!is.na(V10)) %>%                        # echte NAs auch ok
+  filter(!is.na(V10)) %>%                        # NAs sind hier ok
   separate_rows(V10, sep = ";\\s*") %>%          # mehrfachcodierung splitten
   mutate(V10 = str_trim(V10)) %>%
   filter(!(V10 %in% allowed_v10))
@@ -346,12 +358,12 @@ log_event(
 log_event(
   step   = "03_V10_value_fix",
   action = "manual_edit",
-  note   = "id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (mehrere Medientypen)"
+  note   = "id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (fehlende Kodierung)"
 )
 log_event(
   step   = "03_V10_value_fix",
   action = "manual_edit",
-  note   = "id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (Twitter, Facebook, Instagram, Reddit via Synthesio)"
+  note   = "id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (fehlende Kodierung)"
 )
 
 
@@ -360,7 +372,7 @@ log_event(
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
 
 invalid_v11 <- df_clean %>%
-  filter(!is.na(V11)) %>%                 # echte NAs auch ok
+  filter(!is.na(V11)) %>%                 # NAs sind hier ok
   separate_rows(V11, sep = ";\\s*") %>%   # mehrfachcodierung splitten
   mutate(V11 = str_trim(V11)) %>%         
   filter(!(V11 %in% allowed_v11))         
@@ -394,8 +406,7 @@ log_event(
 
 allowed_v12 <- c("0", "1")
 
-invalid_v12 <- df_clean %>%
-  filter(!is.na(V12)) %>%               #  NAs sind nicht erlaubt
+invalid_v12 <- df_clean %>%           
   mutate(V12 = str_trim(as.character(V12))) %>%
   filter(!(V12 %in% allowed_v12))       
 
@@ -406,7 +417,6 @@ print(invalid_v12)
 allowed_v13 <- c("0", "1")
 
 invalid_v13 <- df_clean %>%
-  filter(!is.na(V13)) %>%               #  NAs sind nicht erlaubt
   mutate(V13 = str_trim(as.character(V13))) %>%
   filter(!(V13 %in% allowed_v13))      
 
@@ -443,11 +453,10 @@ df_clean <- df_clean %>%
          V11 = if_else(id_unique == "ID94", "24", V11)
          ) 
 
-
 log_event(
   step   = "04_consistency_CSS_in_method0",
   action = "no_change_documented",
-  note   = "IDs ID1199, ID202, ID2152, ID267, ID366: V11 überprüft – keine Änderungen erforderlich; CSS-Methoden erscheinen hier fälschlich bei method == 0"
+  note   = "IDs ID1199, ID202, ID2152, ID267, ID366: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
 )
 
 log_event(
@@ -494,7 +503,6 @@ log_event(
 
 # Step 5: Kommentare -----------------------------------------------------------
 
-
 comments_long <- df_clean %>%
   filter(!is.na(Comment_CODER)) %>%
   mutate(Comment = str_squish(Comment_CODER)) %>%             
@@ -507,13 +515,77 @@ comments_long <- df_clean %>%
 
 print(comments_long)
 
-# manually inspected all comments and resolved only the comments with active questions for now.
+df_clean <- df_clean %>% 
+  mutate(V13 = if_else(id_unique == "ID11", 1, V13), 
+         V7 = if_else(id_unique == "ID1703", "10", V7),
+         V8 = if_else(id_unique == "ID1703", "NA", V8),
+         V11 = if_else(id_unique == "ID248", "13; 16", V11),
+         V11 = if_else(id_unique == "ID83", "13; 16; 99", V11)
+  )
+         
+log_event(
+  step   = "05_comment_review",
+  action = "manual_review",
+  note   = "Alle Kommentare in comments_long manuell geprüft; nur aktive Fragen mit Relevanz angepasst"
+)
 
-# 
+log_event(
+  step   = "05_comment_review",
+  action = "manual_edit",
+  note   = "id_unique ID11: V13 geändert von '0' zu '1' (Kommentar: quasi-experimentell – ja, ausreichend für V13=1)"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "manual_edit",
+  note   = "id_unique ID1703: V7 geändert von '8' zu '10' (global, Diaspora); V8 geändert von 'Israel/Palästina' zu 'NA'"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "no_change_documented",
+  note   = "id_unique ID2054: V7 geprüft – Kommentar zur MEA-Region; keine Änderung (Code 10 korrekt)"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "no_change_documented",
+  note   = "id_unique ID2449: V12 geprüft – Kommentar zu 'disabled people in the UK'; keine Änderung (nicht cross-national)"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "manual_edit",
+  note   = "id_unique ID248: V11 geändert von '13' zu '13; 16' (Kommentar: semantisches Netzwerk via Gephi – Code 16 ergänzt)"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "no_change_documented",
+  note   = "id_unique ID391: V10 geprüft – Kommentar zu 131/141/151/160; keine Änderung (111 korrekt für Website-Analyse)"
+)
+log_event(
+  step   = "05_comment_review",
+  action = "manual_edit",
+  note   = "id_unique ID83: V11 geändert von '18; 12' zu '13; 16; 99' (Kommentar: TRS-Datenbank → Code 99; 18 korrigiert zu 13/16)"
+)
+
+checked_ids <- c("ID11", "ID1703", "ID2054", "ID2449", "ID248", "ID391", "ID83")
+
+df_clean <- df_clean %>%
+  mutate(
+    Comment_CODER = if_else(id_unique %in% checked_ids, NA_character_, Comment_CODER)
+  )
+
+log_event(
+  step   = "05_comment_review",
+  action = "clear_reviewed_comments",
+  note   = paste0(
+    "Spalte Comment_CODER geleert für geprüfte Fälle: ",
+    toString(checked_ids)
+  )
+)
 
 
-# Write Log --------------------------------------------------------------------
+# Write Log and Export Cleaned Data --------------------------------------------------------------------
 
 write_log()
 log <- readr::read_tsv("logs/data_cleaning_log.tsv")
 
+path <- "data/processed/full_paper_sample_coded_clean.xlsx"
+openxlsx::write.xlsx(df_clean, path)
