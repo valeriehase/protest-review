@@ -378,8 +378,218 @@ doc <- doc %>%
   body_add_break()
 
 # Cross Tables ----------------------------------------------------------------
-#tbc
 
+selected_platforms <- c("100","110","130","140")
+
+note_platforms <- "Note. Table limited to the four most frequently used platform types: 100 = Internet / online / social media (general); 110 = Websites; 130 = Social Networking Sites; 140 = Microblogs.
+Percentages are calculated within each platform column, separately for CSS and Non-CSS studies.
+CSS = computational social science."
+
+note_designs <- "Note. Columns show research design categories (cross-national; experimental).
+Percentages are calculated within each research design column, separately for CSS and Non-CSS studies.
+CSS = computational social science."
+
+# Builder function
+# Spaltenprozente getrennt nach CSS / non-CSS
+
+build_pct_table_both_methods <- function(df_rows,
+                                         row_var, levels_row_df,
+                                         col_var, levels_col_df,
+                                         selected_cols = NULL,
+                                         title = NULL, note = NULL) {
+  row_sym <- rlang::sym(row_var)
+  col_sym <- rlang::sym(col_var)
+  row_lab <- paste0(row_var, "_label")
+  col_lab <- paste0(col_var, "_label")
+  
+  if (is.null(selected_cols)) selected_cols <- as.character(levels_col_df[[col_var]])
+  selected_cols <- as.character(selected_cols)
+  
+  col_levels <- levels_col_df %>%
+    dplyr::filter(.data[[col_var]] %in% selected_cols) %>%
+    dplyr::mutate(!!col_sym := factor(.data[[col_var]], levels = selected_cols))
+    
+  # grid
+  full_grid <- tidyr::expand_grid(
+    !!row_sym := as.character(levels_row_df[[row_var]]),
+    !!col_sym := selected_cols,
+    method    = c("0","1")
+  )
+  
+  # method, col; first cast then split
+  tab <- df_rows %>%
+    dplyr::mutate(
+      !!row_sym := as.character(.data[[row_var]]),
+      !!col_sym := as.character(.data[[col_var]])
+    ) %>%
+    tidyr::separate_rows(!!row_sym, sep = ";") %>%
+    tidyr::separate_rows(!!col_sym, sep = ";") %>%
+    dplyr::mutate(
+      !!row_sym := stringr::str_trim(!!row_sym),
+      !!col_sym := stringr::str_trim(!!col_sym)
+    ) %>%
+    dplyr::filter(method %in% c("0","1"),
+                  .data[[col_var]] %in% selected_cols) %>%
+    dplyr::count(method, !!row_sym, !!col_sym, name = "n") %>%
+    dplyr::group_by(method, !!col_sym) %>%
+    dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-n)
+  
+  # zusammensetzen
+  out_long <- full_grid %>%
+    dplyr::left_join(tab, by = c("method", row_var, col_var)) %>%
+    dplyr::mutate(pct = tidyr::replace_na(pct, 0)) %>%
+    dplyr::left_join(levels_row_df, by = setNames(row_var, row_var)) %>%
+    dplyr::left_join(col_levels,     by = setNames(col_var, col_var)) %>%
+    dplyr::mutate(MethodLabel = dplyr::recode(method, "0" = "Non-CSS %", "1" = "CSS %"))
+  
+  # wide format
+  out <- out_long %>%
+    dplyr::select(RowLabel = !!rlang::sym(row_lab),
+                  ColLabel = !!rlang::sym(col_lab),
+                  MethodLabel, pct) %>%
+    tidyr::pivot_wider(
+      id_cols    = c(RowLabel),
+      names_from = c(ColLabel, MethodLabel),
+      values_from = pct
+    ) %>%
+    dplyr::left_join(levels_row_df %>% dplyr::select(RowLabel = !!rlang::sym(row_lab)),
+                     by = "RowLabel") %>%
+    dplyr::distinct(RowLabel, .keep_all = TRUE)
+
+  col_labels <- col_levels[[col_lab]]
+  ordered_cols <- c(
+    "RowLabel",
+    as.vector(rbind(
+      paste0(col_labels, "_Non-CSS %"),
+      paste0(col_labels, "_CSS %")
+    ))
+  )
+  existing_cols <- names(out)
+  ordered_cols <- c("RowLabel", intersect(ordered_cols[-1], existing_cols))
+  out <- out[, ordered_cols, drop = FALSE]
+  
+  # header
+  header_top    <- c("", rep(col_labels, each = 2))
+  header_bottom <- c("", rep(c("Non-CSS %", "CSS %"), times = length(col_labels)))
+  colkeys <- names(out)
+  header_df <- data.frame(
+    col_keys = colkeys,
+    Group    = header_top,
+    Method   = header_bottom,
+    stringsAsFactors = FALSE
+  )
+  
+  ft <- flextable::flextable(out, col_keys = colkeys) %>%
+    flextable::set_header_df(mapping = header_df, key = "col_keys") %>%
+    flextable::merge_h(part = "header") %>%
+    flextable::align(align = "center", part = "all") %>%
+    flextable::align(j = "RowLabel", align = "left", part = "body") %>%
+    flextable::theme_vanilla() %>%
+    flextable::set_caption(title %||% "Row × Column — % within column") %>%
+    flextable::colformat_num(j = setdiff(names(out), "RowLabel"), digits = 1, big.mark = "") %>%
+    flextable::fontsize(size = 9, part = "all") %>%
+    flextable::padding(padding = 2, part = "all") %>%
+    flextable::compose(part = "header", i = 1, j = "RowLabel", value = flextable::as_paragraph("")) %>%
+    flextable::compose(part = "header", i = 2, j = "RowLabel", value = flextable::as_paragraph(""))
+  
+  # A4 format
+  total_width <- 9.5
+  label_w <- 3.8
+  n_value_cols <- ncol(out) - 1
+  other_w <- (total_width - label_w - 0.4) / max(1, n_value_cols)
+  ft <- ft %>%
+    flextable::width(j = "RowLabel", width = label_w) %>%
+    flextable::width(j = setdiff(names(out), "RowLabel"), width = other_w)
+  
+  if (!is.null(note)) {
+    ft <- flextable::add_footer_lines(ft, values = note)
+  }
+  ft
+}
+
+
+# Methods (V11) × Major Platform Types (V10_agg)
+ft_V11_platforms <- build_pct_table_both_methods(
+  df_rows = df_V10agg,
+  row_var = "V11", levels_row_df = levels_V11,
+  col_var = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_cols = selected_platforms,
+  title = "Analysis Methods (V11) × Major Platform Types (V10_agg) — % within platform",
+  note  = note_platforms
+)
+
+# Regions (V7) × Major Platform Types (V10_agg)
+ft_V7_platforms <- build_pct_table_both_methods(
+  df_rows = df_V10agg,
+  row_var = "V7", levels_row_df = levels_V7,
+  col_var = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_cols = selected_platforms,
+  title = "Regions (V7) × Major Platform Types (V10_agg) — % within platform",
+  note  = note_platforms
+)
+
+# Cross-National (V12) × Major Platform Types (V10_agg)
+ft_V12_platforms <- build_pct_table_both_methods(
+  df_rows = df_V10agg,
+  row_var = "V12", levels_row_df = levels_V12,
+  col_var = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_cols = selected_platforms,
+  title = "Cross-National Designs (V12) × Major Platform Types (V10_agg) — % within platform",
+  note  = note_platforms
+)
+
+# Experimental (V13) × Major Platform Types (V10_agg)
+ft_V13_platforms <- build_pct_table_both_methods(
+  df_rows = df_V10agg,
+  row_var = "V13", levels_row_df = levels_V13,
+  col_var = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_cols = selected_platforms,
+  title = "Experimental Designs (V13) × Major Platform Types (V10_agg) — % within platform",
+  note  = note_platforms
+)
+
+# Methods (V11) × Cross-National (V12)
+ft_V11_V12 <- build_pct_table_both_methods(
+  df_rows = df,  # V12 liegt im Grund-df
+  row_var = "V11", levels_row_df = levels_V11,
+  col_var = "V12", levels_col_df = levels_V12,
+  selected_cols = c("1","0"),     # Reihenfolge: cross-national, not cross-national
+  title = "Analysis Methods (V11) × Cross-National Design (V12) — % within design",
+  note  = note_designs
+)
+
+# Methods (V11) × Experimental (V13)
+ft_V11_V13 <- build_pct_table_both_methods(
+  df_rows = df,  # V13 liegt im Grund-df
+  row_var = "V11", levels_row_df = levels_V11,
+  col_var = "V13", levels_col_df = levels_V13,
+  selected_cols = c("1","0"),     # Reihenfolge: experiment, not experiment
+  title = "Analysis Methods (V11) × Experimental Design (V13) — % within design",
+  note  = note_designs
+)
+
+# in word doc
+doc <- doc %>%
+  body_add_par("Table (supplement): V11 × V10_agg (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V11_platforms) %>%
+  body_add_break() %>%
+  body_add_par("Table (supplement): V7 × V10_agg (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V7_platforms) %>%
+  body_add_break() %>%
+  body_add_par("Table (supplement): V12 × V10_agg (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V12_platforms) %>%
+  body_add_break() %>%
+  body_add_par("Table (supplement): V13 × V10_agg (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V13_platforms) %>%
+  body_add_break() %>%
+  body_add_par("Table (supplement): V11 × V12 (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V11_V12) %>%
+  body_add_break() %>%
+  body_add_par("Table (supplement): V11 × V13 (Non-CSS/CSS %)", style = "Normal") %>%
+  body_add_flextable(ft_V11_V13) %>%
+  body_add_break()
 
 # PRINT -----------------------------------------------------------------------
 
