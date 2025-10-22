@@ -1,10 +1,8 @@
-########################
 #
 # Main Script for Lit Review Protest
-# Author: Valerie Hase
-# Date: 2025-01-27
+# Author: Miriam Milzner, Valerie Hase
+# Date: 2025-10-22
 #
-########################
 
 library("here")
 library("readxl")
@@ -30,19 +28,20 @@ library("caret")
 #samples sample 1 (CSS) and sample 2 (non-CSS) based on search terms
 #draws sample for intercoder tests & coding of abstracts
 
-load("working_spaces/01.load.data.RDATA")
-source("02.abstract.screening.R")
+#load("working_spaces/01.load.data.RDATA")
+#source("02.abstract.screening.R")
+#save.image("working_spaces/02.abstract.screening.data.RDATA")
 
-##### 2.1 report details for method/appendix section #####
+##### 2.1 Details Method Section / Appendix A2.1 #####
 
 #initial amount of identified studies
 n_deduplicated
 
+#reliability for inclusion/exclusion
+intercoder
+
 #validation of search string
 validation
-
-#reliability
-intercoder
 
 #initial sample of CSS vs. non-CSS studies
 nrow(css.sample)
@@ -70,50 +69,39 @@ sample_relevant %>%
   group_by(method) %>%
   count(protest)
 
+#other visualization of flow chart
+
+#flow.chart <- flow_exclusions(
+#  incl_counts = c(nrow(wos.abstracts), 
+#                  nrow(coding_abstracts) + nrow(coding_abstracts_2), 
+#                  nrow(coding_abstracts) + nrow(coding_abstracts_2) - n_inaccessible,
+#                  nrow(sample_relevant)),
+#  total_label = "Deduplicated articles from WoS",
+#  incl_labels = c("By-method stratified sample", 
+#                  "Accessible full papers",
+#                  "Relevant full papers"),
+#  excl_labels = c("Removal due by-method\nstratified sampling", 
+#                  "Removal due to\ninaccessible full paper", 
+#                  "Removal due to\nirrelevance (manual coding)"),
+#)
+
+#has to be saved manually (500, 300 as size for export)
+#flow.chart
+
+##### 2.2 Distribution over time #####
+
 #distribution of CSS vs. non-CSS over time
 ggarrange(sample_relevant %>%
             filter(method == 1) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
-            ggtitle(paste0("CSS Sample (N = ", nrow(css.sample), ")")) + theme_bw(),
+            ggtitle(paste0("CSS Sample (N = ", nrow(sample_relevant %>%
+                                                      filter(method == 1)), ")")) + theme_bw(),
           sample_relevant %>%
             filter(method == 0) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
-            ggtitle(paste0("Non CSS Sample (N = ", nrow(non.css.sample), ")")) + theme_bw())
-
-sample_relevant %>%
-  group_by(method) %>%
-  count(year) %>%
-  ungroup %>%
-  mutate(method = replace(method,
-                          method == 0,
-                          "non-CSS"),
-         method = replace(method,
-                          method == 1,
-                          "CSS")) %>%
-  pivot_wider(names_from = c(method), values_from = c(n)) %>%
-  arrange(as.numeric(year))
-
-##### 2.2 flow chart #####
-
-flow.chart <- flow_exclusions(
-  incl_counts = c(nrow(wos.abstracts), 
-                  nrow(coding_abstracts) + nrow(coding_abstracts_2), 
-                  nrow(coding_abstracts) + nrow(coding_abstracts_2) - n_inaccessible,
-                  nrow(sample_relevant)),
-  total_label = "Deduplicated articles from WoS",
-  incl_labels = c("By-method stratified sample", 
-                  "Accessible full papers",
-                  "Relevant full papers"),
-  excl_labels = c("Removal due by-method\nstratified sampling", 
-                  "Removal due to\ninaccessible full paper", 
-                  "Removal due to\nirrelevance (manual coding)"),
-)
-
-#has to be saved manually (500, 300 as size for export)
-flow.chart
-
-#save.image("working_spaces/02.abstract.screening.RDATA")
+            ggtitle(paste0("Non CSS Sample (N = ", nrow(sample_relevant %>%
+                                                          filter(method == 0)), ")")) + theme_bw())
 
 #### Step 3: Full-paper coding ####
