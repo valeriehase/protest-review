@@ -95,13 +95,13 @@ ggarrange(sample_relevant %>%
             filter(method == 1) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
-            ggtitle(paste0("CSS Sample (N = ", nrow(sample_relevant %>%
+            ggtitle(paste0("CSS sample (N = ", nrow(sample_relevant %>%
                                                       filter(method == 1)), ")")) + theme_bw(),
           sample_relevant %>%
             filter(method == 0) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
-            ggtitle(paste0("Non CSS Sample (N = ", nrow(sample_relevant %>%
+            ggtitle(paste0("Non-CSS sample (N = ", nrow(sample_relevant %>%
                                                           filter(method == 0)), ")")) + theme_bw())
 
 #### Step 3: Full-paper coding ####
