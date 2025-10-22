@@ -651,7 +651,10 @@ sample_relevant <- rbind(coding_abstracts_relevant,
                          coding_abstracts_2_relevant) %>%
   
   #remove by chance identified oversampled "0" (non-CSS observation)
-  filter(id_unique != "ID2218")
+  filter(id_unique != "ID2218") %>%
+  
+  #remove duplicates
+  distinct(id_unique, .keep_all = TRUE)
 
 #write out for manual coding
 #write.csv2(sample_relevant, "codings/full_paper/full_paper_sample.csv", row.names = FALSE)
@@ -660,5 +663,3 @@ sample_relevant <- rbind(coding_abstracts_relevant,
 n_inaccessible <- rbind(coding_abstracts, coding_abstracts_2) %>%
   filter(is.na(protest) & is.na(method) & is.na(type)) %>%
   nrow()
-
-#todo: Check for duplicates and remove them, see comment Miriam!
