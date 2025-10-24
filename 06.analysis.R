@@ -305,6 +305,10 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
   p <- ggplot(df_long, aes(x = Category, y = Percentage, fill = Method)) +
     geom_col(position = position_dodge(width = 0.8),
              width = 0.7, color = "black") +
+    geom_text(aes(label = paste0(round(Percentage, 1), "%")),
+              position = position_dodge(width = 0.8),
+              vjust = -0.8,
+              size = 2) +
     scale_fill_manual(values = c("grey70","white")) +
     labs(x = category_var, y = "Percentage", fill = "Method Group") +
     theme_minimal(base_size = 12) +
