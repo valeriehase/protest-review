@@ -2,7 +2,7 @@
 #
 # Analysis
 # Author: Miriam Milzner, Valerie Hase
-# Date: 2025-10-23
+# Date: 2025-10-24
 #
 ########################
 #
@@ -17,6 +17,9 @@ suppressPackageStartupMessages({
   library(openxlsx)
   library(flextable)
   library(officer)
+  library(sf)
+  library(rnaturalearth)
+  library(rnaturalearthdata)
 })
 
 # Prepare Data -----------------------------------------------------------------
@@ -361,6 +364,187 @@ chi_method_table <- function(dataset,        # dataset we used
   )
 }
 
+#create the world map
+worldmap_data <- df %>%
+  
+  #we split multiple regions mentioned in the same paper (e.g., 1;10)
+  tidyr::separate_rows(V7, sep = ";") %>%
+  dplyr::mutate(V7 = stringr::str_trim(as.character(V7)),
+                V7 = dplyr::case_when(is.na(V7) ~ "NA", V7 == "" ~ "NA", TRUE ~ V7),
+                
+                #create string for CSS vs. non-CSS
+                CSS = "non-CSS",
+                CSS = replace(CSS, method == 1, "CSS")) %>%
+  
+  #turn to strings instead of numbers
+  mutate(region = as.character(V7),
+         region = case_when(region == 1 ~ "North America",
+                            region == 2 ~ "South America",
+                            region == 3 ~ "Europe",
+                            region == 4 ~ "Russia and former Soviet Republics",
+                            region == 5 ~ "Middle East and North Africa",
+                            region == 6 ~ "East Asia",
+                            region == 7 ~ "Central and South (East) Asia",
+                            region == 8 ~ "Sub-Saharan Africa",
+                            region == 9 ~ "Oceania",
+                            region == 10 ~ NA)) %>% #global excluded here  
+  
+  #exclude global studies for this graph
+  filter(!is.na(region)) %>%
+  
+  #exclude V7 - no longer needed
+  select(-V7) %>%
+  
+  #create table
+  count(CSS, region)
+
+world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
+  dplyr::select(iso_a3, name, region_un, subregion, continent, geometry)
+
+#assign countries to region for mapping (in line with codebook)
+region_map <- bind_rows(
+  # (1) North America
+  tibble(
+    iso_a3 = c(
+      "ATG","BHS","BRB","BLZ","CAN","CRI","CUB","DMA","SLV","GRD","GTM","HTI",
+      "HND","JAM","MEX","NIC","PAN","KNA","LCA","VCT","TTO","USA"
+    ),
+    region = "North America"
+  ),
+  
+  # (2) South America
+  tibble(
+    iso_a3 = c(
+      "ARG","BOL","BRA","CHL","COL","ECU","FLK","GUF","GUY","PRY",
+      "PER","SGS","SUR","URY","VEN"
+    ),
+    region = "South America"
+  ),
+  
+  # (3) Europe (including Turkey and Armenia, excluding former Soviet Republics)
+  tibble(
+    iso_a3 = c(
+      "ALB","AND","AUT","BEL","BIH","BGR","HRV","CYP","CZE","DNK","EST",
+      "FIN","FRA","DEU","GRC","HUN","ISL","IRL","ITA","LIE","LTU","LUX",
+      "LVA","MLT","MCO","MNE","NLD","MKD","NOR","POL","PRT","ROU","SMR",
+      "SRB","SVK","SVN","ESP","SWE","CHE","TUR","GBR","VAT","ARM"
+    ),
+    region = "Europe"
+  ),
+  
+  # (4) Russia and former Soviet Republics
+  tibble(
+    iso_a3 = c(
+      "RUS","UKR","BLR","AZE","KAZ","KGZ","TJK","TKM","UZB","EST","LVA","LTU"
+    ),
+    region = "Russia and former Soviet Republics"
+  ),
+  
+  # (5) Middle East and North Africa
+  tibble(
+    iso_a3 = c(
+      "DZA","BHR","EGY","IRN","IRQ","ISR","JOR","KWT","LBN","LBY",
+      "MAR","OMN","QAT","SAU","SYR","TUN","ARE","YEM"
+    ),
+    region = "Middle East and North Africa"
+  ),
+  
+  # (6) East Asia
+  tibble(
+    iso_a3 = c("CHN","JPN","MNG","PRK","KOR","HKG","TWN"),
+    region = "East Asia"
+  ),
+  
+  # (7) Central and South (East) Asia
+  tibble(
+    iso_a3 = c(
+      "AFG","PAK","IND","THA","BGD","BTN","MDV","NPL","LKA",
+      "BRN","KHM","TLS","IDN","LAO","MYS","MMR","PHL","SGP","VNM"
+    ),
+    region = "Central and South (East) Asia"
+  ),
+  
+  # (8) Sub-Saharan Africa
+  tibble(
+    iso_a3 = c(
+      "AGO","BEN","BWA","BFA","BDI","CMR","CPV","CAF","TCD","COM","COD",
+      "COG","DJI","GNQ","ERI","SWZ","ETH","GAB","GMB","GHA","GIN","GNB",
+      "CIV","KEN","LSO","LBR","MDG","MWI","MLI","MRT","MUS","MOZ","NAM",
+      "NER","NGA","RWA","STP","SEN","SYC","SLE","SOM","ZAF","SSD","SDN",
+      "TZA","TGO","UGA","ZMB","ZWE"
+    ),
+    region = "Sub-Saharan Africa"
+  ),
+  
+  # (9) Oceania
+  tibble(
+    iso_a3 = c(
+      "AUS","FJI","KIR","MHL","FSM","NRU","NZL","PLW","PNG",
+      "WSM","SLB","TON","TUV","VUT"
+    ),
+    region = "Oceania"
+  )
+)
+
+# attach our custom region to each country polygon
+world_regions <- world %>%
+  left_join(region_map, by = "iso_a3")
+
+# add by method grouped study counts
+world_counts <- world_regions %>%
+  left_join(worldmap_data, by = c("region" = "region"), relationship = "many-to-many") %>%
+  
+  #for now, exclude countries without region
+  filter(!is.na(region))
+
+#In addition, save the number of global studies for facet labels
+facet_labels <- df %>%
+  
+  #create global yes/no
+  mutate(global = if_else(str_detect(V7, "10"), "Global", "Not-Global"),
+         
+         #create string for CSS vs. non-CSS
+         CSS = "non-CSS",
+         CSS = replace(CSS, method == 1, "CSS")) %>%
+  
+  # count studies per method and global/not-global
+  count(CSS, global) %>%
+  
+  # within each CSS group, compute share that is global
+  group_by(CSS) %>%
+  mutate(percentage = round(100 * n / sum(n), 1)) %>%
+  ungroup() %>%
+  
+  #keep only global count and create label for text annotation
+  filter(global == "Global") %>%
+  mutate(label_full = paste0(CSS, "\n(", percentage, "% of studies with global data)")) %>%
+  
+  # turn into a named vector: names = CSS, values = label_full
+  select(CSS, label_full) %>%
+  tibble::deframe()
+
+worldmap <- ggplot(world_counts) +
+  geom_sf(aes(fill = n), color = "grey30", linewidth = 0.1) +
+  coord_sf(crs = "ESRI:54030") +
+  scale_fill_gradient(
+    name = "Studies (N)",
+    low = "#f0f0f0",
+    high = "#08306b",
+    na.value = "white",
+    guide = guide_colorbar(barwidth = 12, barheight = .4)) +
+  facet_wrap(~ CSS, nrow = 1, labeller = as_labeller(facet_labels)) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom",
+        panel.grid.major = element_line(linewidth = 0.1, color = "grey80"),
+        panel.grid.minor = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_rect(fill = "white", color = NA),
+        strip.text = element_text(face = "bold"))
+
+#clean house
+rm(worldmap_data, world, region_map, world_regions, world_counts, facet_labels)
+
 # Frequency Tables APA Export  -------------------------------------------------
 
 apa_note <- "Note. CSS = computational social science; n = frequency; % = percentage. 
@@ -490,6 +674,15 @@ for (i in seq_along(apa_tables)) {
                     df    = tab_raw,
                     category_var = table_specs[[var]],
                     levels_vec   = get(paste0("levels_", var))[[paste0(var, "_label")]])
+  
+  # add the worldmap here
+  if (i == 1) {
+    doc <- doc %>%
+      body_add_par("Figure (supplement): Geographic distribution of studies across world regions", style = "Normal") %>%
+      body_add_par("Shaded world maps by method group (CSS vs. Non-CSS). Darker shading indicates more studies in that region. Facet titles include % of studies using global samples.", style = "Normal") %>%
+      body_add_gg(value = worldmap, width = 9, height = 5) %>%
+      body_add_break()
+  }
 }
 
 
