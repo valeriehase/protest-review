@@ -409,16 +409,17 @@ for (i in seq_along(apa_tables)) {
 
 
 # Combined figure: Cross-national & Experimental --------------------------------
-
-# helper to compute share of "1" within method group
+# helper: 1 per method grpoup
 share_one <- function(.df, var) {
   .df %>%
-    dplyr::mutate(val = as.character(.data[[var]])) %>%
+    dplyr::mutate(val = as.character(.data[[var]]),
+                  method = as.character(method)) %>%
+    dplyr::filter(method %in% c("0","1")) %>%
     dplyr::group_by(method) %>%
     dplyr::summarise(
       n_total = dplyr::n(),
       n_one   = sum(val == "1", na.rm = TRUE),
-      pct_one = round(100 * n_one / n_total, 1),
+      pct_one = dplyr::if_else(n_total > 0, round(100 * n_one / n_total, 1), 0),
       .groups = "drop"
     ) %>%
     dplyr::mutate(variable = var)
@@ -427,12 +428,18 @@ share_one <- function(.df, var) {
 v12_share <- share_one(df, "V12")
 v13_share <- share_one(df, "V13")
 
-design_share <- design_share %>%
-  dplyr::mutate(y_lab = dplyr::if_else(pct_one == 0, 0.5, pct_one))
+design_share <- dplyr::bind_rows(v12_share, v13_share) %>%
+  dplyr::mutate(
+    Design = dplyr::recode(variable,
+                           "V12" = "Cross-national",
+                           "V13" = "Experimental"),
+    Method = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS"),
+    # zero percent labels
+    y_lab  = dplyr::if_else(pct_one == 0, 0.5, pct_one)
+  )
 
 p_design <- ggplot(design_share, aes(x = Design, y = pct_one, fill = Method)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
-
   geom_text(aes(y = y_lab, label = sprintf("%.1f%%", pct_one)),
             position = position_dodge(width = 0.8),
             vjust = -0.2, size = 3) +
@@ -448,7 +455,6 @@ p_design <- ggplot(design_share, aes(x = Design, y = pct_one, fill = Method)) +
     axis.text.x        = element_text(angle = 0, hjust = 0.5),
     plot.margin        = margin(10, 10, 10, 10)
   )
-
 
 doc <- doc %>%
   body_add_par("Figure (supplement): Cross-national and Experimental Designs", style = "Normal") %>%
