@@ -651,7 +651,6 @@ build_crosstab_pct <- function(
       flextable::padding(padding = 2, part = "all")
   }
   
-  # Spaltenbreiten ohne colkeys/fortify
   total_width <- 9.5
   label_w    <- 3.8
   n_value_cols <- length(value_cols)
@@ -669,7 +668,7 @@ build_crosstab_pct <- function(
 
 
 
-# 1) V11 × V10_agg — mit CSS-Splitting, nur 6 V11-Methoden und 4 Plattformtypen
+# 1) V11 × V10_agg mit CSS-Splitting, nur 6 V11-Methoden und 4 Plattformtypen
 levels_V11_subset <- levels_V11 %>%
   dplyr::filter(V11 %in% c("21","22","23","24","25","26"))
 selected_platforms <- c("100","110","130","140")
@@ -688,7 +687,7 @@ ft_V11_platforms <- build_crosstab_pct(
   note  = note_platforms
 )
 
-# 2) V11 × V12 — mit CSS-Splitting, gleiche V11-Auswahl
+# 2) V11 × V12 mit CSS-Splitting, gleiche V11-Auswahl
 ft_V11_V12 <- build_crosstab_pct(
   df_rows       = df,
   row_var       = "V11", levels_row_df = levels_V11_subset,
@@ -703,7 +702,7 @@ ft_V11_V12 <- build_crosstab_pct(
   note  = note_designs
 )
 
-# 3) V12 × V10_agg — OVERALL (ohne CSS-Splitting), 4 Plattformtypen
+# 3) V12 × V10_agg OVERALL (ohne CSS-Splitting), 4 Plattformtypen
 ft_V12_platforms <- build_crosstab_pct(
   df_rows       = df_V10agg,
   row_var       = "V12", levels_row_df = levels_V12,
@@ -765,7 +764,6 @@ v11_cross_share <- tidyr::expand_grid(
   dplyr::mutate(
     MethodGrp = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS"),
     V11_label = factor(V11_label, levels = levels_V11_subset$V11_label),
-    # kleine Label-Höhe für 0%-Balken, damit Zahl sichtbar wird
     y_lab     = dplyr::if_else(pct == 0, 0.5, pct)
   )
 
