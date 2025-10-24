@@ -427,27 +427,28 @@ share_one <- function(.df, var) {
 v12_share <- share_one(df, "V12")
 v13_share <- share_one(df, "V13")
 
-design_share <- dplyr::bind_rows(v12_share, v13_share) %>%
-  dplyr::mutate(
-    Design = dplyr::recode(variable,
-                           "V12" = "Cross-national",
-                           "V13" = "Experimental"),
-    Method = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS")
-  )
+design_share <- design_share %>%
+  dplyr::mutate(y_lab = dplyr::if_else(pct_one == 0, 0.5, pct_one))
 
 p_design <- ggplot(design_share, aes(x = Design, y = pct_one, fill = Method)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
+
+  geom_text(aes(y = y_lab, label = sprintf("%.1f%%", pct_one)),
+            position = position_dodge(width = 0.8),
+            vjust = -0.2, size = 3) +
   scale_fill_manual(values = c("grey70","white")) +
   labs(x = NULL, y = "Percentage", fill = "Method Group") +
+  coord_cartesian(ylim = c(0, max(design_share$y_lab, na.rm = TRUE) + 6)) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "top",
-    legend.title = element_text(face = "bold"),
-    axis.text.x = element_text(angle = 0, hjust = 0.5),
-    plot.margin = margin(10, 10, 10, 10)
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    legend.title       = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 0, hjust = 0.5),
+    plot.margin        = margin(10, 10, 10, 10)
   )
+
 
 doc <- doc %>%
   body_add_par("Figure (supplement): Cross-national and Experimental Designs", style = "Normal") %>%
@@ -722,8 +723,9 @@ doc <- doc %>%
 
 # Cross Tables Figures ----------------------------------------------------------------
 
-# Prozente innerhalb des Designs (nur cross-national), getrennt nach method
-v11_cross_share <- df %>%
+method_levels_vec <- c("0","1")  # Non-CSS, CSS
+
+cross_counts <- df %>%
   dplyr::mutate(
     V11    = as.character(V11),
     V12    = as.character(V12),
@@ -732,28 +734,43 @@ v11_cross_share <- df %>%
   tidyr::separate_rows(V11, sep = ";") %>%
   dplyr::mutate(V11 = stringr::str_trim(V11)) %>%
   dplyr::filter(
-    method %in% c("0","1"),
-    V12 == "1",                                   
+    method %in% method_levels_vec,
+    V12 == "1",
     V11 %in% levels_V11_subset$V11
   ) %>%
-  dplyr::count(method, V11, name = "n") %>%
-  dplyr::group_by(method) %>%                      
-  dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
-  dplyr::ungroup() %>%
+  dplyr::count(method, V11, name = "n")
+
+totals <- cross_counts %>%
+  dplyr::group_by(method) %>%
+  dplyr::summarise(total = sum(n), .groups = "drop")
+
+v11_cross_share <- tidyr::expand_grid(
+  method = method_levels_vec,
+  V11    = levels_V11_subset$V11
+) %>%
+  dplyr::left_join(cross_counts, by = c("method","V11")) %>%
+  dplyr::left_join(totals,      by = "method") %>%
+  dplyr::mutate(
+    n     = tidyr::replace_na(n, 0),
+    total = tidyr::replace_na(total, 0),
+    pct   = dplyr::if_else(total > 0, round(100 * n / total, 1), 0)
+  ) %>%
   dplyr::left_join(levels_V11_subset, by = "V11") %>%
   dplyr::mutate(
     MethodGrp = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS"),
-    V11_label = factor(V11_label, levels = levels_V11_subset$V11_label)
+    V11_label = factor(V11_label, levels = levels_V11_subset$V11_label),
+    # kleine Label-Höhe für 0%-Balken, damit Zahl sichtbar wird
+    y_lab     = dplyr::if_else(pct == 0, 0.5, pct)
   )
 
-# Balkendiagramm
+# Plot
 p_v11_cross <- ggplot(v11_cross_share, aes(x = V11_label, y = pct, fill = MethodGrp)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
-  geom_text(aes(label = sprintf("%.1f", pct)),
+  geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)),
             position = position_dodge(width = 0.8), vjust = -0.2, size = 3) +
   scale_fill_manual(values = c("grey70","white")) +
   labs(x = NULL, y = "% within design (cross-national)", fill = "Method Group") +
-  coord_cartesian(ylim = c(0, max(v11_cross_share$pct, na.rm = TRUE) + 5)) +
+  coord_cartesian(ylim = c(0, max(v11_cross_share$y_lab, na.rm = TRUE) + 5)) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
@@ -763,7 +780,7 @@ p_v11_cross <- ggplot(v11_cross_share, aes(x = V11_label, y = pct, fill = Method
     axis.text.x        = element_text(angle = 35, hjust = 1)
   )
 
-# optional
+
 doc <- doc %>%
   body_add_par("Figure (supplement): Analysis Methods — % within design (cross-national only)", style = "Normal") %>%
   body_add_par("Bar chart of cross-national design by analysis method, split by CSS vs. Non-CSS. Matches the left block of the V11 × V12 table.", style = "Normal") %>%
