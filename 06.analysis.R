@@ -766,7 +766,7 @@ p_v11_cross <- ggplot(v11_cross_share, aes(x = V11_label, y = pct, fill = Method
 # optional
 doc <- doc %>%
   body_add_par("Figure (supplement): Analysis Methods — % within design (cross-national only)", style = "Normal") %>%
-  body_add_par("Bar chart of cross-national design (V12=1) by analysis method (V11), split by CSS vs. Non-CSS. Matches the left block of the V11 × V12 table.", style = "Normal") %>%
+  body_add_par("Bar chart of cross-national design by analysis method, split by CSS vs. Non-CSS. Matches the left block of the V11 × V12 table.", style = "Normal") %>%
   body_add_gg(value = p_v11_cross, width = 9, height = 5) %>%
   body_add_break()
 
