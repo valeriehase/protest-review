@@ -215,6 +215,11 @@ rm(mod, chi_sq, obs, n, r, c, k, cramers_v, chi_note)
 
 # Helper Functions  ------------------------------------------------------------
 
+#we create a function to exclude specific categories for figures
+exclude <- function(df) {
+  df %>%
+    dplyr::filter(!Category %in% c("Other", "Not mentioned"))
+}
 make_complete_table <- function(df, var, levels_df, 
                                 apa = FALSE, title = NULL, note = NULL) {
   var_sym <- rlang::sym(var)
@@ -295,7 +300,9 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
     ) %>%
     dplyr::mutate(Method = dplyr::recode(Method,
                                          "Non-CSS %" = "Non-CSS",
-                                         "CSS %"     = "CSS"))
+                                         "CSS %"     = "CSS")) %>%
+    #exclude specific cases for visualization
+    exclude(.)
   
   # enforce level order
   if (!is.null(levels_vec)) {
