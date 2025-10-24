@@ -473,34 +473,36 @@ CSS = computational social science."
 
 # Builder function
 
-# Spaltenprozente getrennt nach CSS / non-CSS
-
-build_pct_table_both_methods <- function(df_rows,
-                                         row_var, levels_row_df,
-                                         col_var, levels_col_df,
-                                         selected_cols = NULL,
-                                         title = NULL, note = NULL) {
+build_crosstab_pct <- function(
+    df_rows,
+    row_var, levels_row_df,
+    col_var, levels_col_df,
+    selected_cols   = NULL,
+    selected_rows   = NULL,
+    split_by_method = TRUE,
+    method_var      = "method",
+    method_levels   = c("0","1"),
+    method_labels   = c("Non-CSS %","CSS %"),
+    title           = NULL,
+    note            = NULL,
+    percent_digits  = 1
+) {
   row_sym <- rlang::sym(row_var)
   col_sym <- rlang::sym(col_var)
+  meth_sym <- rlang::sym(method_var)
   row_lab <- paste0(row_var, "_label")
   col_lab <- paste0(col_var, "_label")
   
   if (is.null(selected_cols)) selected_cols <- as.character(levels_col_df[[col_var]])
+  if (is.null(selected_rows)) selected_rows <- as.character(levels_row_df[[row_var]])
   selected_cols <- as.character(selected_cols)
+  selected_rows <- as.character(selected_rows)
   
-  col_levels <- levels_col_df %>%
+  col_levels_df <- levels_col_df %>%
     dplyr::filter(.data[[col_var]] %in% selected_cols) %>%
     dplyr::mutate(!!col_sym := factor(.data[[col_var]], levels = selected_cols))
   
-  # grid
-  full_grid <- tidyr::expand_grid(
-    !!row_sym := as.character(levels_row_df[[row_var]]),
-    !!col_sym := selected_cols,
-    method    = c("0","1")
-  )
-  
-  # method, col; first cast then split
-  tab <- df_rows %>%
+  base <- df_rows %>%
     dplyr::mutate(
       !!row_sym := as.character(.data[[row_var]]),
       !!col_sym := as.character(.data[[col_var]])
@@ -511,173 +513,136 @@ build_pct_table_both_methods <- function(df_rows,
       !!row_sym := stringr::str_trim(!!row_sym),
       !!col_sym := stringr::str_trim(!!col_sym)
     ) %>%
-    dplyr::filter(method %in% c("0","1"),
-                  .data[[col_var]] %in% selected_cols) %>%
-    dplyr::count(method, !!row_sym, !!col_sym, name = "n") %>%
-    dplyr::group_by(method, !!col_sym) %>%
-    dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-n)
+    dplyr::filter(.data[[col_var]] %in% selected_cols,
+                  .data[[row_var]] %in% selected_rows)
   
-  # zusammensetzen
-  out_long <- full_grid %>%
-    dplyr::left_join(tab, by = c("method", row_var, col_var)) %>%
-    dplyr::mutate(pct = tidyr::replace_na(pct, 0)) %>%
-    dplyr::left_join(levels_row_df, by = setNames(row_var, row_var)) %>%
-    dplyr::left_join(col_levels,     by = setNames(col_var, col_var)) %>%
-    dplyr::mutate(MethodLabel = dplyr::recode(method, "0" = "Non-CSS %", "1" = "CSS %"))
+  # wir sammeln hier die Value-Spaltennamen für die spätere Breiten-Logik
+  value_cols <- character(0)
   
-  # wide format
-  out <- out_long %>%
-    dplyr::select(RowLabel = !!rlang::sym(row_lab),
-                  ColLabel = !!rlang::sym(col_lab),
-                  MethodLabel, pct) %>%
-    tidyr::pivot_wider(
-      id_cols    = c(RowLabel),
-      names_from = c(ColLabel, MethodLabel),
-      values_from = pct
-    ) %>%
-    dplyr::left_join(levels_row_df %>% dplyr::select(RowLabel = !!rlang::sym(row_lab)),
-                     by = "RowLabel") %>%
-    dplyr::distinct(RowLabel, .keep_all = TRUE)
-  
-  col_labels <- col_levels[[col_lab]]
-  ordered_cols <- c(
-    "RowLabel",
-    as.vector(rbind(
-      paste0(col_labels, "_Non-CSS %"),
-      paste0(col_labels, "_CSS %")
-    ))
-  )
-  existing_cols <- names(out)
-  ordered_cols <- c("RowLabel", intersect(ordered_cols[-1], existing_cols))
-  out <- out[, ordered_cols, drop = FALSE]
-  
-  # header
-  header_top    <- c("", rep(col_labels, each = 2))
-  header_bottom <- c("", rep(c("Non-CSS %", "CSS %"), times = length(col_labels)))
-  colkeys <- names(out)
-  header_df <- data.frame(
-    col_keys = colkeys,
-    Group    = header_top,
-    Method   = header_bottom,
-    stringsAsFactors = FALSE
-  )
-  
-  ft <- flextable::flextable(out, col_keys = colkeys) %>%
-    flextable::set_header_df(mapping = header_df, key = "col_keys") %>%
-    flextable::merge_h(part = "header") %>%
-    flextable::align(align = "center", part = "all") %>%
-    flextable::align(j = "RowLabel", align = "left", part = "body") %>%
-    flextable::theme_vanilla() %>%
-    flextable::set_caption(title %||% "Row × Column — % within column") %>%
-    flextable::colformat_num(j = setdiff(names(out), "RowLabel"), digits = 1, big.mark = "") %>%
-    flextable::fontsize(size = 9, part = "all") %>%
-    flextable::padding(padding = 2, part = "all") %>%
-    flextable::compose(part = "header", i = 1, j = "RowLabel", value = flextable::as_paragraph("")) %>%
-    flextable::compose(part = "header", i = 2, j = "RowLabel", value = flextable::as_paragraph(""))
-  
-  # A4 format
-  total_width <- 9.5
-  label_w <- 3.8
-  n_value_cols <- ncol(out) - 1
-  other_w <- (total_width - label_w - 0.4) / max(1, n_value_cols)
-  ft <- ft %>%
-    flextable::width(j = "RowLabel", width = label_w) %>%
-    flextable::width(j = setdiff(names(out), "RowLabel"), width = other_w)
-  
-  if (!is.null(note)) {
-    ft <- flextable::add_footer_lines(ft, values = note)
+  if (split_by_method) {
+    base <- base %>% dplyr::filter(.data[[method_var]] %in% method_levels)
+    
+    tab <- base %>%
+      dplyr::count(!!meth_sym, !!row_sym, !!col_sym, name = "n") %>%
+      dplyr::group_by(!!meth_sym, !!col_sym) %>%
+      dplyr::mutate(pct = round(100 * n / sum(n), percent_digits)) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(-n)
+    
+    full_grid <- tidyr::expand_grid(
+      !!row_sym := selected_rows,
+      !!col_sym := selected_cols,
+      !!meth_sym := factor(method_levels, levels = method_levels)
+    )
+    
+    out_long <- full_grid %>%
+      dplyr::left_join(tab, by = c(row_var, col_var, method_var)) %>%
+      dplyr::mutate(pct = tidyr::replace_na(pct, 0)) %>%
+      dplyr::left_join(levels_row_df, by = setNames(row_var, row_var)) %>%
+      dplyr::left_join(col_levels_df, by = setNames(col_var, col_var)) %>%
+      dplyr::mutate(
+        MethodLabel = dplyr::recode(as.character(.data[[method_var]]),
+                                    !!!stats::setNames(method_labels, method_levels))
+      )
+    
+    wide <- out_long %>%
+      dplyr::select(RowLabel = !!rlang::sym(row_lab),
+                    ColLabel = !!rlang::sym(col_lab),
+                    MethodLabel, pct) %>%
+      tidyr::pivot_wider(
+        id_cols = RowLabel,
+        names_from = c(ColLabel, MethodLabel),
+        values_from = pct
+      )
+    
+    col_labels <- col_levels_df[[col_lab]]
+    ordered <- c("RowLabel",
+                 as.vector(rbind(
+                   paste0(col_labels, "_", method_labels[1]),
+                   paste0(col_labels, "_", method_labels[2])
+                 )))
+    existing <- intersect(ordered, names(wide))
+    wide <- wide[, c("RowLabel", existing[existing != "RowLabel"]), drop = FALSE]
+    
+    # value_cols direkt aus dem Dataframe
+    value_cols <- setdiff(names(wide), "RowLabel")
+    
+    header_top    <- c("", rep(col_labels, each = length(method_labels)))
+    header_bottom <- c("", rep(method_labels, times = length(col_labels)))
+    colkeys <- names(wide)
+    header_df <- data.frame(
+      col_keys = colkeys,
+      Group    = header_top,
+      Method   = header_bottom,
+      stringsAsFactors = FALSE
+    )
+    
+    ft <- flextable::flextable(wide, col_keys = colkeys) %>%
+      flextable::set_header_df(mapping = header_df, key = "col_keys") %>%
+      flextable::merge_h(part = "header") %>%
+      flextable::align(align = "center", part = "all") %>%
+      flextable::align(j = "RowLabel", align = "left", part = "body") %>%
+      flextable::theme_vanilla() %>%
+      flextable::set_caption(title %||% paste(row_var, "×", col_var, "— % within column")) %>%
+      flextable::colformat_num(j = value_cols, digits = percent_digits, big.mark = "") %>%
+      flextable::fontsize(size = 9, part = "all") %>%
+      flextable::padding(padding = 2, part = "all") %>%
+      flextable::compose(part = "header", i = 1, j = "RowLabel", value = flextable::as_paragraph("")) %>%
+      flextable::compose(part = "header", i = 2, j = "RowLabel", value = flextable::as_paragraph(""))
+    
+  } else {
+    tab <- base %>%
+      dplyr::count(!!row_sym, !!col_sym, name = "n") %>%
+      dplyr::group_by(!!col_sym) %>%
+      dplyr::mutate(pct = round(100 * n / sum(n), percent_digits)) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(-n)
+    
+    full_grid <- tidyr::expand_grid(
+      !!row_sym := selected_rows,
+      !!col_sym := selected_cols
+    )
+    
+    out_long <- full_grid %>%
+      dplyr::left_join(tab, by = c(row_var, col_var)) %>%
+      dplyr::mutate(pct = tidyr::replace_na(pct, 0)) %>%
+      dplyr::left_join(levels_row_df, by = setNames(row_var, row_var)) %>%
+      dplyr::left_join(col_levels_df, by = setNames(col_var, col_var))
+    
+    wide <- out_long %>%
+      dplyr::select(RowLabel = !!rlang::sym(row_lab),
+                    ColLabel = !!rlang::sym(col_lab),
+                    pct) %>%
+      tidyr::pivot_wider(id_cols = RowLabel,
+                         names_from = ColLabel,
+                         values_from = pct)
+    
+    col_labels <- col_levels_df[[col_lab]]
+    keep <- intersect(col_labels, names(wide))
+    wide <- wide[, c("RowLabel", keep), drop = FALSE]
+    
+    # value_cols direkt aus dem Dataframe
+    value_cols <- setdiff(names(wide), "RowLabel")
+    
+    ft <- flextable::flextable(wide) %>%
+      flextable::theme_vanilla() %>%
+      flextable::align(align = "center", part = "all") %>%
+      flextable::align(j = "RowLabel", align = "left", part = "body") %>%
+      flextable::set_caption(title %||% paste(row_var, "×", col_var, "— % within column (overall)")) %>%
+      flextable::colformat_num(j = value_cols, digits = percent_digits, big.mark = "") %>%
+      flextable::fontsize(size = 9, part = "all") %>%
+      flextable::padding(padding = 2, part = "all")
   }
-  ft
-}
-
-# Builder 
-# Spaltenprozente nicht getrennt
-build_pct_table_overall <- function(df_rows,
-                                    row_var, levels_row_df,
-                                    col_var, levels_col_df,
-                                    selected_cols = NULL,
-                                    title = NULL, note = NULL) {
-  row_sym <- rlang::sym(row_var)
-  col_sym <- rlang::sym(col_var)
-  row_lab <- paste0(row_var, "_label")
-  col_lab <- paste0(col_var, "_label")
   
-  if (is.null(selected_cols)) selected_cols <- as.character(levels_col_df[[col_var]])
-  selected_cols <- as.character(selected_cols)
-  
-  # Level-Reihenfolge für Spalten
-  col_levels <- levels_col_df %>%
-    dplyr::filter(.data[[col_var]] %in% selected_cols) %>%
-    dplyr::mutate(!!col_sym := factor(.data[[col_var]], levels = selected_cols))
-  
-  # Daten aufbereiten (ohne method-Grouping)
-  tab <- df_rows %>%
-    dplyr::mutate(
-      !!row_sym := as.character(.data[[row_var]]),
-      !!col_sym := as.character(.data[[col_var]])
-    ) %>%
-    tidyr::separate_rows(!!row_sym, sep = ";") %>%
-    tidyr::separate_rows(!!col_sym, sep = ";") %>%
-    dplyr::mutate(
-      !!row_sym := stringr::str_trim(!!row_sym),
-      !!col_sym := stringr::str_trim(!!col_sym)
-    ) %>%
-    dplyr::filter(.data[[col_var]] %in% selected_cols) %>%
-    dplyr::count(!!row_sym, !!col_sym, name = "n") %>%
-    dplyr::group_by(!!col_sym) %>%
-    dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-n)
-  
-  # alle Kombinationen sicherstellen
-  full_grid <- tidyr::expand_grid(
-    !!row_sym := as.character(levels_row_df[[row_var]]),
-    !!col_sym := selected_cols
-  )
-  
-  out_long <- full_grid %>%
-    dplyr::left_join(tab, by = c(row_var, col_var)) %>%
-    dplyr::mutate(pct = tidyr::replace_na(pct, 0)) %>%
-    dplyr::left_join(levels_row_df, by = setNames(row_var, row_var)) %>%
-    dplyr::left_join(col_levels,     by = setNames(col_var, col_var))
-  
-  out <- out_long %>%
-    dplyr::select(RowLabel = !!rlang::sym(row_lab),
-                  ColLabel = !!rlang::sym(col_lab),
-                  pct) %>%
-    tidyr::pivot_wider(
-      id_cols = RowLabel,
-      names_from = ColLabel,
-      values_from = pct
-    ) %>%
-    dplyr::left_join(levels_row_df %>% dplyr::select(RowLabel = !!rlang::sym(row_lab)),
-                     by = "RowLabel") %>%
-    dplyr::distinct(RowLabel, .keep_all = TRUE)
-  
-  # Spaltenreihenfolge gemäß selected_cols / Labels
-  col_labels <- col_levels[[col_lab]]
-  out <- out[, c("RowLabel", intersect(col_labels, names(out))), drop = FALSE]
-  
-  # flextable
-  ft <- flextable::flextable(out) %>%
-    flextable::theme_vanilla() %>%
-    flextable::align(align = "center", part = "all") %>%
-    flextable::align(j = "RowLabel", align = "left", part = "body") %>%
-    flextable::set_caption(title %||% "Row × Column — % within column (overall)") %>%
-    flextable::colformat_num(j = setdiff(names(out), "RowLabel"), digits = 1, big.mark = "") %>%
-    flextable::fontsize(size = 9, part = "all") %>%
-    flextable::padding(padding = 2, part = "all")
-  
-  # A4-Breiten
+  # Spaltenbreiten ohne colkeys/fortify
   total_width <- 9.5
   label_w    <- 3.8
-  n_value_cols <- ncol(out) - 1
+  n_value_cols <- length(value_cols)
   other_w <- (total_width - label_w - 0.4) / max(1, n_value_cols)
+  
   ft <- ft %>%
     flextable::width(j = "RowLabel", width = label_w) %>%
-    flextable::width(j = setdiff(names(out), "RowLabel"), width = other_w)
+    flextable::width(j = value_cols, width = other_w)
   
   if (!is.null(note)) {
     ft <- flextable::add_footer_lines(ft, values = note)
@@ -686,37 +651,50 @@ build_pct_table_overall <- function(df_rows,
 }
 
 
-# Methods (V11) × Major Platform Types (V10_agg)
-ft_V11_platforms <- build_pct_table_both_methods(
-  df_rows = df_V10agg,
-  row_var = "V11", levels_row_df = levels_V11_subset,  # <- geändert
-  col_var = "V10_agg", levels_col_df = levels_V10_agg,
-  selected_cols = selected_platforms,
-  title = "Major Analysis Methods × Major Platform Types — % within platform",
+
+# 1) V11 × V10_agg — mit CSS-Splitting, nur 6 V11-Methoden und 4 Plattformtypen
+levels_V11_subset <- levels_V11 %>%
+  dplyr::filter(V11 %in% c("21","22","23","24","25","26"))
+selected_platforms <- c("100","110","130","140")
+
+ft_V11_platforms <- build_crosstab_pct(
+  df_rows       = df_V10agg,
+  row_var       = "V11", levels_row_df = levels_V11_subset,
+  col_var       = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_rows = levels_V11_subset$V11,    # ← entscheidet über den Nenner
+  selected_cols = selected_platforms,       # ← entscheidet, welche Spalten drin sind
+  split_by_method = TRUE,                   # ← CSS vs Non-CSS
+  method_var    = "method",
+  method_levels = c("0","1"),
+  method_labels = c("Non-CSS %","CSS %"),
+  title = "Analysis Methods × Major Platform Types — % within platform",
   note  = note_platforms
 )
 
-# Cross-National (V12) × Major Platform Types (V10_agg)
-
-note_platforms_overall <- "Note. Column percentages are computed overall (CSS and Non-CSS combined). CSS distinction is not shown here."
-
-ft_V12_platforms <- build_pct_table_overall(
-  df_rows = df_V10agg,
-  row_var = "V12", levels_row_df = levels_V12,
-  col_var = "V10_agg", levels_col_df = levels_V10_agg,
-  selected_cols = selected_platforms,
-  title = "Cross-National Designs × Major Platform Types — % within platform",
-  note  = note_platforms_overall
-)
-
-# Methods (V11) × Cross-National (V12)
-ft_V11_V12 <- build_pct_table_both_methods(
-  df_rows = df,  # V12 liegt im Grund-df
-  row_var = "V11", levels_row_df = levels_V11,
-  col_var = "V12", levels_col_df = levels_V12,
-  selected_cols = c("1","0"),     # Reihenfolge: cross-national, not cross-national
+# 2) V11 × V12 — mit CSS-Splitting, gleiche V11-Auswahl
+ft_V11_V12 <- build_crosstab_pct(
+  df_rows       = df,
+  row_var       = "V11", levels_row_df = levels_V11_subset,
+  col_var       = "V12", levels_col_df = levels_V12,
+  selected_rows = levels_V11_subset$V11,
+  selected_cols = c("1","0"),               # Reihenfolge der Spalten
+  split_by_method = TRUE,
+  method_var    = "method",
+  method_levels = c("0","1"),
+  method_labels = c("Non-CSS %","CSS %"),
   title = "Analysis Methods × Cross-National Design — % within design",
   note  = note_designs
+)
+
+# 3) V12 × V10_agg — OVERALL (ohne CSS-Splitting), 4 Plattformtypen
+ft_V12_platforms <- build_crosstab_pct(
+  df_rows       = df_V10agg,
+  row_var       = "V12", levels_row_df = levels_V12,
+  col_var       = "V10_agg", levels_col_df = levels_V10_agg,
+  selected_cols = selected_platforms,
+  split_by_method = FALSE,                  # ← kein CSS-Splitting
+  title = "Cross-National Designs × Major Platform Types — % within platform (overall)",
+  note  = "Note. Column percentages are computed overall (CSS and Non-CSS combined)."
 )
 
 
@@ -732,6 +710,62 @@ doc <- doc %>%
   body_add_flextable(ft_V11_V12) %>%
   body_add_break() 
 
+#### FIGURE
+
+# gleiche V11-Auswahl wie in der Tabelle
+levels_V11_subset <- levels_V11 %>%
+  dplyr::filter(V11 %in% c("21","22","23","24","25","26"))
+
+# Prozente innerhalb des Designs (nur cross-national), getrennt nach method
+v11_cross_share <- df %>%
+  dplyr::mutate(
+    V11    = as.character(V11),
+    V12    = as.character(V12),
+    method = as.character(method)
+  ) %>%
+  tidyr::separate_rows(V11, sep = ";") %>%
+  dplyr::mutate(V11 = stringr::str_trim(V11)) %>%
+  dplyr::filter(
+    method %in% c("0","1"),
+    V12 == "1",                                   # <- nur vorderer Tabellenteil (cross-national)
+    V11 %in% levels_V11_subset$V11
+  ) %>%
+  dplyr::count(method, V11, name = "n") %>%
+  dplyr::group_by(method) %>%                      # <- Nenner: innerhalb cross-national je method
+  dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
+  dplyr::ungroup() %>%
+  dplyr::left_join(levels_V11_subset, by = "V11") %>%
+  dplyr::mutate(
+    MethodGrp = dplyr::recode(method, "0" = "Non-CSS", "1" = "CSS"),
+    V11_label = factor(V11_label, levels = levels_V11_subset$V11_label)
+  )
+
+# Balkendiagramm: entspricht exakt dem linken (cross-national) Block der Tabelle
+p_v11_cross <- ggplot(v11_cross_share, aes(x = V11_label, y = pct, fill = MethodGrp)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black") +
+  geom_text(aes(label = sprintf("%.1f", pct)),
+            position = position_dodge(width = 0.8), vjust = -0.2, size = 3) +
+  scale_fill_manual(values = c("grey70","white")) +
+  labs(x = NULL, y = "% within design (cross-national)", fill = "Method Group") +
+  coord_cartesian(ylim = c(0, max(v11_cross_share$pct, na.rm = TRUE) + 5)) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    legend.title       = element_text(face = "bold"),
+    axis.text.x        = element_text(angle = 35, hjust = 1)
+  )
+
+# optional: in dein Word-Dokument
+doc <- doc %>%
+  body_add_par("Figure (supplement): Analysis Methods — % within design (cross-national only)", style = "Normal") %>%
+  body_add_par("Bar chart of cross-national design (V12=1) by analysis method (V11), split by CSS vs. Non-CSS. Matches the left block of the V11 × V12 table.", style = "Normal") %>%
+  body_add_gg(value = p_v11_cross, width = 9, height = 5) %>%
+  body_add_break()
+
+
 # PRINT -----------------------------------------------------------------------
 
 print(doc, target = "output/tables/All_Tables_and_Figures.docx")
+
