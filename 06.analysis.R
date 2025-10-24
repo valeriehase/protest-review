@@ -154,65 +154,6 @@ levels_V13 <- tibble(
   )
 )
 
-# Prepare chi-Square test for cross table  ----------------------------------------------------------------
-
-# Regions (V7) within CSS and non-CSS methods
-chi_v7_method <- df %>%
-  
-  #we split multiple regions mentioned in the same paper (e.g., 1;10)
-  tidyr::separate_rows(V7, sep = ";") %>%
-  dplyr::mutate(V7 = stringr::str_trim(as.character(V7)),
-                V7     = dplyr::case_when(is.na(V7) ~ "NA", V7 == "" ~ "NA", TRUE ~ V7),
-                method = as.character(method)) %>%
-  
-  #remove NAs in V7, since this is something that will be cleaned
-  filter(V7 != "NA") %>%
-  
-  #run chi square test, for now basic without bootstrapping etc.
-  tidycomm::crosstab(method, V7, chi_square = TRUE)
-
-# --- compute Cramér's V from the stored model ---
-mod <- attr(chi_v7_method, "model") %>% purrr::pluck(1)
-chi_sq <- as.numeric(mod$statistic)
-obs    <- mod$observed
-n      <- sum(obs)
-r      <- nrow(obs)
-c      <- ncol(obs)
-k      <- min(r, c) - 1
-cramers_v <- sqrt(chi_sq / (n * k))
-
-# Assemble a compact results table (APA-style)
-chi_v7_method <- tibble::tibble(
-  Metric = c("Test", "df", "χ²", "p", "N", "Cramér's V"),
-  Value  = c(
-    #Test
-    "Method (CSS vs. non-CSS) X V7 (Regions)",
-    #df
-    as.character(mod$parameter),
-    #Chi-Square test statistic
-    formatC(chi_sq, format = "f", digits = 3),
-    #p
-    formatC(as.numeric(mod$p.value), format = "f", digits = 3),
-    #N
-    as.character(n),
-    #Cramers V
-    formatC(cramers_v, format = "f", digits = 3)
-  )
-)
-
-chi_note <- "Note. Chi-square computed on expanded rows after splitting multi-coded V7 entries (matching the figure’s approach). 'N (expanded)' counts region mentions, not unique studies. Excluding Region = NA. Method: 0 = Non-CSS, 1 = CSS."
-
-ft_chi_v7 <- flextable::flextable(chi_v7_method) %>%
-  flextable::theme_vanilla() %>%
-  flextable::align(align = "center", part = "all") %>%
-  flextable::align(j = 1, align = "left", part = "body") %>%
-  flextable::set_caption("Chi-square Test: Method (CSS vs. non-CSS) X V7 (Regions)") %>%
-  flextable::autofit() %>%
-  flextable::add_footer_lines(values = chi_note)
-
-#clean house
-rm(mod, chi_sq, obs, n, r, c, k, cramers_v, chi_note)
-
 # Helper Functions  ------------------------------------------------------------
 
 #we create a function to exclude specific categories for figures
@@ -335,7 +276,90 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
     body_add_break()
 }
 
+#build a function to create chi-square test tables
 
+chi_method_table <- function(dataset,        # dataset we used
+                             dep_var,        # dependent variable
+                             table_caption,  # for flextable caption
+                             note_text,      # note to put under table
+                             multi = FALSE   # does dep_var have multiple codes like "1;10"?) 
+){ 
+  
+  # turn var names into symbols
+  dep_sym <- rlang::sym(dep_var)
+  
+  #include splitting into multiple variables (only for V7 regions)
+  if (multi) {
+    dataset <- dataset %>%
+      tidyr::separate_rows(!!dep_sym, sep = ";") %>%
+      dplyr::mutate(
+        !!dep_sym := stringr::str_trim(as.character(!!dep_sym)),
+        !!dep_sym := dplyr::case_when(
+          is.na(!!dep_sym) ~ "NA",
+          !!dep_sym == ""  ~ "NA",
+          TRUE ~ !!dep_sym
+        ),
+        method = as.character(method)
+      )
+  }
+  
+  # prep data for chi-square:
+  # - make sure both columns are character
+  chi_obj <- dataset %>%
+    dplyr::mutate(
+      method   = as.character(method),
+      !!dep_sym := as.character(.data[[dep_var]]),
+      !!dep_sym := dplyr::case_when(
+        is.na(!!dep_sym) ~ "NA",
+        !!dep_sym == ""  ~ "NA",
+        TRUE ~ !!dep_sym
+      )
+    ) %>%
+    
+    #run the test using tidycomm
+    tidycomm::crosstab(method, !!dep_sym, chi_square = TRUE)
+  
+  # extract model + compute Cramér's V (not stored in crosstab command)
+  mod        <- attr(chi_obj, "model") %>% purrr::pluck(1)
+  chi_sq     <- as.numeric(mod$statistic)
+  obs        <- mod$observed
+  n_total    <- sum(obs)
+  r          <- nrow(obs)
+  c          <- ncol(obs)
+  k          <- min(r, c) - 1
+  cramers_v  <- sqrt(chi_sq / (n_total * k))
+  
+  # build APA-style summary tibble
+  chi_tib <- tibble::tibble(
+    Metric = c("Test", "df", "χ²", "p", "N", "Cramér's V"),
+    Value  = c(
+      paste0("Method (CSS vs. non-CSS) × ", dep_var),
+      as.character(mod$parameter),
+      formatC(chi_sq, format = "f", digits = 3),
+      formatC(as.numeric(mod$p.value), format = "f", digits = 3),
+      as.character(n_total),
+      formatC(cramers_v, format = "f", digits = 3)
+    )
+  )
+  
+  # build flextable
+  ft <- flextable::flextable(chi_tib) %>%
+    flextable::theme_vanilla() %>%
+    flextable::align(align = "center", part = "all") %>%
+    flextable::align(j = 1, align = "left", part = "body") %>%
+    flextable::set_caption(table_caption) %>%
+    flextable::autofit() %>%
+    flextable::add_footer_lines(values = note_text)
+  
+  # return list 
+  list(
+    ft         = ft,
+    chi_table  = chi_tib,
+    model      = mod,
+    chi_sq     = chi_sq,
+    cramers_v  = cramers_v
+  )
+}
 
 # Frequency Tables APA Export  -------------------------------------------------
 
@@ -366,6 +390,49 @@ apa_tables <- lapply(names(table_specs), function(var) {
 
 names(apa_tables) <- names(table_specs)
 
+#additionally generate tables for Chi-Square
+
+# Chi-square table for Method X V7 Regions
+res_V7 <- chi_method_table(
+  dataset         = df,
+  dep_var         = "V7",
+  table_caption   = "Chi-square Test: Method (CSS vs. non-CSS) X V7 (Regions)",
+  note_text       = "Note. Chi-square computed on expanded rows after splitting multi-coded V7 entries (matching the figure’s approach). 'N (expanded)' counts region mentions, not unique studies. Excluding Region = NA. Method: 0 = Non-CSS, 1 = CSS.",
+  multi           = T
+)
+
+ft_chi_v7 <- res_V7$ft
+
+# Chi-square table for Method X V10 (Platforms, but aggregated)
+res_V10 <- chi_method_table(
+  dataset         = df_V10agg,
+  dep_var         = "V10_agg",
+  table_caption   = "Chi-square Test: Method (CSS vs. non-CSS) X V10 (platform aggregated)",
+  note_text       = "Note. Chi-square computed on expanded rows after splitting multi-coded V10 entries (matching the figure’s approach). 'N (expanded)' counts platform mentions, not unique studies. Excluding Platform = NA. Method: 0 = Non-CSS, 1 = CSS."
+)
+
+ft_chi_v10 <- res_V10$ft
+
+# Chi-square table for Method X V12 Cross-National
+res_V12 <- chi_method_table(
+  dataset         = df,
+  dep_var         = "V12",
+  table_caption   = "Chi-square Test: Method (CSS vs. non-CSS) × V12 (Cross-national Design)",
+  note_text       = "Note. V12 coded as 1 = cross-national, 0 = not cross-national. Chi-square computed after excluding V12 = NA. Method: 0 = Non-CSS, 1 = CSS."
+)
+
+ft_chi_v12 <- res_V12$ft
+
+# Chi-square table for Method X V13 Experimental
+res_V13 <- chi_method_table(
+  dataset         = df,
+  dep_var         = "V13",
+  table_caption   = "Chi-square Test: Method (CSS vs. non-CSS) × V13 (Experimental Design)",
+  note_text       = "Note. V13 coded as 1 = experiment, 0 = not experiment. Chi-square computed after excluding V13 = NA. Method: 0 = Non-CSS, 1 = CSS."
+)
+
+ft_chi_v13 <- res_V13$ft
+
 # Export to Word (Tables + Figures)  -------------------------------------------
 
 landscape <- prop_section(
@@ -392,6 +459,25 @@ for (i in seq_along(apa_tables)) {
     doc <- doc %>%
       body_add_par("Table (supplement): Method (CSS vs. non-CSS) × V7 (Regions)", style = "Normal") %>%
       body_add_flextable(ft_chi_v7) %>%
+      body_add_break()
+  }
+  
+  # insert chi-square table for Method X V10_aggregated platforms right after Table 3
+  if (i == 3) {
+    doc <- doc %>%
+      body_add_par("Table (supplement): Method (CSS vs. non-CSS) × V10_agg (Aggregated Platforms)", style = "Normal") %>%
+      body_add_flextable(ft_chi_v10) %>%
+      body_add_break()
+  }
+  
+  # insert chi-square table for Method X design (experimental, cross-national) right after Table 5
+  if (i == 5) {
+    doc <- doc %>%
+      body_add_par("Table (supplement): Method (CSS vs. non-CSS) × V12 (Cross-national)", style = "Normal") %>%
+      body_add_flextable(ft_chi_v12) %>%
+      body_add_break() %>%
+      body_add_par("Table (supplement): Method (CSS vs. non-CSS) × V13 (Experimental)", style = "Normal") %>%
+      body_add_flextable(ft_chi_v13) %>%
       body_add_break()
   }
   
