@@ -95,13 +95,32 @@ ggarrange(sample_relevant %>%
             filter(method == 1) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
+            coord_cartesian(ylim = c(0, 60)) +
             ggtitle(paste0("CSS sample (N = ", nrow(sample_relevant %>%
                                                       filter(method == 1)), ")")) + theme_bw(),
           sample_relevant %>%
             filter(method == 0) %>%
             count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
+            coord_cartesian(ylim = c(0, 60)) +
             ggtitle(paste0("Non-CSS sample (N = ", nrow(sample_relevant %>%
                                                           filter(method == 0)), ")")) + theme_bw())
+#get the numbers
+sample_relevant %>%
+  group_by(method) %>%
+  count(year) %>%
+  ungroup() %>%
+  mutate(
+    method = replace(method, method == 0, "non-CSS"),
+    method = replace(method, method == 1, "CSS")
+  ) %>%
+  pivot_wider(
+    names_from = method,
+    values_from = n
+  ) %>%
+  arrange(as.numeric(year))
 
 #### Step 3: Full-paper coding ####
+
+# we will integrate all following scripts here after the ICA deadline
+# to be able to run them from main
