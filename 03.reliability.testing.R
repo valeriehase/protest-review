@@ -170,7 +170,7 @@ icr_v7v16 <- test_icr(
   coder_var = V5,
   na.omit = TRUE,
   brennan_prediger = TRUE,
-  V7, V12, V13, V14, V15, V16
+  V7, V8, V12, V13, V14, V15, V16
 )
 
 ####
