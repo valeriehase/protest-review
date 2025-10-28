@@ -168,6 +168,8 @@ make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, n
   levels_df <- levels_df %>% mutate(!!var_sym := as.character(.data[[var]]))
   
   tab <- df %>%
+    
+    ##TO CHECK: this create several observations for each study with, e.g., several regions: Do we want that?
     tidyr::separate_rows(!!var_sym, sep = ";") %>%
     mutate(!!var_sym := dplyr::coalesce(trimws(!!var_sym), "Missing")) %>%
     count(method, !!var_sym, name = "n") %>%
