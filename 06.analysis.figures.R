@@ -698,29 +698,26 @@ levels_MethodCombo <- tibble::tibble(
 )
 
 mc_share <- df_method_combo %>%
-  count(method, MethodCombo, name = "n") %>%
-  group_by(method) %>%
+  count(MethodCombo, name = "n") %>%
   mutate(pct = round(100 * n / sum(n), 1)) %>%
-  ungroup() %>%
   right_join(
-    expand_grid(method = c("0","1"), MethodCombo = levels_MethodCombo$MethodCombo),
-    by = c("method","MethodCombo")
+    expand_grid(MethodCombo = levels_MethodCombo$MethodCombo),
+    by = c("MethodCombo")
   ) %>%
   mutate(n = replace_na(n, 0), pct = replace_na(pct, 0)) %>%
   left_join(levels_MethodCombo, by = "MethodCombo") %>%
   filter(MethodCombo_label != "Not mentioned") %>%  # wie bei exclude()
   mutate(
-    MethodGrp = recode(method, "0" = "Non-CSS", "1" = "CSS"),
     MethodCombo_label = factor(MethodCombo_label, levels = levels_MethodCombo$MethodCombo_label),
     y_lab = if_else(pct == 0, 0.5, pct)
   )
 
-p_methodcombo <- ggplot(mc_share, aes(x = MethodCombo_label, y = pct, fill = MethodGrp)) +
+p_methodcombo <- ggplot(mc_share, aes(x = MethodCombo_label, y = pct)) +
   geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
   geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)),
             position = position_dodge(0.8), vjust = -0.2, size = 3) +
   scale_fill_manual(values = c("grey70","white")) +
-  labs(x = NULL, y = "% within method group", fill = "Method Group") +
+  labs(x = NULL, y = "Percentage") +
   coord_cartesian(ylim = c(0, max(mc_share$y_lab, na.rm = TRUE) + 5)) +
   theme_minimal(base_size = 12) +
   theme(
@@ -732,8 +729,8 @@ p_methodcombo <- ggplot(mc_share, aes(x = MethodCombo_label, y = pct, fill = Met
   )
 
 doc <- doc %>%
-  body_add_par("Figure (supplement): Method combinations — % within method group (CSS vs. Non-CSS)", style = "Normal") %>%
-  body_add_par("Bar chart of method-combination types by method group (CSS vs. Non-CSS).", style = "Normal") %>%
+  body_add_par("Figure (supplement): Method combinations — overall %", style = "Normal") %>%
+  body_add_par("Bar chart of method-combination types.", style = "Normal") %>%
   body_add_gg(value = p_methodcombo, width = 9, height = 5) %>%
   body_add_break()
 
