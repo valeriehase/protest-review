@@ -210,8 +210,8 @@ log_event(
 allowed_v7 <- as.character(1:10) |> c("NA")  
 
 invalid_v7 <- df_clean %>%
-  filter(!is.na(V7)) %>%                        # NAs sind hier ok
-  separate_rows(V7, sep = ";\\s*") %>%          # mehrfachcodierungen splitten
+  filter(!is.na(V7)) %>%                        
+  separate_rows(V7, sep = ";\\s*") %>%         
   mutate(V7 = str_trim(V7)) %>%
   filter(!(V7 %in% allowed_v7))  
 
@@ -259,7 +259,7 @@ print(invalid_v8)
 df_clean <- df_clean %>%
   mutate(V8 = if_else(id_unique == "ID1224", "Iraq; Egypt; Yemen", V8), # too many strings, reduced to first three
          V8 = if_else(id_unique == "ID202", "Ireland; Malta; Netherlands", V8), # too many strings, reduced to first three  
-         V8 = if_else(id_unique == "ID44", "Turkey; Ukraine; United States of America", V8) # too many strings, reduced to three
+         V8 = if_else(id_unique == "ID44", "Turkey; Ukraine; United States of America", V8) # too many strings, reduced to first three
          ) %>%
   mutate(
     V8 = if_else(
@@ -337,8 +337,8 @@ log_event(
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
 
 invalid_v10 <- df_clean %>%
-  filter(!is.na(V10)) %>%                        # NAs sind hier ok
-  separate_rows(V10, sep = ";\\s*") %>%          # mehrfachcodierung splitten
+  filter(!is.na(V10)) %>%                        
+  separate_rows(V10, sep = ";\\s*") %>%          
   mutate(V10 = str_trim(V10)) %>%
   filter(!(V10 %in% allowed_v10))
 
@@ -372,8 +372,8 @@ log_event(
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
 
 invalid_v11 <- df_clean %>%
-  filter(!is.na(V11)) %>%                 # NAs sind hier ok
-  separate_rows(V11, sep = ";\\s*") %>%   # mehrfachcodierung splitten
+  filter(!is.na(V11)) %>%                 
+  separate_rows(V11, sep = ";\\s*") %>%   
   mutate(V11 = str_trim(V11)) %>%         
   filter(!(V11 %in% allowed_v11))         
 
@@ -501,71 +501,111 @@ log_event(
 )
 
 
-# Step 5: Kommentare -----------------------------------------------------------
+# Step 5: Comment check --------------------------------------------------------
 
 comments_long <- df_clean %>%
   filter(!is.na(Comment_CODER)) %>%
-  mutate(Comment = str_squish(Comment_CODER)) %>%             
-  separate_rows(Comment, sep = ";\\s*") %>%               
+  mutate(Comment = str_squish(Comment_CODER)) %>%
+  separate_rows(Comment, sep = ";\\s*") %>%
   extract(Comment, into = c("variable", "comment_text"),
-          regex = "^(V\\d{1,2}):\\s*(.*)$", remove = TRUE) %>% 
-  mutate(variable = str_trim(variable),
-         comment_text = str_trim(comment_text)) %>%
+          regex = "^(V\\d{1,2}):\\s*(.*)$", remove = TRUE) %>%
+  mutate(
+    variable = str_trim(variable),
+    comment_text = str_trim(comment_text)
+  ) %>%
   filter(!is.na(variable), variable != "")
 
 print(comments_long)
 
-df_clean <- df_clean %>% 
-  mutate(V13 = if_else(id_unique == "ID11", 1, V13), 
-         V7 = if_else(id_unique == "ID1703", "10", V7),
-         V8 = if_else(id_unique == "ID1703", "NA", V8),
-         V11 = if_else(id_unique == "ID248", "13; 16", V11),
-         V11 = if_else(id_unique == "ID83", "13; 16; 99", V11)
+# --- Manual adjustments based on comments_long review -------------------------
+
+df_clean <- df_clean %>%
+  mutate(
+    V13 = if_else(id_unique == "ID11",   "1",        as.character(V13)),
+    V10 = if_else(id_unique == "ID1072", "100",      as.character(V10)),
+    V7  = if_else(id_unique == "ID1703", "10",       as.character(V7)),
+    V8  = if_else(id_unique == "ID1703", "NA",       as.character(V8)),
+    V11 = if_else(id_unique == "ID248",  "13; 16",   as.character(V11)),
+    V11 = if_else(id_unique == "ID83",   "13; 16; 99", as.character(V11)),
+    V11 = if_else(id_unique == "ID131",  "20",       as.character(V11)),
+    V11 = if_else(id_unique == "ID1355", "20",       as.character(V11)),
+    V11 = if_else(id_unique == "ID1390", "20",       as.character(V11))
   )
-         
-log_event(
-  step   = "05_comment_review",
-  action = "manual_review",
-  note   = "Alle Kommentare in comments_long manuell geprüft; nur aktive Fragen mit Relevanz angepasst"
-)
 
 log_event(
   step   = "05_comment_review",
-  action = "manual_edit",
-  note   = "id_unique ID11: V13 geändert von '0' zu '1' (Kommentar: quasi-experimentell – ja, ausreichend für V13=1)"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "manual_edit",
-  note   = "id_unique ID1703: V7 geändert von '8' zu '10' (global, Diaspora); V8 geändert von 'Israel/Palästina' zu 'NA'"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "no_change_documented",
-  note   = "id_unique ID2054: V7 geprüft – Kommentar zur MEA-Region; keine Änderung (Code 10 korrekt)"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "no_change_documented",
-  note   = "id_unique ID2449: V12 geprüft – Kommentar zu 'disabled people in the UK'; keine Änderung (nicht cross-national)"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "manual_edit",
-  note   = "id_unique ID248: V11 geändert von '13' zu '13; 16' (Kommentar: semantisches Netzwerk via Gephi – Code 16 ergänzt)"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "no_change_documented",
-  note   = "id_unique ID391: V10 geprüft – Kommentar zu 131/141/151/160; keine Änderung (111 korrekt für Website-Analyse)"
-)
-log_event(
-  step   = "05_comment_review",
-  action = "manual_edit",
-  note   = "id_unique ID83: V11 geändert von '18; 12' zu '13; 16; 99' (Kommentar: TRS-Datenbank → Code 99; 18 korrigiert zu 13/16)"
+  action = "review_comments",
+  note   = "Kommentare aus Comment_CODER extrahiert und manuell geprüft."
 )
 
-checked_ids <- c("ID11", "ID1703", "ID2054", "ID2449", "ID248", "ID391", "ID83")
+# --- Logging: changes ---------------------------------------------------------
+
+log_event("05_comment_review", "manual_edit",
+          "ID11: V13 0 -> 1 | Grund: quasi-experimentelles Design erfüllt Experiment-Kriterium")
+
+log_event("05_comment_review", "manual_edit",
+          "ID1072: V10 NA -> 100 | Grund: Fokus auf digitale Kommunikation (Memes), keine plattformspezifische Analyse")
+
+log_event("05_comment_review", "manual_edit",
+          "ID1703: V7 8 -> 10; V8 Israel/Palästina -> NA | Grund: global/Diaspora-Fokus, keine eindeutige Länderzuordnung")
+
+log_event("05_comment_review", "manual_edit",
+          "ID248: V11 13 -> 13; 16 | Grund: semantisches Netzwerk mit Gephi, Netzwerkanalyse ergänzt")
+
+log_event("05_comment_review", "manual_edit",
+          "ID83: V11 18; 12 -> 13; 16; 99 | Grund: Datenbank/Archiv + Netzwerkanalyse; Scraping/API-Codes entfernt")
+
+log_event("05_comment_review", "manual_edit",
+          "ID131: V11 NA -> 20 | Grund: theoretische Diskussion von Case Studies")
+
+log_event("05_comment_review", "manual_edit",
+          "ID1355: V11 NA -> 20 | Grund: theoretische Case-Study-Diskussion")
+
+log_event("05_comment_review", "manual_edit",
+          "ID1390: V11 21 -> 20 | Grund: theoretische Case-Study-Modell-Diskussion")
+
+
+# --- Logging: reviewed, no change --------------------------------------------
+
+log_event("05_comment_review", "no_change_documented",
+          "ID1033: method geprüft | Grund: Methodenteil vorhanden, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID1092: experiment geprüft | Grund: Beleg im Text vorhanden, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID1174: method geprüft | Grund: Methodik ausreichend beschrieben, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID12: method geprüft | Grund: qualitative Frame-Analyse klar beschrieben, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID1273: plattform geprüft | Grund: Plattformzuordnung ausreichend belegt, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID2054: V7 geprüft | Grund: MEA-/Regionenbezug passt zu Code 10, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID2449: V12 geprüft | Grund: nationaler Fall (UK), nicht cross-national, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID391: V10 geprüft | Grund: Website-Analyse passt zu Code 111, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID13: V7 geprüft | Grund: pan-european passt, Kodierung bleibt")
+
+log_event("05_comment_review", "no_change_documented",
+          "ID1463: V7 geprüft | Grund: global/diaspora passt, Kodierung bleibt")
+
+
+# --- Clear reviewed comments --------------------------------------------------
+
+checked_ids <- c(
+  "ID11","ID1072","ID1703","ID248","ID83",
+  "ID131","ID1355","ID1390",
+  "ID1033","ID1092","ID1174","ID12","ID1273","ID2054","ID2449","ID391",
+  "ID13","ID1463"
+)
 
 df_clean <- df_clean %>%
   mutate(
@@ -575,12 +615,60 @@ df_clean <- df_clean %>%
 log_event(
   step   = "05_comment_review",
   action = "clear_reviewed_comments",
-  note   = paste0(
-    "Spalte Comment_CODER geleert für geprüfte Fälle: ",
-    toString(checked_ids)
-  )
+  note   = paste0("Comment_CODER geleert für geprüfte Fälle: ", toString(checked_ids))
 )
 
+# Step 6: Check code distributions by coder -----------------------------------------
+
+coder_col <- "V5"   
+vars_to_check <- paste0("V", 10:13)
+
+code_distribution_by_coder <- purrr::map_dfr(vars_to_check, function(var) {
+  
+  df_clean %>%
+    select(id_unique, all_of(coder_col), all_of(var)) %>%
+    mutate(
+      variable = var,
+      value = as.character(.data[[var]]),
+      coder = as.character(.data[[coder_col]])
+    ) %>%
+    filter(!is.na(coder)) %>%
+    filter(!is.na(value), value != "") %>%
+    separate_rows(value, sep = ";\\s*") %>%
+    mutate(
+      code = str_trim(value)
+    ) %>%
+    filter(code != "") %>%
+    count(variable, coder, code, name = "n") %>%
+    arrange(variable, code, coder)
+})
+
+print(code_distribution_by_coder)
+
+# Inspect specific V11 codes
+
+v11_codes_of_interest <- c("14", "17", "25", "99")
+
+v11_flagged <- df_clean %>%
+  select(id_unique, V5, V11, everything()) %>%
+  mutate(V11_chr = as.character(V11)) %>%
+  filter(
+    is.na(V11_chr) |
+      str_detect(
+        V11_chr,
+        paste0("(^|;\\s*)(", paste(v11_codes_of_interest, collapse = "|"), ")(;|$)")
+      )
+  )
+
+print(v11_flagged)
+
+log_event(
+  step   = "06_code_distributions_by_coder",
+  action = "check_code_frequencies",
+  note   = paste0(
+    "Code-Verteilungen V10–V13 getrennt nach Kodiererin auf Auffälligkeiten geprüft."
+  )
+)
 
 # Write Log and Export Cleaned Data --------------------------------------------------------------------
 
