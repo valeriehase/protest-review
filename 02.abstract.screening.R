@@ -2,7 +2,7 @@
 #
 # Sort into CSS/non-CSS sample & abstract screening
 # Author: Valerie Hase
-# Date: 2024-10-03
+# Date: 2025-01-10
 #
 ########################
 
@@ -103,16 +103,16 @@ ggarrange(css.sample %>%
 #  slice_sample(n = 20)
 
 #write out for manual coding
-#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.ah.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.mm.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv", row.names = FALSE)
 
 ####  Step 2.3  Intercodertest 2 Sample: N = 20 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
 
 #sample.abstracts.2 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #
 #  #get 10 articles from CSS sample
@@ -122,7 +122,7 @@ ggarrange(css.sample %>%
 #  rbind(non.css.sample %>%
 #          
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %notin% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#          filter(id_unique %notin% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 10)) %>%
@@ -145,20 +145,20 @@ ggarrange(css.sample %>%
 #  slice_sample(n = 20)
 
 #write out for manual coding
-#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.ah.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.mm.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv", row.names = FALSE)
 
 ####  Step 2.4 Intercodertest 3 Sample: N = 30 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
 
 #sample.abstracts.3 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -168,11 +168,11 @@ ggarrange(css.sample %>%
 #  rbind(non.css.sample %>%
 #          
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -195,24 +195,24 @@ ggarrange(css.sample %>%
 #  slice_sample(n = 30)
 
 #write out for manual coding
-#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/intercoder.3.ah.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/intercoder.3.mm.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/intercoder.3.vh.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv", row.names = FALSE)
 
 ####  Step 2.5  Intercodertest 4 Sample: N = 30 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
 
 #sample.abstracts.4 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 3
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.3.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv") %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -222,15 +222,15 @@ ggarrange(css.sample %>%
 #  rbind(non.css.sample %>%
 #                     
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
-#          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.3.vh.csv") %>%
+#          #filter by articles from intercoder test 3
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv") %>%
 #                                    pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -253,28 +253,28 @@ ggarrange(css.sample %>%
 #  slice_sample(n = 30)
 
 #write out for manual coding
-#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/intercoder.4.ah.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/intercoder.4.mm.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/intercoder.4.vh.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.vh.csv", row.names = FALSE)
 
 ####  Step 2.6  Intercodertest 5 Sample: N = 30 articles, stratified by CSS vs. non-CSS #### 
 
 #sample.abstracts.5 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                              pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 3
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.3.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv") %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 4
-#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.4.vh.csv") %>%
+#  filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.vh.csv") %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -284,19 +284,19 @@ ggarrange(css.sample %>%
 #  rbind(non.css.sample %>%
 #                     
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.1.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.2.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv") %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 3
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.3.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv") %>%
 #                                    pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 4
-#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/intercoder.4.vh.csv") %>%
+#          filter(id_unique %!in% (read.csv2("codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.vh.csv") %>%
 #                                    pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -319,9 +319,9 @@ ggarrange(css.sample %>%
 #  slice_sample(n = 30)
 
 #write out for manual coding
-#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/intercoder.5.ah.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/intercoder.5.mm.csv", row.names = FALSE)
-#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/intercoder.5.vh.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/reli_5/intercoder.5.ah.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/reli_5/intercoder.5.mm.csv", row.names = FALSE)
+#write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/reli_5/intercoder.5.vh.csv", row.names = FALSE)
 
 ####  Step 2.7 Test reliability with latest coding (4 and 5) #### 
 intercoder_cases <- read_xlsx("codings/abstract_screening_ah_mm_vh/vergleich5.xlsx") %>%
@@ -449,28 +449,6 @@ rm(automated_coding, manual_coding)
 #random <- non.css.sample %>%
 #  slice_sample(n = nrow(css.sample)) 
 
-#check out distribution of samples over time
-#ggarrange(css.sample %>%
-#            count(year) %>%
-#            ggplot(aes(x = year, y = n)) + geom_line() +
-#            ggtitle(paste0("CSS Sample (N = ", nrow(css.sample), ")")) + theme_bw(),
-#          random %>%
-#            count(year) %>%
-#            ggplot(aes(x = year, y = n)) + geom_line() +
-#            ggtitle(paste0("Non CSS Sample (N = ", nrow(non.css.sample), ")")) + theme_bw())
-
-#check spread over years: randomly enough
-#css.sample %>%
-#  mutate(sample = "CSS") %>%
-#  full_join(random %>%
-#              mutate(sample = "non-CSS")) %>%
-#  group_by(sample) %>%
-#  count(year) %>%
-#  ungroup %>%
-
-#  #to wide again
-#  pivot_wider(names_from = c(sample), values_from = c(n))
-
 #create sample for coding
 #coding_abstracts <- css.sample %>%
 #  mutate(sample = "CSS") %>%
@@ -538,10 +516,16 @@ rm(automated_coding, manual_coding)
 
 ####  Step 2.9 Read in & clean initial abstract coding #### 
 
-#read in files by three coders
+#read in files by three coders, reduce to relevant variables and adapt data type
 coding_abstracts <- read_xlsx("codings/abstract_screening_ah_mm_vh/coding.ah.xlsx") %>%
-  rbind(read_xlsx("codings/abstract_screening_ah_mm_vh/coding.mm.xlsx")) %>%
-  rbind(read_xlsx("codings/abstract_screening_ah_mm_vh/coding.vh.xlsx"))
+  select(id_unique:type) %>%
+  mutate(across(protest:type, as.numeric)) %>%
+  rbind(read_xlsx("codings/abstract_screening_ah_mm_vh/coding.mm.xlsx") %>%
+          select(id_unique:type) %>%
+          mutate(across(protest:type, as.numeric))) %>%
+  rbind(read_xlsx("codings/abstract_screening_ah_mm_vh/coding.vh.xlsx") %>%
+          select(id_unique:type) %>%
+          mutate(across(protest:type, as.numeric)))
 
 #clean
 coding_abstracts <- coding_abstracts %>%
@@ -646,9 +630,44 @@ coding_abstracts_2_relevant <- coding_abstracts_2 %>%
               select(id_unique, source.title, source.type, source.conference,
                      author.addresses, author.affiliations, year))
 
-####  Step 2.11 Create final sample #### 
+####  Step 2.11 Add files for third coding round to get similar sample size for CSS and non-CSS sample (N = 226 each) #### 
+
+#during the full paper coding, some papers were excluded from the non-CSS sample after some discussion
+#to get equal sample sizes, we need to add another N = 7 studies from the non-CSS sample
+
+coding_abstracts_3 <- read_xlsx("codings/abstract_screening_ah_mm_vh/coding.vh.added.xlsx") %>%
+  
+  #reduce to relevant variables & cases
+  select(id_unique:type) %>%
+  filter(coder != "NA") %>%
+  
+  #reformat
+  mutate_at(c("coder", "protest", "method", "type"), as.numeric) %>%
+  
+  #create overarching inclusion criterion
+  mutate(inclusion = 0,
+         inclusion = replace(inclusion,
+                             protest == 1 & type == 1,
+                             1))
+
+#identify relevant sample from additionally coded abstracts: only non-CSS ones
+coding_abstracts_3_relevant <- coding_abstracts_3 %>%
+  
+  #identify relevance
+  filter(inclusion == 1) %>%
+  
+  #exclude only non-CSS ones
+  filter(method == 0) %>%
+  
+  #add other meta data
+  left_join(wos.abstracts %>%
+              select(id_unique, source.title, source.type, source.conference,
+                     author.addresses, author.affiliations, year))
+
+####  Step 2.12 Create final sample #### 
 sample_relevant <- rbind(coding_abstracts_relevant,
-                         coding_abstracts_2_relevant) %>%
+                         coding_abstracts_2_relevant,
+                         coding_abstracts_3_relevant) %>%
   
   #remove by chance identified oversampled "0" (non-CSS observation)
   filter(id_unique != "ID2218") %>%
@@ -658,8 +677,3 @@ sample_relevant <- rbind(coding_abstracts_relevant,
 
 #write out for manual coding
 #write.csv2(sample_relevant, "codings/full_paper/full_paper_sample.csv", row.names = FALSE)
-
-#identify inaccessible studies
-n_inaccessible <- rbind(coding_abstracts, coding_abstracts_2) %>%
-  filter(is.na(protest) & is.na(method) & is.na(type)) %>%
-  nrow()
