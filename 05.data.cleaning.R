@@ -456,7 +456,7 @@ df_clean <- df_clean %>%
 log_event(
   step   = "04_consistency_CSS_in_method0",
   action = "no_change_documented",
-  note   = "IDs ID1199, ID202, ID2152, ID267, ID366: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
+  note   = "IDs ID1199, ID202, ID2152, ID267, ID366, ID109: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
 )
 
 log_event(
