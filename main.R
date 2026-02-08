@@ -1,7 +1,7 @@
 #
 # Main Script for Lit Review Protest
 # Author: Miriam Milzner, Valerie Hase
-# Date: 2026-01-10
+# Date: 2026-01-10 (updated 2026-02-09)
 #
 
 library("here")
