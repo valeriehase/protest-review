@@ -1,12 +1,11 @@
-# Central project packages -----------------------------------------------------
+# Activate reproducible package environment (renv) -----------------------------
 
-required_packages <- c(
-  "tidyverse",
-  "readxl",
-  "openxlsx",
-  "tidycomm",
-  "janitor",
-  "here"
-)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-invisible(lapply(required_packages, require, character.only = TRUE))
+if (!requireNamespace("renv", quietly = TRUE)) {
+  install.packages("renv")
+}
+
+renv::activate()
+
+# renv::status()
