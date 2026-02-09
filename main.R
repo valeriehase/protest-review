@@ -65,10 +65,13 @@ rbind(coding_abstracts, coding_abstracts_2, coding_abstracts_3) %>%
 sample_relevant %>%
   count(method)
 
-# 03 Reliability Test Full-Paper Coding ----------------------------------------
-# Generates reliability test sheets + reads coded reliability sheets (must exist)
+# 03a Reliability Test Masks (generate sheets) ---------------------------------
 
-source(here("scripts/03.reliability.testing.R"))
+source(here("scripts/03a.reliability.masks.R"))
+
+# 03b Reliability Tests (compute metrics) --------------------------------------
+
+source(here("scripts/03b.reliability.tests.R"))
 
 # 04 Final Coding Masks --------------------------------------------------------
 # Creates final coding masks for coders (one-time script; still reproducible)
