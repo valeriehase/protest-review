@@ -1,66 +1,69 @@
-########################
 #
-# Construct Coding Masks for Final Coding 
+# Coding Masks for Final Coding 
 # Author: Miriam Milzner
 # Date: 2025-09-11
 #
-########################
+# Setup ---------------------------------------------------------------------
 
+library(here)
+
+source(here("R/packages.R"))
+source(here("R/paths.R"))
+source(here("R/config.R"))
+
+# 1. Create Coding Masks  -------------------------------------------------
 #
-# Packages ---------------------------------------------------------------------
+# Remove cases used for pretests and reliability testing.
+# Draw two stratified samples (by method) for two coders.
+# Remaining cases coded by MM.
 
-suppressPackageStartupMessages({
-  library(readxl)
-  library(dplyr)
-})
+input_file <- file.path(PATHS$raw_full_paper, "full_paper_sample.xlsx")
+df <- readxl::read_excel(input_file)
 
-# Path -------------------------------------------------------------------------
-
-path <- "data"
-
-# Step 1: Create Coding Masks  -------------------------------------------------
-#
-# Remove the cases used for pretests and reliability testing, 
-# then draw two random samples of 150 cases each for the two coders.  
-# The remaining cases will be coded by MM.
-
-input_file <- file.path(path, "raw/full_paper_sample.xlsx")
-df <- read_excel(input_file)
-
-coded_reli <- read_excel("data/raw/df_sample_coded_PRETEST_RELI.xlsx")
+coded_reli <- readxl::read_excel(file.path(PATHS$raw_full_paper, "df_sample_coded_PRETEST_RELI.xlsx"))
 
 df_reduced <- df %>%
-  filter(!(id_unique %in% coded_reli$id_unique))
+  dplyr::filter(!(id_unique %in% coded_reli$id_unique))
 
-set.seed(123)
+set.seed(SEED)
+
 df_labeled <- df_reduced %>%
-  group_by(method) %>%
-  mutate(rand = sample(row_number()),
+  dplyr::group_by(method) %>%
+  dplyr::mutate(rand = sample(row_number()),
          group = case_when(
            rand <= 75 ~ "sample1",
            rand <= 150 ~ "sample2",
            TRUE ~ "rest"
          )) %>%
-  ungroup()
+  dplyr::ungroup()
 
-df_sample1 <- df_labeled %>% filter(group == "sample1")
-df_sample2 <- df_labeled %>% filter(group == "sample2")
-df_rest    <- df_labeled %>% filter(group == "rest")
+df_sample1 <- df_labeled %>% dplyr::filter(group == "sample1")
+df_sample2 <- df_labeled %>% dplyr::filter(group == "sample2")
+df_rest    <- df_labeled %>% dplyr::filter(group == "rest")
 
-write.xlsx(df_sample1, "data/raw/df_sample_clean_AZ_.xlsx")
-write.xlsx(df_sample2, "data/raw/df_sample_clean_VK.xlsx")
-write.xlsx(df_rest,    "data/raw/df_sample_clean_MM.xlsx")
+# 2. Write Coding Masks --------------------------------------------------------
 
+out_AZ <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_AZ_.xlsx")
+out_VK <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_VK.xlsx")
+out_MM <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_MM.xlsx")
 
-# === Check the final coding masks ===============================================
+if (!file.exists(out_AZ)) openxlsx::write.xlsx(df_sample1, out_AZ, overwrite = TRUE)
+if (!file.exists(out_VK)) openxlsx::write.xlsx(df_sample2, out_VK, overwrite = TRUE)
+if (!file.exists(out_MM)) openxlsx::write.xlsx(df_rest, out_MM, overwrite = TRUE)
 
-df_sample_clean_AZ   <- read_excel("data/raw/df_sample_clean_AZ.xlsx")
-df_sample_clean_VK   <- read_excel("data/raw/df_sample_clean_VK.xlsx")
-df_sample_clean_MM   <- read_excel("data/raw/df_sample_clean_MM.xlsx")
-df_sample_coded_RELI <- read_excel("data/raw/df_sample_coded_PRETEST_RELI.xlsx")
-df_full_paper_sample <- read_excel("data/raw/full_paper_sample.xlsx")
+saveRDS(list(df_sample1 = df_sample1, df_sample2 = df_sample2, df_rest = df_rest),
+        file.path(PATHS$processed, "04_coding_masks.rds")
+        )
 
-# Extracting IDs
+# 3. Check Final Coding Masks --------------------------------------------------
+
+df_sample_clean_AZ   <- readxl::read_excel(out_AZ)
+df_sample_clean_VK   <- readxl::read_excel(out_VK)
+df_sample_clean_MM   <- readxl::read_excel(out_MM)
+df_sample_coded_RELI <- coded_reli
+df_full_paper_sample <- df
+
+# Extract IDs
 ids_full <- df_full_paper_sample$id_unique
 ids_AZ   <- df_sample_clean_AZ$id_unique
 ids_VK   <- df_sample_clean_VK$id_unique
@@ -73,8 +76,8 @@ ids_union <- union(union(union(ids_AZ, ids_VK), ids_MM), ids_RELI)
 all_match <- setequal(ids_full, ids_union)
 cat("Exakter Match zwischen Full Sample und Splits? ", all_match, "\n")
 
-missing_in_union <- setdiff(ids_full, ids_union)   # IDs fehlen in den Sub-Samples
-extra_in_union   <- setdiff(ids_union, ids_full)   # IDs sind in Sub-Samples, aber nicht im Full Sample
+missing_in_union <- setdiff(ids_full, ids_union)   
+extra_in_union   <- setdiff(ids_union, ids_full)
 
 cat("IDs fehlen in den Sub-Samples (sind in Full Sample, aber nicht in AZ/VK/MM/RELI):\n")
 print(missing_in_union)
@@ -98,22 +101,11 @@ cat("\nÜberschneidungen zwischen VK und RELI:\n"); print(overlap_VK_RELI)
 cat("\nÜberschneidungen zwischen MM und RELI:\n"); print(overlap_MM_RELI)
 
 # Duplicates
-duplicates_AZ <- df_sample_clean_AZ %>%
-  count(id_unique) %>%
-  filter(n > 1)
-duplicates_VK <- df_sample_clean_VK %>%
-  count(id_unique) %>%
-  filter(n > 1)
-duplicates_MM <- df_sample_clean_MM %>%
-  count(id_unique) %>%
-  filter(n > 1)
-duplicates_RELI <- df_sample_coded_RELI %>%
-  count(id_unique) %>%
-  filter(n > 1)
-
-duplicates_FULL <- df_full_paper_sample %>%
-  count(id_unique) %>%
-  filter(n > 1)
+duplicates_AZ <- df_sample_clean_AZ %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_VK <- df_sample_clean_VK %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_MM <- df_sample_clean_MM %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_RELI <- df_sample_coded_RELI %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_FULL <- df_full_paper_sample %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
 
 cat("\nDoppelte IDs in AZ:\n");   print(duplicates_AZ)
 cat("\nDoppelte IDs in VK:\n");   print(duplicates_VK)
@@ -121,4 +113,4 @@ cat("\nDoppelte IDs in MM:\n");   print(duplicates_MM)
 cat("\nDoppelte IDs in RELI:\n"); print(duplicates_RELI)
 cat("\nDoppelte IDs in FULL:\n"); print(duplicates_FULL)
 
-
+message("Step 04 completed. Coding masks written to: ", PATHS$raw_final_coding_masks)
