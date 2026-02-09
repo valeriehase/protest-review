@@ -2,43 +2,27 @@
 
 library(here)
 
-PATHS <- list(
+IN <- list(
+  root = here("data", "in"),
   
-  # Root folders --------------------------------------------------------------
-  
-  data_raw        = here("data", "raw"),
-  data_processed  = here("data", "processed"),
-  data_reliability= here("data", "reliability"),
-  logs            = here("logs"),
-  
-  # Raw data ------------------------------------------------------------------
-  
-  raw_full_paper          = here("data", "raw", "full_paper"),
-  raw_codings            = here("data", "raw", "codings"),
-  raw_final_coding_masks = here("data", "raw", "full_paper", "final_coding_masks"),
-  
-  raw_coded_full_sample  = here("data", "raw", "full_paper", "full_paper_sample_coded.xlsx"),
-  
-  # Deduplication -------------------------------------------------------------
-  
-  dupes_export          = here("data", "processed", "duplicates.xlsx"),
-  dupes_check           = here("data", "processed", "duplicates_check.xlsx"),
-  dupes_removed_export  = here("data", "processed", "duplicates_removed.xlsx"),
-  
-  deduped_export        = here("data", "processed", "full_paper_sample_coded_deduped.xlsx"),
-  deduped_sample12      = here("data", "processed", "full_paper_sample_coded_deduped_sample12.xlsx"),
-  
-  # Clean data ----------------------------------------------------------------
-  
-  cleaned_export        = here("data", "processed", "full_paper_sample_coded_clean.xlsx"),
-  
-  # Logs ----------------------------------------------------------------------
-  
-  log_cleaning          = here("logs", "data_cleaning_log.tsv")
+  wos_abstracts      = here("data", "in", "wos_abstracts_2009_2023.xlsx"),
+  full_paper_sample = here("data", "in", "full_paper_sample.xlsx"),
+  coded_full_sample  = here("data", "in", "full_paper_sample_coded.xlsx"),
+  dedup_keep_ids     = here("data", "in", "dedup_keep_ids.xlsx")
 )
 
-# Auto-create directories only -------------------------------------------------
+OUT <- list(
+  root         = here("data", "out"),
+  intermediate = here("data", "out", "intermediate"),
+  final        = here("data", "out", "final"),
+  logs         = here("logs"),
+  
+  dupes_export = here("data", "out", "intermediate", "duplicates.xlsx"),
+  cleaned_export = here("data", "out", "final", "full_paper_sample_coded_clean.xlsx")
+)
 
-dirs <- PATHS[!grepl("\\.[a-zA-Z0-9]+$", PATHS)]
+RELIABILITY <- here("data", "reliability")
 
-invisible(lapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE))
+dir.create(OUT$intermediate, recursive = TRUE, showWarnings = FALSE)
+dir.create(OUT$final, recursive = TRUE, showWarnings = FALSE)
+dir.create(OUT$logs, recursive = TRUE, showWarnings = FALSE)

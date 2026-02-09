@@ -7,15 +7,22 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 
-source(here("R/packages.R"))
+if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+renv::activate()
+renv::restore(prompt = FALSE)
+
+library(here)
+stopifnot(file.exists(here::here("renv.lock")))
+
 source(here("R/paths.R"))
 source(here("R/config.R"))
 source(here("R/codebook.R"))
 
 message("Project root: ", here::here())
-message("Seed:, ", SEED)
+message("Seed: ", SEED)
+
 
 # 01 WoS Import ----------------------------------------------------------------
 

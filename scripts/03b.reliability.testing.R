@@ -1,5 +1,5 @@
 #
-# Reliability Testing
+# Reliability Tests
 # Author: Miriam Milzner
 # Date: 2025-08-15
 #
@@ -7,7 +7,6 @@
 
 library(here)
 
-source(here("R/packages.R"))
 source(here("R/paths.R"))
 source(here("R/config.R"))
 
@@ -19,33 +18,22 @@ library(stringr)
 library(openxlsx)
 library(tidycomm)
 
-# 1. Reliability Test Samples Masks --------------------------------------------
+# 1. Read Coded Reliability Test Samples ---------------------------------------
 
-input_file <- here("data", "raw", "full_paper_sample.xlsx")
-stopifnot(file.exists(input_file))
-
-df <- readxl::read_excel(input_file)
-
-set.seed(SEED)
-
-sample_total <- df %>% dplyr::sample_n(92)
-sample1 <- sample_total[1:46, ]
-sample2 <- sample_total[47:92, ]
-
-output_file1 <- here("data", "reliability", "relitest_full_paper_codebook_R1.xlsx")
-output_file2 <- here("data", "reliability", "relitest_full_paper_codebook_R2.xlsx")
-
-if (!file.exists(output_file1)) openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
-if (!file.exists(output_file2)) openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)
-
-# 2. Read Coded Reliability Test Samples ---------------------------------------
+reli_dir <- PATHS$data_reliability
+if (is.null(reli_dir)) stop("PATHS$data_reliability is not defined in R/paths.R")
 
 files <- list.files(
-  path = PATHS$data_reliability,
-  pattern = "^relitest_full_paper_codebook_R\\d+_.+\\.xlsx$",
+  path = reli_dir,
+  pattern = "^relitest_full_paper_codebook_R\\d+(?:_.+)?\\.xlsx$",
   full.names = TRUE
 )
-if (length(files) == 0) stop("No coded reliability files found in: ", PATHS$data_reliability)
+
+if (length(files) == 0) {
+  message("03b skipped: no reliability files found in: ", reli_dir)
+  message("Run 03a to generate masks, then save coded versions in the same folder.")
+  return(invisible(NULL))
+}
 
 df_all <- files %>%
   purrr::set_names() %>%
@@ -62,7 +50,7 @@ df_all <- files %>%
     -dplyr::any_of(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments"))
   )
 
-# 3. Calculate Reliability Values  ---------------------------------------------
+# 2. Calculate Reliability Values  ---------------------------------------------
 
 ### V10 Platform
 
@@ -84,12 +72,12 @@ for (val in c(100, 110:114, 120:122, 124, 130:134, 140:142, 150:153, 160:162,
               200:204, 300, 400, NA)) {
   col_name <- paste0("cat_", val)
   if (!col_name %in% names(df_v10_dummy)) df_v10_dummy[[col_name]] <- 0
-  }
+}
 
 df_v10_expanded <- df_v10_dummy %>%
   tidyr::pivot_longer(starts_with("cat_"), names_to = "category", values_to = "dummy") %>%
   dplyr::mutate(unit_id = paste(id_unique, category, sep = "_"),
-         V10 = dummy)
+                V10 = dummy)
 
 icr_v10 <- tidycomm::test_icr(
   data = df_v10_expanded,
@@ -120,12 +108,12 @@ df_v11_dummy <- df_v11_long %>%
 for (val in c(10:18, 20:26, 99)) {
   col_name <- paste0("cat_", val)
   if (!col_name %in% names(df_v11_dummy)) df_v11_dummy[[col_name]] <- 0
-  }
+}
 
 df_v11_expanded <- df_v11_dummy %>%
   tidyr::pivot_longer(starts_with("cat_"), names_to = "category", values_to = "dummy") %>%
   dplyr::mutate(unit_id = paste(id_unique, category, sep = "_"),
-         V11 = dummy)
+                V11 = dummy)
 
 icr_v11 <- tidycomm::test_icr(
   data = df_v11_expanded,
@@ -152,6 +140,11 @@ icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
 # 4. Output --------------------------------------------------------------------
 
+if (is.null(PATHS$out_reliability)) {
+  stop("PATHS$out_reliability is not defined in R/paths.R (needed for writing results).")
+}
+dir.create(PATHS$out_reliability, recursive = TRUE, showWarnings = FALSE)
+
 out_date <- format(Sys.Date(), "%Y-%m-%d")
 out_xlsx <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".xlsx"))
 out_rds  <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".rds"))
@@ -159,5 +152,5 @@ out_rds  <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".
 openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
 saveRDS(icr, out_rds)
 
-message("Step 03 completed. Output: ", out_xlsx)
+message("Step 03b completed. Output: ", out_xlsx)
 
