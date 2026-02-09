@@ -11,6 +11,10 @@ source(here("R/packages.R"))
 source(here("R/paths.R"))
 source(here("R/config.R"))
 
+library(readxl)
+library(dplyr)
+library(openxlsx)
+
 # 1. Create Coding Masks  -------------------------------------------------
 #
 # Remove cases used for pretests and reliability testing.
@@ -18,9 +22,14 @@ source(here("R/config.R"))
 # Remaining cases coded by MM.
 
 input_file <- file.path(PATHS$raw_full_paper, "full_paper_sample.xlsx")
+stopifnot(file.exists(input_file))
+
 df <- readxl::read_excel(input_file)
 
-coded_reli <- readxl::read_excel(file.path(PATHS$raw_full_paper, "df_sample_coded_PRETEST_RELI.xlsx"))
+coded_reli_path <- file.path(PATHS$raw_full_paper, "df_sample_coded_PRETEST_RELI.xlsx")
+stopifnot(file.exists(coded_reli_path))
+
+coded_reli <- readxl::read_excel(coded_reli_path)
 
 df_reduced <- df %>%
   dplyr::filter(!(id_unique %in% coded_reli$id_unique))
@@ -29,12 +38,14 @@ set.seed(SEED)
 
 df_labeled <- df_reduced %>%
   dplyr::group_by(method) %>%
-  dplyr::mutate(rand = sample(row_number()),
-         group = case_when(
-           rand <= 75 ~ "sample1",
-           rand <= 150 ~ "sample2",
-           TRUE ~ "rest"
-         )) %>%
+  dplyr::mutate(
+    rand = sample.int(dplyr::n()),
+    group = dplyr::case_when(
+      rand <= 75 ~ "sample1",
+      rand <= 150 ~ "sample2",
+      TRUE ~ "rest"
+    )
+  ) %>%
   dplyr::ungroup()
 
 df_sample1 <- df_labeled %>% dplyr::filter(group == "sample1")
@@ -43,7 +54,7 @@ df_rest    <- df_labeled %>% dplyr::filter(group == "rest")
 
 # 2. Write Coding Masks --------------------------------------------------------
 
-out_AZ <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_AZ_.xlsx")
+out_AZ <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_AZ.xlsx")
 out_VK <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_VK.xlsx")
 out_MM <- file.path(PATHS$raw_final_coding_masks, "df_sample_clean_MM.xlsx")
 
@@ -51,9 +62,12 @@ if (!file.exists(out_AZ)) openxlsx::write.xlsx(df_sample1, out_AZ, overwrite = T
 if (!file.exists(out_VK)) openxlsx::write.xlsx(df_sample2, out_VK, overwrite = TRUE)
 if (!file.exists(out_MM)) openxlsx::write.xlsx(df_rest, out_MM, overwrite = TRUE)
 
-saveRDS(list(df_sample1 = df_sample1, df_sample2 = df_sample2, df_rest = df_rest),
-        file.path(PATHS$processed, "04_coding_masks.rds")
-        )
+saveRDS(
+  list(df_sample1 = df_sample1,
+       df_sample2 = df_sample2,
+       df_rest = df_rest),
+  file.path(PATHS$data_processed, "04_coding_masks.rds")
+)
 
 # 3. Check Final Coding Masks --------------------------------------------------
 

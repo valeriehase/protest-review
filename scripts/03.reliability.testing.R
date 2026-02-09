@@ -11,9 +11,19 @@ source(here("R/packages.R"))
 source(here("R/paths.R"))
 source(here("R/config.R"))
 
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(openxlsx)
+library(tidycomm)
+
 # 1. Reliability Test Samples Masks --------------------------------------------
 
-input_file <- file.path(PATHS$raw_full_paper, "full_paper_sample.xlsx")
+input_file <- here("data", "raw", "full_paper_sample.xlsx")
+stopifnot(file.exists(input_file))
+
 df <- readxl::read_excel(input_file)
 
 set.seed(SEED)
@@ -22,31 +32,35 @@ sample_total <- df %>% dplyr::sample_n(92)
 sample1 <- sample_total[1:46, ]
 sample2 <- sample_total[47:92, ]
 
-if (!file.exists(output_file1)) openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE) 
+output_file1 <- here("data", "reliability", "relitest_full_paper_codebook_R1.xlsx")
+output_file2 <- here("data", "reliability", "relitest_full_paper_codebook_R2.xlsx")
+
+if (!file.exists(output_file1)) openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
 if (!file.exists(output_file2)) openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)
 
 # 2. Read Coded Reliability Test Samples ---------------------------------------
 
 files <- list.files(
-  path = PATHS$reliability,
+  path = PATHS$data_reliability,
   pattern = "^relitest_full_paper_codebook_R\\d+_.+\\.xlsx$",
   full.names = TRUE
 )
-if (length(files) == 0) {
-  stop("No coded reliability files found.")
-}
+if (length(files) == 0) stop("No coded reliability files found in: ", PATHS$data_reliability)
 
 df_all <- files %>%
-  purrr::set_names() %>%  
+  purrr::set_names() %>%
   purrr::map_dfr(
     ~ readxl::read_excel(.x, .name_repair = "unique_quiet") %>%
       dplyr::mutate(dplyr::across(dplyr::everything(), as.character)),
-    .id = "source") %>%
-  dplyr::rename_with(~ stringt::str_extract(.x, "^V\\d+"),  
-    dplyr::starts_with("V")) %>%
-  dplyr::mutate(dplyr::across(dplyr::everything(), as.character)) %>%
-  dplyr::select(-dplyr::any_off(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments")))
-
+    .id = "source"
+  ) %>%
+  dplyr::rename_with(
+    ~ stringr::str_extract(.x, "^V\\d+"),
+    dplyr::starts_with("V")
+  ) %>%
+  dplyr::select(
+    -dplyr::any_of(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments"))
+  )
 
 # 3. Calculate Reliability Values  ---------------------------------------------
 
@@ -138,10 +152,12 @@ icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
 # 4. Output --------------------------------------------------------------------
 
-out_xlsx <- file.path(PATHS$out_reliability, paste0("reli_values_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx"))
-openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
+out_date <- format(Sys.Date(), "%Y-%m-%d")
+out_xlsx <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".xlsx"))
+out_rds  <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".rds"))
 
-saveRDS(icr, file.path(PATHS$out_reliability, paste0("reli_value_", format(Sys.Date(), "%Y-%m-%d"), ".rds")))
+openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
+saveRDS(icr, out_rds)
 
 message("Step 03 completed. Output: ", out_xlsx)
 
