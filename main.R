@@ -4,6 +4,13 @@
 # Date: 2026-01-10 (updated 2026-02-09)
 #
 
+
+source(here("R/packages.R"))
+source(here("R/paths.R"))
+source(here("R/config.R"))
+source(here("R/codebook.R"))
+
+
 library("here")
 library("readxl")
 library("tidyverse")

@@ -6,27 +6,21 @@
 #
 ########################
 
-# Packages ---------------------------------------------------------------------
+# Setup ------------------------------------------------------------------------
 
-suppressPackageStartupMessages({
-  library(readxl)
-  library(tidyverse)
-  library(tidycomm)
-  library(janitor)
-  library(stringr)
-  library(openxlsx)
-})
+library(here)
 
-# Path ------------------------------------------------------------------------
+source(here("R/packages.R"))
+source(here("R/paths.R"))
+source(here("R/config.R"))
 
-path <- "data"
+# 1. Reliability Test Samples Masks --------------------------------------------
 
-# Step 1: Construct Reliability Test Samples -----------------------------------
+input_file <- file.path(PATH$raw_full_paper, "full_paper_sample.xlsx")
+df <- readxl::read_excel(input_file)
 
-input_file <- file.path(path, "raw/full_paper_sample.xlsx")
-df <- read_excel(input_file)
+set.seed(SEED)
 
-set.seed(123)  
 sample_total <- df %>% sample_n(92)
 sample1 <- sample_total[1:46, ]
 sample2 <- sample_total[47:92, ]
@@ -37,7 +31,7 @@ output_file2 <- file.path(path, "reliability/relitest_full_paper_codebook_R2.xls
 write.xlsx(sample1, output_file1)
 write.xlsx(sample2, output_file2)
 
-# Step 2: Read Coded Reliability Test Samples ----------------------------------
+# 2. Read Coded Reliability Test Samples ---------------------------------------
 
 files <- list.files(
   path = "data/reliability",
@@ -70,7 +64,7 @@ df_all <- df_all %>%
   select(-c(source, authors, title, abstract, keywords, link, method, Comments))
 
 
-# Step 3: Calculate reliability values  ----------------------------------------
+# 3. Calculate reliability values  ---------------------------------------------
 
 # Reliability statistics (Krippendorff’s α) require the data to be in the format:
 # coding unit × coder × code to allow direct comparison across coders.  
