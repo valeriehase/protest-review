@@ -10,16 +10,23 @@
 options(repos = c(CRAN = "https://cloud.r-project.org"))
 options(stringsAsFactors = FALSE)
 
-if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
-renv::activate()
-renv::restore(prompt = FALSE)
-
-if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
+if (!requireNamespace("here", quietly = TRUE)) {
+  stop("Package 'here' is required. Install it with install.packages('here').")
+}
 library(here)
 
 stopifnot(file.exists(here::here("renv.lock")))
 
-setwd(here::here())
+if (!requireNamespace("renv", quietly = TRUE)) {
+  stop("Package 'renv' is required. Install it with install.packages('renv').")
+}
+
+renv::restore(prompt = FALSE)
+
+message("Project root: ", here::here())
+message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
+
+# Source project files ---------------------------------------------------------
 
 source(here("R/paths.R"))
 source(here("R/config.R"))
@@ -27,53 +34,64 @@ source(here("R/codebook.R"))
 source(here("R/logging.R"))
 source(here("R/helpers.R"))
 
-message("Project root: ", here::here())
 message("Seed: ", SEED)
 
+# Pipeline switches ------------------------------------------------------------
+
+RUN <- list(
+  wos_import = FALSE,
+  abstract_screening = FALSE,
+  reliability_masks = TRUE,
+  reliability_tests = TRUE,
+  final_masks = TRUE,
+  deduplication = TRUE,
+  final_clean = TRUE,
+  figures = TRUE,
+  tables = TRUE
+)
 
 # 01 WoS Import ----------------------------------------------------------------
-
 # Loads Web of Science data (2019-2023, downloaded on 03.04.2024)
 # Does some initial data cleaning (removing duplicates and other irrelevant abstracts)
 
-source(here("scripts/01.load.wos.data.R"))
+if (RUN$wos_import) source(here("scripts/01.load.wos.data.R"))
 
 # 02 Abstract Screening --------------------------------------------------------
 
 #samples sample 1 (CSS) and sample 2 (non-CSS) based on search terms
 #draws sample for intercoder tests & coding of abstracts
 
-source(here("scripts/02.abstract.screening.R"))
+if (RUN$abstract_screening) source(here("scripts/02.abstract.screening.R"))
 
 # 03a Reliability Test Masks (generate sheets) ---------------------------------
 
-source(here("scripts/03a.reliability.masks.R"))
+if (RUN$reliability_masks) source(here("scripts/03a.reliability.masks.R"))
 
 # 03b Reliability Tests (compute metrics) --------------------------------------
 
-source(here("scripts/03b.reliability.tests.R"))
+if (RUN$reliability_tests) source(here("scripts/03b.reliability.tests.R"))
 
 # 04 Final Coding Masks --------------------------------------------------------
 # Creates final coding masks for coders (one-time script; still reproducible)
 
-source(here("scripts/04.coding_masks_final.R"))
+if (RUN$final_masks) source(here("scripts/04.coding_masks_final.R"))
 
 # 05 Deduplication + Sample out (from coded full sample) -----------------------
 # Exports dupes table + apply keep-list
 
-source(here("scripts/05.deduplication.resampling.R"))
+if (RUN$deduplication) source(here("scripts/05.deduplication.R"))
 
 # 06 Final Data Cleaning -------------------------------------------------------
 # Uses deduplicated coded sample, applies cleaning + logs
 
-source(here("scripts/06.final.data.cleaning.R"))
+if (RUN$final_clean) source(here("scripts/06.final.data.cleaning.R"))
 
 # 07 Analysis Output -----------------------------------------------------------
 
-source(here("scripts/07.figures.R"))
-source(here("scripts/08.tables.R"))
+if (RUN$figures) source(here("scripts/07.analysis.figures.R"))
+if (RUN$tables)  source(here("scripts/08.analysis.tables.R"))
 
-message("main completed.")
+message("main completed: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 
 
 
