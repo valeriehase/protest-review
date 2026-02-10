@@ -59,7 +59,7 @@ Place the following files in `data/in/` before running `main.R`.
 | `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
 | `df_sample_coded_reli.xlsx` | Pretest + reliability coded cases used to exclude papers before final coding |
 
-## Output Data
+### Output Data
 
 All generated files are written to `data/out/`:
 
@@ -67,7 +67,7 @@ All generated files are written to `data/out/`:
 - `data/out/final/` – cleaned analysis dataset and final tables/figures
 - `logs/` – data-cleaning and pipeline logs
 
-## Important Notes
+### Important Notes
 
 Some scripts intentionally do not overwrite existing files (e.g., reliability samples, coding masks).
 If regeneration is required, delete the existing files first.
