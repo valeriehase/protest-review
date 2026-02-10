@@ -25,11 +25,11 @@ stopifnot(file.exists(input_file))
 
 df <- readxl::read_excel(input_file)
 
-coded_reli_path <- here("data", "in", "df_sample_coded_PRETEST_RELI.xlsx")
+coded_reli_path <- here("data", "in", "df_sample_coded_reli.xlsx")
 if (!file.exists(coded_reli_path)) {
   stop(
     "Missing input file needed for step 04: ", coded_reli_path, "\n",
-    "Place df_sample_coded_PRETEST_RELI.xlsx in data/in/ (or update the path in this script).",
+    "Place df_sample_coded_reli.xlsx in data/in/ (or update the path in this script).",
     call. = FALSE
   )
 }
@@ -37,7 +37,7 @@ coded_reli <- readxl::read_excel(coded_reli_path)
 
 # 4.1 Create Coding Masks  -------------------------------------------------
 #
-# Remove cases used for pretests and reliability testing.
+# Remove cases coded during pretests and reliability testing.
 # Draw two stratified samples (by method) for two coders.
 # Remaining cases coded by MM.
 
@@ -62,7 +62,59 @@ df_sample1 <- df_labeled %>% dplyr::filter(group == "sample1")
 df_sample2 <- df_labeled %>% dplyr::filter(group == "sample2")
 df_rest    <- df_labeled %>% dplyr::filter(group == "rest")
 
-# 4.2 Write Coding Masks --------------------------------------------------------
+# 4.2 Double Check Coding Masks --------------------------------------------------
+
+# Extract IDs
+ids_full <- df$id_unique
+ids_1    <- df_sample1$id_unique
+ids_2    <- df_sample2$id_unique
+ids_rest <- df_rest$id_unique
+ids_reli <- coded_reli$id_unique
+
+ids_union <- union(union(union(ids_1, ids_2), ids_rest), ids_reli)
+
+# Missing IDs
+all_match <- setequal(ids_full, ids_union)
+cat("Exakter Match zwischen Full Sample und Splits? ", all_match, "\n")
+
+missing_in_union <- setdiff(ids_full, ids_union)   
+extra_in_union   <- setdiff(ids_union, ids_full)
+
+cat("IDs fehlen in den Sub-Samples (sind in Full Sample, aber nicht in 1/2/rest/reli):\n")
+print(missing_in_union)
+
+cat("\nIDs tauchen in Sub-Samples auf, sind aber NICHT im Full Sample:\n")
+print(extra_in_union)
+
+# Overlapping IDs
+overlap_1_2   <- intersect(ids_1, ids_2)
+overlap_1_rest   <- intersect(ids_1, ids_rest)
+overlap_1_reli <- intersect(ids_1, ids_reli)
+overlap_2_rest   <- intersect(ids_2, ids_rest)
+overlap_2_reli <- intersect(ids_2, ids_reli)
+overlap_rest_reli <- intersect(ids_rest, ids_reli)
+
+cat("\nÜberschneidungen zwischen Sample 1 und Sample 2:\n");   print(overlap_1_2)
+cat("\nÜberschneidungen zwischen Sample 1 und Sample Rest:\n");   print(overlap_1_rest)
+cat("\nÜberschneidungen zwischen Sample 1 und Sample Reli:\n"); print(overlap_1_reli)
+cat("\nÜberschneidungen zwischen Sample 2 und Sample Rest:\n");   print(overlap_2_rest)
+cat("\nÜberschneidungen zwischen Sample 2 und Sample Reli:\n"); print(overlap_2_reli)
+cat("\nÜberschneidungen zwischen Sample Rest und Sample Reli:\n"); print(overlap_rest_reli)
+
+# Duplicates
+duplicates_1 <- df_sample1 %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_2 <- df_sample2 %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_rest <- df_rest %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_reli <- coded_reli %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+duplicates_full <- df %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
+
+cat("\nDoppelte IDs in Sample 1:\n");   print(duplicates_1)
+cat("\nDoppelte IDs in Sample 2:\n");   print(duplicates_2)
+cat("\nDoppelte IDs in Sample Rest:\n");   print(duplicates_rest)
+cat("\nDoppelte IDs in Sample Reli:\n"); print(duplicates_reli)
+cat("\nDoppelte IDs in Full Sample:\n"); print(duplicates_full)
+
+# Output -----------------------------------------------------------------------
 
 out_dir <- if (exists("OUT") && !is.null(OUT$intermediate)) {
   file.path(OUT$intermediate, "final_coding_masks")
@@ -100,66 +152,6 @@ saveRDS(
   out_rds
 )
 
-# 4.3 Check Final Coding Masks --------------------------------------------------
-
-df_sample_clean_AZ   <- readxl::read_excel(out_AZ)
-df_sample_clean_VK   <- readxl::read_excel(out_VK)
-df_sample_clean_MM   <- readxl::read_excel(out_MM)
-df_sample_coded_RELI <- coded_reli
-df_full_paper_sample <- df
-
-# Extract IDs
-ids_full <- df_full_paper_sample$id_unique
-ids_AZ   <- df_sample_clean_AZ$id_unique
-ids_VK   <- df_sample_clean_VK$id_unique
-ids_MM   <- df_sample_clean_MM$id_unique
-ids_RELI <- df_sample_coded_RELI$id_unique
-
-ids_union <- union(union(union(ids_AZ, ids_VK), ids_MM), ids_RELI)
-
-# Missing IDs
-all_match <- setequal(ids_full, ids_union)
-cat("Exakter Match zwischen Full Sample und Splits? ", all_match, "\n")
-
-missing_in_union <- setdiff(ids_full, ids_union)   
-extra_in_union   <- setdiff(ids_union, ids_full)
-
-cat("IDs fehlen in den Sub-Samples (sind in Full Sample, aber nicht in AZ/VK/MM/RELI):\n")
-print(missing_in_union)
-
-cat("\nIDs tauchen in Sub-Samples auf, sind aber NICHT im Full Sample:\n")
-print(extra_in_union)
-
-# Overlapping IDs
-overlap_AZ_VK   <- intersect(ids_AZ, ids_VK)
-overlap_AZ_MM   <- intersect(ids_AZ, ids_MM)
-overlap_AZ_RELI <- intersect(ids_AZ, ids_RELI)
-overlap_VK_MM   <- intersect(ids_VK, ids_MM)
-overlap_VK_RELI <- intersect(ids_VK, ids_RELI)
-overlap_MM_RELI <- intersect(ids_MM, ids_RELI)
-
-cat("\nÜberschneidungen zwischen AZ und VK:\n");   print(overlap_AZ_VK)
-cat("\nÜberschneidungen zwischen AZ und MM:\n");   print(overlap_AZ_MM)
-cat("\nÜberschneidungen zwischen AZ und RELI:\n"); print(overlap_AZ_RELI)
-cat("\nÜberschneidungen zwischen VK und MM:\n");   print(overlap_VK_MM)
-cat("\nÜberschneidungen zwischen VK und RELI:\n"); print(overlap_VK_RELI)
-cat("\nÜberschneidungen zwischen MM und RELI:\n"); print(overlap_MM_RELI)
-
-# Duplicates
-duplicates_AZ <- df_sample_clean_AZ %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
-duplicates_VK <- df_sample_clean_VK %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
-duplicates_MM <- df_sample_clean_MM %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
-duplicates_RELI <- df_sample_coded_RELI %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
-duplicates_FULL <- df_full_paper_sample %>% dplyr::count(id_unique) %>% dplyr::filter(n > 1)
-
-cat("\nDoppelte IDs in AZ:\n");   print(duplicates_AZ)
-cat("\nDoppelte IDs in VK:\n");   print(duplicates_VK)
-cat("\nDoppelte IDs in MM:\n");   print(duplicates_MM)
-cat("\nDoppelte IDs in RELI:\n"); print(duplicates_RELI)
-cat("\nDoppelte IDs in FULL:\n"); print(duplicates_FULL)
-
 message("Step 04 completed. Coding masks written to: ", out_dir)
 message("Also saved: ", out_rds)
-
-
 
