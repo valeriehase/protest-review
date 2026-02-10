@@ -1,15 +1,44 @@
-########################
 #
 # Load raw Web of Science data & check for duplicates
 # Author: Valerie Hase
 # Date: 2024-04-05
 #
-########################
+# Setup ------------------------------------------------------------------------
 
-#### Step 1.1: Load WoS data from Excel sheet & do some cleaning ####
-wos.abstracts <- read_excel("raw_data_wos/WoS_savedrecs_1-1000.xls") %>%
-  rbind(read_excel("raw_data_wos/WoS_savedrecs_1001-2000.xls")) %>%
-  rbind(read_excel("raw_data_wos/WoS_savedrecs_2001-2765.xls"))
+library(here)
+
+source(here("R/paths.R"))
+source(here("R/config.R"))
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(tidytext)
+library(widyr)
+
+# 1.1 Load WoS data from Excel sheet & do some cleaning ------------------------
+
+if (exists("IN") && !is.null(IN$wos_abstracts) && file.exists(IN$wos_abstracts)) {
+  wos.abstracts <- readxl::read_excel(IN$wos_abstracts)
+} else {
+  f1 <- here("raw_data_wos", "WoS_savedrecs_1-1000.xls")
+  f2 <- here("raw_data_wos", "WoS_savedrecs_1001-2000.xls")
+  f3 <- here("raw_data_wos", "WoS_savedrecs_2001-2765.xls")
+  
+  if (!file.exists(f1) || !file.exists(f2) || !file.exists(f3)) {
+    stop(
+      "Missing WoS input.\n",
+      "Expected either:\n",
+      "- data/in/wos_abstracts_2009_2023.xlsx (preferred), or\n",
+      "- legacy files in raw_data_wos/: WoS_savedrecs_1-1000.xls, WoS_savedrecs_1001-2000.xls, WoS_savedrecs_2001-2765.xls",
+      call. = FALSE
+    )
+  }
+  
+  wos.abstracts <- readxl::read_excel(f1) %>%
+    dplyr::bind_rows(readxl::read_excel(f2)) %>%
+    dplyr::bind_rows(readxl::read_excel(f3))
+}
 
 # Inspect data
 #glimpse(wos_abstracts)
@@ -20,10 +49,10 @@ table(wos.abstracts$Language)
 wos.abstracts <- wos.abstracts %>%
   
   #reduce to relevant cases
-  filter(Language == "English") %>%
+  dplyr::filter(Language == "English") %>%
   
   #rename variable in dplyr style
-  rename(id_wos = `UT (Unique WOS ID)`,
+  dplyr::rename(id_wos = `UT (Unique WOS ID)`,
          authors = `Author Full Names`,
          title = `Article Title`,
          source.title = `Source Title`,
@@ -40,13 +69,13 @@ wos.abstracts <- wos.abstracts %>%
          doi = DOI) %>%
   
   #filter out non-English abstracts not idenfied as such
-  filter(id_wos != "WOS:000338130200005") %>%
+  dplyr::filter(id_wos != "WOS:000338130200005") %>%
   
   #create placeholder for unique, shorter id
-  mutate(id_unique = NA) %>%
+  dplyr::mutate(id_unique = NA) %>%
 
   #reduce to relevant variables
-  select(id_unique, id_wos, authors, title, abstract, 
+  dplyr::select(id_unique, id_wos, authors, title, abstract, 
          source.title, source.type, source.conference,
          keywords, keywords.plus,
          author.addresses, author.affiliations,
@@ -54,9 +83,9 @@ wos.abstracts <- wos.abstracts %>%
 
 #for articles with 2024 as year: were they originally published in 2023?
 check <- wos.abstracts %>%
-  filter(year == 2024) %>%
-  select(title, id_wos, doi) %>%
-  mutate(link = paste0("https://doi.org/", doi))
+  dplyr::filter(year == 2024) %>%
+  dplyr::select(title, id_wos, doi) %>%
+  dplyr::mutate(link = paste0("https://doi.org/", doi))
 
 #manually check their website
 #browseURL(check$link[48])
@@ -65,7 +94,7 @@ check <- wos.abstracts %>%
 wos.abstracts <- wos.abstracts %>%
   
   #all years to 2023
-  mutate(year = replace(year,
+  dplyr::mutate(year = replace(year,
                         id_wos %in% check$id_wos,
                         2023),
          
@@ -90,48 +119,63 @@ wos.abstracts <- wos.abstracts %>%
 
 rm(check)
 
-#### Step 1.2: Check for duplicates ####
+# 1.2: Check for duplicates ----------------------------------------------------
 
 #by ID: looks good
 length(unique(wos.abstracts$id_wos))
 
 #by DOI
 wos.abstracts %>%
-  filter(!is.na(doi)) %>%
-  count(doi) %>%
-  filter(n>1)
+  dplyr::filter(!is.na(doi)) %>%
+  dplyr::count(doi) %>%
+  dplyr::filter(n>1)
 
 #we drop 1 article included both as early access and as regular article based on same doi
 wos.abstracts <- wos.abstracts %>%
-    filter(id_wos != "WOS:000953595300001")
+    dplyr::filter(id_wos != "WOS:000953595300001")
 
 #by title similarity
 titles <- wos.abstracts %>%
-  mutate(title = tolower(title)) %>% 
-  select(title, id_wos) %>%
-  unnest_tokens(word, title) %>%
-  count(id_wos, word) %>%
-  ungroup() 
+  dplyr::mutate(title = tolower(title)) %>% 
+  dplyr::select(title, id_wos) %>%
+  tidytext::unnest_tokens(word, title) %>%
+  dplyr::count(id_wos, word) %>%
+  dplyr::ungroup() 
 
 similarity <- titles %>%
-                  pairwise_similarity(id_wos, word, n) %>%
-                  arrange(desc(similarity)) %>% 
-                  filter(similarity >= .8)
+                  widyr::pairwise_similarity(id_wos, word, n) %>%
+                  dplyr::arrange(desc(similarity)) %>% 
+                  dplyr::filter(similarity >= .8)
 
 duplicates <- wos.abstracts %>%
-  filter(id_wos %in% similarity$item1 | id_wos %in% similarity$item2)
+  dplyr::filter(id_wos %in% similarity$item1 | id_wos %in% similarity$item2)
 
 #we drop 3 more articles included both as early access and as regular article based on same title
 wos.abstracts <- wos.abstracts %>%
-  filter(id_wos != "WOS:000209845700001" & id_wos != "WOS:000209845600001" & id_wos != "WOS:000777856400001")
+  dplyr::filter(id_wos != "WOS:000209845700001" & id_wos != "WOS:000209845600001" & id_wos != "WOS:000777856400001")
 
 #clean house
 rm(duplicates, similarity, titles)
 
-#### Step 1.3: Create unique ID per article ####
+# 1.3 Create unique ID per article ---------------------------------------------
 
 wos.abstracts <- wos.abstracts %>%
-  mutate(id_unique = paste0("ID", 1:nrow(wos.abstracts)))
+  dplyr::mutate(id_unique = paste0("ID", 1:nrow(wos.abstracts)))
 
-#### Step 1.4: Create N preliminary sample for PRISMA flow ####
+# 1.4 Create N preliminary sample for PRISMA flow ------------------------------
 n_deduplicated <- nrow(wos.abstracts)
+
+# Export -----------------------------------------------------------------------
+
+out_file_rds <- if (exists("OUT") && !is.null(OUT$intermediate)) {
+  file.path(OUT$intermediate, "wos_abstracts_clean.rds")
+} else {
+  here("data", "out", "intermediate", "wos_abstracts_clean.rds")
+}
+dir.create(dirname(out_file_rds), recursive = TRUE, showWarnings = FALSE)
+
+saveRDS(wos.abstracts, out_file_rds)
+message("01 completed. Cleaned WoS abstracts saved to: ", out_file_rds)
+message("n_deduplicated = ", n_deduplicated)
+
+

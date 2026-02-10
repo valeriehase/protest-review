@@ -17,11 +17,10 @@ library(openxlsx)
 
 # Load Input -------------------------------------------------------------------
 
-
-input_file <- if (!is.null(PATHS$raw_full_paper_sample)) {
-  PATHS$raw_full_paper_sample
+input_file <- if (exists("IN") && !is.null(IN$full_paper_sample)) {
+  IN$full_paper_sample
 } else {
-  here("data", "raw", "full_paper_sample.xlsx")
+  here("data", "in", "full_paper_sample.xlsx")
 }
 
 if (!file.exists(input_file)) {
@@ -43,10 +42,10 @@ sample2 <- sample_total[47:92, ]
 
 # Export masks -----------------------------------------------------------------
 
-reli_dir <- if (!is.null(PATHS$data_reliability)) {
-  PATHS$data_reliability
+reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
+  OUT$reliability
 } else {
-  here("data", "reliability")
+  here("data", "out", "reliability")
 }
 dir.create(reli_dir, recursive = TRUE, showWarnings = FALSE)
 

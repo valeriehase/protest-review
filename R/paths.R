@@ -18,10 +18,10 @@ OUT <- list(
   logs         = here("logs"),
   
   dupes_export = here("data", "out", "intermediate", "duplicates.xlsx"),
-  cleaned_export = here("data", "out", "final", "full_paper_sample_coded_clean.xlsx")
+  cleaned_export = here("data", "out", "final", "full_paper_sample_coded_clean.xlsx"),
+  
+  reliability   = here("data", "out", "reliability")
 )
-
-RELIABILITY <- here("data", "reliability")
 
 dir.create(OUT$intermediate, recursive = TRUE, showWarnings = FALSE)
 dir.create(OUT$final, recursive = TRUE, showWarnings = FALSE)

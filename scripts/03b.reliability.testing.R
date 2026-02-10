@@ -20,8 +20,16 @@ library(tidycomm)
 
 # 1. Read Coded Reliability Test Samples ---------------------------------------
 
-reli_dir <- PATHS$data_reliability
-if (is.null(reli_dir)) stop("PATHS$data_reliability is not defined in R/paths.R")
+reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
+  OUT$reliability
+} else {
+  here("data", "out", "reliability")
+}
+
+if (!dir.exists(reli_dir)) {
+  message("03b skipped: reliability folder does not exist: ", reli_dir)
+  return(invisible(NULL))
+}
 
 files <- list.files(
   path = reli_dir,
@@ -31,7 +39,6 @@ files <- list.files(
 
 if (length(files) == 0) {
   message("03b skipped: no reliability files found in: ", reli_dir)
-  message("Run 03a to generate masks, then save coded versions in the same folder.")
   return(invisible(NULL))
 }
 
@@ -50,9 +57,19 @@ df_all <- files %>%
     -dplyr::any_of(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments"))
   )
 
+needed_cols <- c("id_unique", "V5", "V7", "V8", "V10", "V11", "V12", "V13", "V14", "V15", "V16")
+missing_cols <- setdiff(needed_cols, names(df_all))
+if (length(missing_cols) > 0) {
+  stop(
+    "03b: missing required column(s) in reliability sheets: ",
+    paste(missing_cols, collapse = ", "),
+    call. = FALSE
+  )
+}
+
 # 2. Calculate Reliability Values  ---------------------------------------------
 
-### V10 Platform
+# V10 Platform (multi-label)
 
 df_v10_long <- df_all %>%
   dplyr::select(id_unique, V5, V10) %>%
@@ -89,7 +106,7 @@ icr_v10 <- tidycomm::test_icr(
   holsti = TRUE
 )
 
-### V11 Methods
+# V11 Methods (multi-label)
 
 df_v11_long <- df_all %>%
   dplyr::select(id_unique, V5, V11) %>%
@@ -125,7 +142,7 @@ icr_v11 <- tidycomm::test_icr(
   holsti = TRUE
 )
 
-### V12-V16
+### V7, V8, V12-V16 (single-label)
 
 icr_v7v16 <- tidycomm::test_icr(
   data = df_all,
@@ -140,10 +157,8 @@ icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
 # 4. Output --------------------------------------------------------------------
 
-if (is.null(PATHS$out_reliability)) {
-  stop("PATHS$out_reliability is not defined in R/paths.R (needed for writing results).")
-}
-dir.create(PATHS$out_reliability, recursive = TRUE, showWarnings = FALSE)
+out_dir <- reli_dir
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 out_date <- format(Sys.Date(), "%Y-%m-%d")
 out_xlsx <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".xlsx"))

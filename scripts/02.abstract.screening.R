@@ -1,37 +1,71 @@
-########################
 #
 # Sort into CSS/non-CSS sample & abstract screening
 # Author: Valerie Hase
 # Date: 2025-01-10
 #
-########################
+# Setup ------------------------------------------------------------------------
+
+library(here)
+
+source(here("R/paths.R"))
+source(here("R/config.R"))
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(tibble)
+library(ggplot2)
+library(ggpubr)
+library(tidycomm)
+library(caret)
 
 `%!in%` <- Negate(`%in%`)
 
-#### Step 2.1: Sort sample into CSS/non-CSS samples #### 
+# Input data -------------------------------------------------------------------
+
+if (!exists("wos.abstracts", inherits = TRUE)) {
+  in_rds <- if (exists("OUT") && !is.null(OUT$intermediate)) {
+    file.path(OUT$intermediate, "wos_abstracts_clean.rds")
+  } else {
+    here("data", "out", "intermediate", "wos_abstracts_clean.rds")
+  }
+  
+  if (!file.exists(in_rds)) {
+    stop(
+      "02 needs wos.abstracts.\n",
+      "Either run scripts/01.load.WoS.data.R first, or provide: ", in_rds,
+      call. = FALSE
+    )
+  }
+  
+  wos.abstracts <- readRDS(in_rds)
+}
+
+# 2.1 Sort sample into CSS/non-CSS samples -------------------------------------
 
 #inspect further keywords; based on all keywords
 keywords <- wos.abstracts %>%
-  mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
-  pull(keywords.css) %>%
+  dplyr::mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
+  dplyr::pull(keywords.css) %>%
   strsplit(., split = ";") %>%
   unlist() %>%
   trimws() %>%
   tolower() %>%
   table() %>%
-  as_tibble()
+  tibble::as_tibble()
 
 #inspect further keywords; based on CSS keywords in abstract
 keywords <- wos.abstracts %>%
-  filter(grepl("computational|CSS|big data|automated", abstract)) %>%
-  mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
-  pull(keywords.css) %>%
+  dplyr::filter(grepl("computational|CSS|big data|automated", abstract)) %>%
+  dplyr::mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
+  dplyr::pull(keywords.css) %>%
   strsplit(., split = ";") %>%
   unlist() %>%
   trimws() %>%
   tolower() %>%
   table() %>%
-  as_tibble()
+  tibble::as_tibble()
 
 rm(keywords)
 
@@ -48,33 +82,34 @@ text as data|text mining|topic model|track|transformer"
 css.sample <- wos.abstracts %>%
   
   #text including title, abstracts, keywords
-  mutate(search.text = paste0(title, " ", abstract, " ", keywords),
+  dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
          search.text = tolower(search.text)) %>%
   
   #filter for CSS keywords
-  filter(grepl(search.terms.CSS, search.text))
+  dplyr::filter(grepl(search.terms.CSS, search.text))
 
 #create non-CSS sample
 non.css.sample <- wos.abstracts %>%
   
   #text including title, abstracts, keywords
-  mutate(search.text = paste0(title, " ", abstract, " ", keywords),
+  dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
          search.text = tolower(search.text)) %>%
   
   #filter for CSS keywords
-  filter(!grepl(search.terms.CSS, search.text))
+  dplyr::filter(!grepl(search.terms.CSS, search.text))
 
 #check out distribution of samples over time
-ggarrange(css.sample %>%
-            count(year) %>%
+ggpubr::ggarrange(css.sample %>%
+            dplyr::count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
             ggtitle(paste0("CSS Sample (N = ", nrow(css.sample), ")")) + theme_bw(),
           non.css.sample %>%
-            count(year) %>%
+            dplyr::count(year) %>%
             ggplot(aes(x = year, y = n)) + geom_line() +
             ggtitle(paste0("Non CSS Sample (N = ", nrow(non.css.sample), ")")) + theme_bw())
 
-####  Step 2.2 Intercodertest 1 Sample: N = 20 articles, stratified by CSS vs. non-CSS (OLD ID)#### 
+# 2.2 Intercodertest 1 Sample --------------------------------------------------
+# N = 20 articles, stratified by CSS vs. non-CSS (OLD ID)
 
 #sample.abstracts.1 <- css.sample %>%
 #  
@@ -107,7 +142,8 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.1, "codings/abstract_screening_ah_mm_vh/reli_1/intercoder.1.vh.csv", row.names = FALSE)
 
-####  Step 2.3  Intercodertest 2 Sample: N = 20 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
+# 2.3 Intercodertest 2 Sample --------------------------------------------------
+# N = 20 articles, stratified by CSS vs. non-CSS (OLD ID)
 
 #sample.abstracts.2 <- css.sample %>%
 #  
@@ -149,7 +185,8 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.2, "codings/abstract_screening_ah_mm_vh/reli_2/intercoder.2.vh.csv", row.names = FALSE)
 
-####  Step 2.4 Intercodertest 3 Sample: N = 30 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
+# 2.4 Intercodertest 3 Sample --------------------------------------------------
+# N = 30 articles, stratified by CSS vs. non-CSS (OLD ID)
 
 #sample.abstracts.3 <- css.sample %>%
 #  
@@ -199,7 +236,8 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.3, "codings/abstract_screening_ah_mm_vh/reli_3/intercoder.3.vh.csv", row.names = FALSE)
 
-####  Step 2.5  Intercodertest 4 Sample: N = 30 articles, stratified by CSS vs. non-CSS (OLD ID) #### 
+# 2.5 Intercodertest 4 Sample --------------------------------------------------
+# N = 30 articles, stratified by CSS vs. non-CSS (OLD ID)
 
 #sample.abstracts.4 <- css.sample %>%
 #  
@@ -257,7 +295,8 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.4, "codings/abstract_screening_ah_mm_vh/reli_4/intercoder.4.vh.csv", row.names = FALSE)
 
-####  Step 2.6  Intercodertest 5 Sample: N = 30 articles, stratified by CSS vs. non-CSS #### 
+# 2.6 Intercodertest 5 Sample --------------------------------------------------
+# N = 30 articles, stratified by CSS vs. non-CSS 
 
 #sample.abstracts.5 <- css.sample %>%
 #  
@@ -323,7 +362,8 @@ ggarrange(css.sample %>%
 #write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/reli_5/intercoder.5.mm.csv", row.names = FALSE)
 #write.csv2(sample.abstracts.5, "codings/abstract_screening_ah_mm_vh/reli_5/intercoder.5.vh.csv", row.names = FALSE)
 
-####  Step 2.7 Test reliability with latest coding (4 and 5) #### 
+# 2.7 Test reliability with latest coding (4 and 5) ----------------------------
+
 intercoder_cases <- read_xlsx("codings/abstract_screening_ah_mm_vh/vergleich5.xlsx") %>%
   
   #reduce to necessary variables
@@ -408,7 +448,7 @@ intercoder <- intercoder_cases %>%
   test_icr(id_unique, coder, protest, method, type, empirical, inclusion) %>%
   filter(Variable != "empirical" & Variable != "inclusion")
 
-####  Step 2.7 Validate CSS keywords #### 
+# 2.7 Validate CSS keywords ----------------------------------------------------
 
 #read in manual coding based on N = 60 cases from intercoder 4/5
 manual_coding <- read_xlsx("codings/validation_CSS_sample/intercoder.4.vh.xlsx") %>%
@@ -445,7 +485,7 @@ validation <- confusionMatrix(data = validation$coding_automated,
 #clean house
 rm(automated_coding, manual_coding)
 
-####  Step 2.8 Draw samples for coding #### 
+# 2.8 Draw samples for coding --------------------------------------------------
 #random <- non.css.sample %>%
 #  slice_sample(n = nrow(css.sample)) 
 
@@ -514,7 +554,7 @@ rm(automated_coding, manual_coding)
 #write.csv2(coding_abstracts_mm, "codings/abstract_screening_ah_mm_vh/coding.mm.csv", row.names = FALSE)
 #write.csv2(coding_abstracts_vh, "codings/abstract_screening_ah_mm_vh/coding.vh.csv", row.names = FALSE)
 
-####  Step 2.9 Read in & clean initial abstract coding #### 
+# 2.9 Read in & clean initial abstract coding ----------------------------------
 
 #read in files by three coders, reduce to relevant variables and adapt data type
 coding_abstracts <- read_xlsx("codings/abstract_screening_ah_mm_vh/coding.ah.xlsx") %>%
@@ -568,7 +608,7 @@ coding_abstracts_relevant <- coding_abstracts %>%
               select(id_unique, source.title, source.type, source.conference,
                      author.addresses, author.affiliations, year))
 
-####  Step 2.10 Add files for second coding round to get similar sample size for CSS and non-CSS sample (N = 207 each) #### 
+# 2.10 Add files for second coding round to get similar sample size for CSS and non-CSS sample (N = 207 each) -------------------
 
 #based on step 2.9 (initial coding of CSS sample, we have to add around N = 49 non-CSS pieces 
 # as well as a missing CSS file to get equal sample sizes for both CSS and non-CSS sample
@@ -630,7 +670,7 @@ coding_abstracts_2_relevant <- coding_abstracts_2 %>%
               select(id_unique, source.title, source.type, source.conference,
                      author.addresses, author.affiliations, year))
 
-####  Step 2.11 Add files for third coding round to get similar sample size for CSS and non-CSS sample (N = 226 each) #### 
+# 2.11 Add files for third coding round to get similar sample size for CSS and non-CSS sample (N = 226 each) ------------------------
 
 #during the full paper coding, some papers were excluded from the non-CSS sample after some discussion
 #to get equal sample sizes, we need to add another N = 7 studies from the non-CSS sample
@@ -664,7 +704,8 @@ coding_abstracts_3_relevant <- coding_abstracts_3 %>%
               select(id_unique, source.title, source.type, source.conference,
                      author.addresses, author.affiliations, year))
 
-####  Step 2.12 Create final sample #### 
+# 2.12 Create final sample -----------------------------------------------------
+
 sample_relevant <- rbind(coding_abstracts_relevant,
                          coding_abstracts_2_relevant,
                          coding_abstracts_3_relevant) %>%
@@ -677,3 +718,6 @@ sample_relevant <- rbind(coding_abstracts_relevant,
 
 #write out for manual coding
 #write.csv2(sample_relevant, "codings/full_paper/full_paper_sample.csv", row.names = FALSE)
+
+
+
