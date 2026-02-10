@@ -111,7 +111,6 @@ if (file.exists(out_removed_dupes) || file.exists(out_df_deduplicated)) {
 
 openxlsx::write.xlsx(df_deduplicated, out_df_deduplicated, overwrite = TRUE)
 openxlsx::write.xlsx(removed_duplicates, out_removed_dupes, overwrite = TRUE)
-saveRDS(df_deduplicated, out_df_deduplicated)
 
 message("05 completed.")
 message("- Duplicated IDs detected: ", n_dupe_ids)

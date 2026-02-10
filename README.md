@@ -1,6 +1,6 @@
-# Protest-Review
+## Protest-Review
 
-This repository contains all code for the protest review within the DFG Network on Protest & CSS Methods.
+This repository contains all code for the protest literature review within the DFG Network on Protest & CSS Methods.
 
 To run the full pipeline, execute:
 

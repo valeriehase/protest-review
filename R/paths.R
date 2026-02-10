@@ -3,8 +3,8 @@
 library(here)
 
 PATH <- list(
-  in  = here("data", "in"),
-  out = here("data", "out")
+  "in"  = here("data", "in"),
+  "out" = here("data", "out")
 )
 
 PATH$out_intermediate <- here(PATH$out, "intermediate")

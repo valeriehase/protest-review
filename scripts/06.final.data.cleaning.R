@@ -1,5 +1,5 @@
 #
-# Data Cleaning of Final Coded Date
+# Data Cleaning of Final Coded Data
 # Author: Miriam Milzner
 # Date: 2025-10-20
 #
@@ -7,36 +7,40 @@
 
 library(here)
 
-source(here("R/packages.R"))
 source(here("R/paths.R"))
 source(here("R/config.R"))
 source(here("R/logging.R"))
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(purrr)
+library(openxlsx)
+
 log_df <- init_log()
 
+# Load Input -----------------------------------------------------
 
-# Step 1: Import ---------------------------------------------------------------
+input_file <- if (exists("IN") && !is.null(IN$coded_full_sample_deduplicated)) {
+  IN$coded_full_sample_deduplicated
+} else {
+  here("data", "in", "full_paper_sample_coded_deduplicated.xlsx")
+}
+stopifnot(file.exists(input_file))
+df <- readxl::read_excel(input_file) 
 
-raw_data <- "data/raw/full_paper_sample_coded.xlsx"
-df_raw <- readxl::read_excel(raw_data)
-
-log_df <- log_event(
-  step = "01_import",
-  action = "standardization",
-  note = "Comment column was manually standardized to format 'Vxx: text; Vyy: text' before import"
-)
-
-
-# Step 3: Basic Cleaning - Value Validation ------------------------------------
-
-df_clean <- df_deduplicated %>%
+df_clean <- df %>%
   rename_with(
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
 
+# 6.1 Check Values ----------------------------------------
+
 # sanity check
 n_distinct(df_clean$id_unique) == nrow(df_clean)
 
-### V6 ------------------------------------
+# --- V6 ------------------------------------
 
 v6_long <- df_clean %>%
   mutate(.row = dplyr::row_number()) %>%
@@ -87,7 +91,7 @@ log_event(
 )
 
 
-### V7 ------------------------------------
+# --- V7 ------------------------------------
 
 allowed_v7 <- as.character(1:10) |> c("NA")  
 
@@ -109,7 +113,7 @@ log_event(
   note   = "id_unique ID366: V7 geändert von '1.3' zu '1; 3'"
 )
 
-### V8 ------------------------------------
+# --- V8 ------------------------------------
 
 v8_long <- df_clean %>%
   mutate(.row = dplyr::row_number()) %>%
@@ -162,7 +166,7 @@ log_event(
   note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert); gesamte Spalte V8 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
 )
 
-### V9 ------------------------------------
+# --- V9 ------------------------------------
 
 v9_long <- df_clean %>%
   mutate(.row = dplyr::row_number()) %>%
@@ -214,7 +218,7 @@ log_event(
 )
 
 
-### V10 ------------------------------------
+# --- V10 ------------------------------------
 
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
 
@@ -249,7 +253,7 @@ log_event(
 )
 
 
-### V11 ------------------------------------
+# --- V11 ------------------------------------
 
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
 
@@ -284,7 +288,7 @@ log_event(
 )
 
 
-### V12 ------------------------------------
+# --- V12 ------------------------------------
 
 allowed_v12 <- c("0", "1")
 
@@ -294,7 +298,7 @@ invalid_v12 <- df_clean %>%
 
 print(invalid_v12)
 
-### V13 ------------------------------------
+# --- V13 ------------------------------------
 
 allowed_v13 <- c("0", "1")
 
@@ -305,9 +309,9 @@ invalid_v13 <- df_clean %>%
 print(invalid_v12)
 
 
-# Step 4: Konsistenzprüfung ----------------------------------------------------
+# 6.2 Check Consistency ----------------------------------------------------
 
-### Konsistenzprüfung: Wenn method == "0", dürfen in V11 keine 10:18 stehen
+### Wenn method == "0", dürfen in V11 keine 10:18 stehen
 
 method_col <- "method"
 
@@ -334,12 +338,6 @@ df_clean <- df_clean %>%
          V11 = if_else(id_unique == "ID413", "21", V11),
          V11 = if_else(id_unique == "ID94", "24", V11)
          ) 
-
-log_event(
-  step   = "04_consistency_CSS_in_method0",
-  action = "no_change_documented",
-  note   = "IDs ID1199, ID202, ID2152, ID267, ID366, ID109: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
-)
 
 log_event(
   step   = "04_consistency_CSS_in_method0",
@@ -382,8 +380,42 @@ log_event(
   note   = "id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)"
 )
 
+log_event(
+  step   = "04_consistency_CSS_in_method0",
+  action = "no_change_documented",
+  note   = "IDs ID1199, ID202, ID2152, ID267, ID366, ID109: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
+)
 
-# Step 5: Comment check --------------------------------------------------------
+ids_method_css <- c("ID1199", "ID202", "ID2152", "ID267", "ID366", "ID109")
+
+df_clean <- df_clean %>%
+  mutate(
+    method = if_else(id_unique %in% ids_method_css, 1, method)
+  )
+
+set.seed(SEED)
+ids_to_delete <- df_clean %>%
+  filter(method == 1) %>%
+  distinct(id_unique) %>%
+  slice_sample(n = 12) %>%
+  pull(id_unique)
+
+df_clean <- df_clean %>%
+  filter(!id_unique %in% ids_to_delete)
+
+df_clean %>% count(method)
+
+log_event(
+  step   = "04_consistency_correction",
+  action = "random_deletion",
+  note   = paste0(
+    "Randomly removed 12 cases from method == 1 to restore equal group sizes ",
+    "(n = 220 each). Draw reproducible via predefined seed. IDs removed: ",
+    paste(ids_to_delete, collapse = ", ")
+  )
+)
+
+# 6.3 Check Comments --------------------------------------------------------
 
 comments_long <- df_clean %>%
   filter(!is.na(Comment_CODER)) %>%
@@ -501,7 +533,7 @@ log_event(
   note   = paste0("Comment_CODER geleert für geprüfte Fälle: ", toString(checked_ids))
 )
 
-# Step 6: Check code distributions by coder -----------------------------------------
+# 6.4 Check code distributions -----------------------------------------
 
 coder_col <- "V5"   
 vars_to_check <- paste0("V", 10:13)
@@ -553,7 +585,7 @@ log_event(
   )
 )
 
-# Write Log and Export Cleaned Data --------------------------------------------------------------------
+# Output --------------------------------------------------------------------
 
 write_log(log_df, PATHS$log_cleaning)
 
