@@ -70,13 +70,18 @@ If regeneration is required, delete the existing files first.
 
 ## Project Structure
 
-data/
- ├── in/            # required input files
- ├── out/           # output files
-logs/               # processing logs
-R/                  # helper functions and configuration
-scripts/            # analysis pipeline
-main.R              # entry point
-
+```text
+.
+├── data/
+│   ├── in/              # required input files
+│   ├── out/             # output files
+│   │   ├── intermediate/
+│   │   └── final/
+│   │   └── logs/
+│
+├── R/                   # helper functions and configuration
+├── scripts/             # analysis pipeline
+└── main.R               # entry point
+```
 
 

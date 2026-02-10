@@ -15,7 +15,7 @@ OUT <- list(
   root         = here("data", "out"),
   intermediate = here("data", "out", "intermediate"),
   final        = here("data", "out", "final"),
-  logs         = here("logs"),
+  logs         = here("data", "out", "logs"),
   
   dupes_export = here("data", "out", "intermediate", "duplicates.xlsx"),
   cleaned_export = here("data", "out", "final", "full_paper_sample_coded_clean.xlsx"),
