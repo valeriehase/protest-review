@@ -32,7 +32,7 @@ if (!file.exists(input_file)) {
 
 df <- readxl::read_excel(input_file)
 
-# Draw Sample ------------------------------------------------------------------
+# 3.1 Draw Sample ------------------------------------------------------------------
 
 set.seed(SEED)
 
@@ -40,7 +40,7 @@ sample_total <- df %>% dplyr::sample_n(92)
 sample1 <- sample_total[1:46, ]
 sample2 <- sample_total[47:92, ]
 
-# Export masks -----------------------------------------------------------------
+# 3.2 Export masks -----------------------------------------------------------------
 
 reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
   OUT$reliability

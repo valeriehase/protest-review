@@ -35,12 +35,16 @@ Code to identify CSS and non-CSS research using search strings, intercoder tests
 03b reads the coded masks and computes intercoder reliability metrics.
 
 **04.final.coding.masks**  
-Code to generate the final coding masks for full-paper coding in the main sample.
+Code to generate the final coding masks for full-paper coding of the main sample.
 
-**05.data.cleaning**  
+**05.deduplication**
+There were duplicates in the coded final sample. This file exports duplicates as a table for manual inspection.
+It then applies keep/remove decision.
+
+**06.data.cleaning**  
 Code to clean the coded full-paper dataset and document the cleaning process (log).
 
-**06.analysis**  
+**07.analysis**  
 Code to analyze the cleaned data and produce APA-style summary tables and figures.
 
 ## Required Input Data

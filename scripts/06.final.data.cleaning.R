@@ -1,81 +1,17 @@
-########################
 #
 # Data Cleaning of Final Coded Date
 # Author: Miriam Milzner
 # Date: 2025-10-20
 #
-########################
-#
-# Notes:
-# - Input: data/raw/df_full_sample_coded.xlsx
-# - Comment-Spalte wurde vor Upload manuell vereinheitlicht (Format: "Vxx: Text; Vyy: Text")
-#
-# - Schritte im Skript:
-#   1. Vergibt eindeutige row_id (1:n)
-#   2. Identifiziert doppelte id_unique
-#      → manuelle Entscheidung in duplicates_check.xlsx (Spalte 'decision')
-#      → entfernt Duplikate anhand row_id
-#   3. Bereinigt und validiert Variablenwerte (V6–V13)
-#      → prüft gültige Codes laut Codebuch
-#      → erlaubt Mehrfachkodierungen mit "; "
-#      → zeigt ungültige Werte in der Konsole
-#      → führt gezielte manuelle Korrekturen durch (mutate + Log)
-#      → Vereinheitlicht Textformatierung: lowercase, einheitliche Trennung mit "; ", entfernt führende und abschließende Semikolons
-#   4. Konsistenzprüfungen
-#      → keine CSS-Codes (10–18) bei method == 0
-#      → protokolliert alle Änderungen und Überprüfungen im Log
-#   6. Extrahiert und strukturiert Comments-Spalte für inhaltliche Nachprüfung
-#
-# - Logging:
-#   → Format: TSV (Tab-separiert)
-#   → Pfad: logs/data_cleaning_log.tsv
-#   → Enthält: timestamp | step | action | note
-#
-# Packages -------------------------------------------------------------------
+# Setup ------------------------------------------------------------------------
 
-suppressPackageStartupMessages({
-  library(readxl)
-  library(tidyverse)
-  library(tidycomm)
-  library(janitor)
-  library(stringr)
-  library(openxlsx)
-  library(flextable)
-  library(officer)
-  library(glue)
-  library(fs)
-  library(readr)
-})
+library(here)
 
-# Simple Log System for Documentation ------------------------------------------
-
-# empty log table
-log_df <- tibble::tibble(
-  timestamp = character(),
-  step = character(),
-  action = character(),
-  note = character()
-)
-
-# log function
-log_event <- function(step, action, note = "") {
-  new_row <- tibble::tibble(
-    timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-    step = step,
-    action = action,
-    note = note
-  )
-  assign("log_df", dplyr::bind_rows(get("log_df", envir = .GlobalEnv), new_row),
-         envir = .GlobalEnv)
-  invisible(new_row)
-}
-
-# save logs
-write_log <- function(path = "logs/data_cleaning_log.tsv") {
-  fs::dir_create(dirname(path))
-  readr::write_tsv(log_df, path)
-  message("Log saved: ", path)
-}
+source(here("R/packages.R"))
+source(here("R/paths.R"))
+source(here("R/config.R"))
+source(here("R/logging.R"))
+log_df <- init_log()
 
 
 # Step 1: Import ---------------------------------------------------------------
@@ -83,66 +19,12 @@ write_log <- function(path = "logs/data_cleaning_log.tsv") {
 raw_data <- "data/raw/full_paper_sample_coded.xlsx"
 df_raw <- readxl::read_excel(raw_data)
 
-log_event(
+log_df <- log_event(
   step = "01_import",
   action = "standardization",
-  note = "Comment column manually standardized to format 'Vxx: text; Vyy: text' before import"
+  note = "Comment column was manually standardized to format 'Vxx: text; Vyy: text' before import"
 )
 
-# Step 2: Inspect Duplicates manually ------------------------------------------
-#
-# Note: Duplicates have not been deleted before coding
-
-df_raw <- df_raw %>%
-  mutate(row_id = row_number())
-
-dupes <- df_raw %>%
-  group_by(id_unique) %>%
-  mutate(dup_count = n()) %>%
-  ungroup() %>%
-  filter(dup_count > 1) %>%
-  arrange(id_unique, row_id)
-
-# write.xlsx(dupes, "data/processed/duplicates.xlsx")
-
-log_event(
-  step   = "02_duplicates",
-  action = "export_duplicates",
-  note   = paste0("Duplikate in id_unique gefunden: ", n_distinct(dupes$id_unique),
-                  " IDs, ", nrow(dupes), " Zeilen exportiert nach data/processed/duplicates.xlsx, um sie manuell zu inspizieren")
-)
-
-### here: inspected duplicates manually here
-
-duplicates_path <- "data/processed/duplicates_check.xlsx"
-dupes_decided <- read_excel(duplicates_path)
-
-to_remove <- dupes_decided %>%
-  filter(decision == 0) %>%
-  pull(row_id)
-
-to_remove
-
-df_deduplicated <- df_raw %>%
-  filter(!row_id %in% to_remove)
-
-removed_n <- nrow(df_raw) - nrow(df_deduplicated)
-
-# save deduplicated df
-# write.xlsx(df_deduplicated, "data/processed/df_deduplicated.xlsx")
-
-# save removed cases (documentation)
-removed_duplicates <- df_raw %>% filter(row_id %in% to_remove)
-# write.xlsx(removed_duplicates, "data/processed/duplicates_removed.xlsx")
-
-# log
-log_event(
-  step   = "02_deduplication",
-  action = "remove_duplicates_by_manual_decision",
-  note   = paste0("Gesamt entfernt: ", removed_n,
-                  " Zeilen (row_ids: ", toString(sort(unique(to_remove))),
-                  ") | Ergebnis: data/processed/df_deduplicated.xlsx und data/processed/duplicates_removed.xlsx")
-)
 
 # Step 3: Basic Cleaning - Value Validation ------------------------------------
 
@@ -673,8 +555,8 @@ log_event(
 
 # Write Log and Export Cleaned Data --------------------------------------------------------------------
 
-write_log()
-log <- readr::read_tsv("logs/data_cleaning_log.tsv")
+write_log(log_df, PATHS$log_cleaning)
+
 
 path <- "data/processed/full_paper_sample_coded_clean.xlsx"
 openxlsx::write.xlsx(df_clean, path)

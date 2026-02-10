@@ -18,7 +18,7 @@ library(stringr)
 library(openxlsx)
 library(tidycomm)
 
-# 1. Read Coded Reliability Test Samples ---------------------------------------
+# 3.3 Read Coded Reliability Test Samples ---------------------------------------
 
 reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
   OUT$reliability
@@ -67,7 +67,7 @@ if (length(missing_cols) > 0) {
   )
 }
 
-# 2. Calculate Reliability Values  ---------------------------------------------
+# 3.4 Calculate Reliability Values  ---------------------------------------------
 
 # V10 Platform (multi-label)
 
@@ -155,7 +155,7 @@ icr_v7v16 <- tidycomm::test_icr(
 
 icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
-# 4. Output --------------------------------------------------------------------
+# Output --------------------------------------------------------------------
 
 out_dir <- reli_dir
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
