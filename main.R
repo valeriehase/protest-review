@@ -3,8 +3,6 @@
 # Author: Miriam Milzner, Valerie Hase
 # Date: 2026-01-10 (updated 2026-02-09)
 #
-# Runs the full reproducible pipeline.
-#
 # Setup ------------------------------------------------------------------------
 
 options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -57,7 +55,6 @@ RUN <- list(
 if (RUN$wos_import) source(here("scripts/01.load.wos.data.R"))
 
 # 02 Abstract Screening --------------------------------------------------------
-
 #samples sample 1 (CSS) and sample 2 (non-CSS) based on search terms
 #draws sample for intercoder tests & coding of abstracts
 
@@ -72,24 +69,34 @@ if (RUN$reliability_masks) source(here("scripts/03a.reliability.masks.R"))
 if (RUN$reliability_tests) source(here("scripts/03b.reliability.tests.R"))
 
 # 04 Final Coding Masks --------------------------------------------------------
-# Creates final coding masks for coders (one-time script; still reproducible)
+# Creates final coding masks for coders
 
 if (RUN$final_masks) source(here("scripts/04.coding_masks_final.R"))
 
-# 05 Deduplication + Sample out (from coded full sample) -----------------------
-# Exports dupes table + apply keep-list
+# 05 Deduplication -------------------------------------------------------------
+# Exports dupes table + applies remove/keep-list
 
 if (RUN$deduplication) source(here("scripts/05.deduplication.R"))
 
-# 06 Final Data Cleaning -------------------------------------------------------
-# Uses deduplicated coded sample, applies cleaning + logs
+# 06a Final Data Cleaning (general) --------------------------------------------
+# Uses deduplicated coded sample, applies general data cleaning + logs
 
-if (RUN$final_clean) source(here("scripts/06.final.data.cleaning.R"))
+if (RUN$final_clean) source(here("scripts/06a.data.cleaning.general.R"))
+
+# 06b Final Data Cleaning (comments) --------------------------------------------
+# Uses cleaned coded sample, checks all coders comments + logs
+
+if (RUN$final_clean) source(here("scripts/06b.data.cleaning.comments.R"))
+
+# 06c Final Data Cleaning (codes) --------------------------------------------
+# Uses cleaned coded sample with checked comments, checks rare codes and code distributions + logs
+
+if (RUN$final_clean) source(here("scripts/06c.data.cleaning.codes.R"))
 
 # 07 Analysis Output -----------------------------------------------------------
 
 if (RUN$figures) source(here("scripts/07.analysis.figures.R"))
-if (RUN$tables)  source(here("scripts/08.analysis.tables.R"))
+if (RUN$tables)  source(here("scripts/07.analysis.tables.R"))
 
 message("main completed: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 

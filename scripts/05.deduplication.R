@@ -87,7 +87,7 @@ df_deduplicated <- df %>%
 removed_duplicates <- df %>%
   dplyr::filter(id_unique_dup %in% to_remove)
 
-# Outputs -------------------------------------------------------------
+# Output -----------------------------------------------------------------------
 
 out_dir <- if (exists("OUT") && !is.null(OUT$intermediate)) {
   file.path(OUT$intermediate, "deduplication")

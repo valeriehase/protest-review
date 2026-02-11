@@ -57,7 +57,7 @@ Place the following files in `data/in/` before running `main.R`.
 | `full_paper_sample.xlsx` | Full-paper sample |
 | `full_paper_sample_coded.xlsx` | Coded full-paper sample (pre-deduplication) |
 | `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
-| `df_sample_coded_reli.xlsx` | Pretest + reliability coded cases used to exclude papers before final coding |
+| `df_sample_coded_reli.xlsx` | Reliability coded cases used to exclude papers before final coding |
 
 ### Output Data
 
