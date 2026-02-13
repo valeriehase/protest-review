@@ -1,3 +1,5 @@
+# Levels Codebook --------------------------------------------------------------
+
 levels_V7 <- tibble(
   V7 = c(as.character(1:10), "NA"),
   V7_label = c(
@@ -38,27 +40,6 @@ levels_V10 <- tibble(
   )
 )
 
-df_V10agg <- df %>%
-  tidyr::separate_rows(V10, sep = ";") %>%
-  dplyr::mutate(V10 = stringr::str_trim(as.character(V10))) %>%
-  dplyr::mutate(
-    V10_agg = dplyr::case_when(
-      V10 == "100" ~ "100",
-      V10 %in% c("110","111","112","113","114") ~ "110",
-      V10 %in% c("120","121","122","124") ~ "120",
-      V10 %in% c("130","131","132","133","134") ~ "130",
-      V10 %in% c("140","141","142") ~ "140",
-      V10 %in% c("150","151","152","153") ~ "150",
-      V10 %in% c("160","161","162") ~ "160",
-      V10 %in% c("200","201","202","203","204") ~ "200",
-      V10 == "300" ~ "300",
-      V10 == "400" ~ "400",
-      V10 %in% c("NA", NA) ~ "NA",
-      TRUE ~ "Other"
-    )
-  ) %>%
-  dplyr::mutate(V10_agg = as.character(V10_agg))
-
 levels_V10_agg <- tibble(
   V10_agg = c("100", "110", "120", "130", "140", "150", "160", "200", "300", "400", "NA"),
   V10_agg_label = c(
@@ -75,7 +56,6 @@ levels_V10_agg <- tibble(
     "Not mentioned"
   )
 )
-
 
 levels_V11 <- tibble(
   V11 = c(

@@ -36,11 +36,16 @@ df <- readxl::read_excel(input_file)
 
 set.seed(SEED)
 
-sample_total <- df %>% dplyr::sample_n(92)
+stopifnot(nrow(df) >= 92)
+sample_total <- dplyr::slice_sample(df, n = 92)
+
 sample1 <- sample_total[1:46, ]
 sample2 <- sample_total[47:92, ]
 
-# 3.2 Export masks -----------------------------------------------------------------
+message("Seed used for sampling: ", SEED)
+message("N in input df: ", nrow(df))
+
+# Outpu ------------------------------------------------------------------------
 
 reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
   OUT$reliability
@@ -49,18 +54,9 @@ reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
 }
 dir.create(reli_dir, recursive = TRUE, showWarnings = FALSE)
 
-output_file1 <- file.path(reli_dir, "relitest_full_paper_codebook_R1.xlsx")
-output_file2 <- file.path(reli_dir, "relitest_full_paper_codebook_R2.xlsx")
-
-if (file.exists(output_file1) || file.exists(output_file2)) {
-  stop(
-    "Reliability mask file(s) already exist. I will not overwrite them.\n",
-    "Existing:\n",
-    "- ", if (file.exists(output_file1)) output_file1 else "(missing R1)", "\n",
-    "- ", if (file.exists(output_file2)) output_file2 else "(missing R2)", "\n\n",
-    "If you really need to regenerate them, delete the existing files first."
-  )
-}
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
+output_file1 <- file.path(reli_dir, paste0("relitest_full_paper_codebook_R1_", stamp, ".xlsx"))
+output_file2 <- file.path(reli_dir, paste0("relitest_full_paper_codebook_R2_", stamp, ".xlsx"))
 
 openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
 openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)

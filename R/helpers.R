@@ -7,6 +7,37 @@ exclude_other_not_mentioned <- function(df) {
   df %>% dplyr::filter(!Category %in% c("Other", "Not mentioned"))
 }
 
+# Transform Variables ----------------------------------------------------------
+
+make_df_V10agg <- function(df) {
+  stopifnot(is.data.frame(df))
+  if (!"V10" %in% names(df)) {
+    stop("make_df_V10agg(): df has no column 'V10'.")
+  }
+  
+  df %>%
+    tidyr::separate_rows(V10, sep = ";") %>%
+    dplyr::mutate(V10 = stringr::str_trim(as.character(V10))) %>%
+    dplyr::mutate(
+      V10_agg = dplyr::case_when(
+        V10 == "100" ~ "100",
+        V10 %in% c("110","111","112","113","114") ~ "110",
+        V10 %in% c("120","121","122","124") ~ "120",
+        V10 %in% c("130","131","132","133","134") ~ "130",
+        V10 %in% c("140","141","142") ~ "140",
+        V10 %in% c("150","151","152","153") ~ "150",
+        V10 %in% c("160","161","162") ~ "160",
+        V10 %in% c("200","201","202","203","204") ~ "200",
+        V10 == "300" ~ "300",
+        V10 == "400" ~ "400",
+        V10 %in% c("NA", NA) ~ "NA",
+        TRUE ~ "Other"
+      )
+    ) %>%
+    dplyr::mutate(V10_agg = as.character(V10_agg))
+}
+
+
 # Frequency table (APA optional) -----------------------------------------------
 
 make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, note = NULL) {
