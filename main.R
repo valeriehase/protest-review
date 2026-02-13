@@ -20,6 +20,7 @@ if (!requireNamespace("renv", quietly = TRUE)) {
 }
 
 renv::restore(prompt = FALSE)
+sessionInfo()
 
 message("Project root: ", here::here())
 message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
@@ -33,6 +34,7 @@ source(here("R/logging.R"))
 source(here("R/helpers.R"))
 
 message("Seed: ", SEED)
+set.seed(SEED)
 
 # Pipeline switches ------------------------------------------------------------
 
@@ -66,12 +68,12 @@ if (RUN$reliability_masks) source(here("scripts/03a.reliability.masks.R"))
 
 # 03b Reliability Tests (compute metrics) --------------------------------------
 
-if (RUN$reliability_tests) source(here("scripts/03b.reliability.tests.R"))
+if (RUN$reliability_tests) source(here("scripts/03b.reliability.testing.R"))
 
 # 04 Final Coding Masks --------------------------------------------------------
 # Creates final coding masks for coders
 
-if (RUN$final_masks) source(here("scripts/04.coding_masks_final.R"))
+if (RUN$final_masks) source(here("scripts/04.final.coding.masks.R"))
 
 # 05 Deduplication -------------------------------------------------------------
 # Exports dupes table + applies remove/keep-list
@@ -99,6 +101,10 @@ if (RUN$figures) source(here("scripts/07.analysis.figures.R"))
 if (RUN$tables)  source(here("scripts/07.analysis.tables.R"))
 
 message("main completed: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
+message("---- SESSION INFO ----")
+print(sessionInfo())
+message("---- RENV STATUS ----")
+renv::status()
 
 
 

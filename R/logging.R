@@ -1,4 +1,5 @@
 # Simple log system ------------------------------------------------------------
+#
 # Usage:
 # source(here("R/logging.R"))
 # log_df <- init_log()

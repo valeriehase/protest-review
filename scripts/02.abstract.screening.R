@@ -5,10 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -25,22 +23,22 @@ library(caret)
 # Input data -------------------------------------------------------------------
 
 if (!exists("wos.abstracts", inherits = TRUE)) {
-  in_rds <- if (exists("OUT") && !is.null(OUT$intermediate)) {
-    file.path(OUT$intermediate, "wos_abstracts_clean.rds")
-  } else {
-    here("data", "out", "intermediate", "wos_abstracts_clean.rds")
-  }
+  
+  in_rds <- file.path(PATHS$out_intermediate, "wos_abstracts_clean.rds")
   
   if (!file.exists(in_rds)) {
     stop(
-      "02 needs wos.abstracts.\n",
-      "Either run scripts/01.load.WoS.data.R first, or provide: ", in_rds,
+      "Step 02 requires 'wos.abstracts'.\n",
+      "Run scripts/01.load.wos.data.R first.\n",
+      "Expected file: ", in_rds,
       call. = FALSE
     )
   }
   
+  message("Loading cleaned WoS abstracts from: ", in_rds)
   wos.abstracts <- readRDS(in_rds)
 }
+
 
 # 2.1 Sort sample into CSS/non-CSS samples -------------------------------------
 

@@ -1,6 +1,6 @@
 # Levels Codebook --------------------------------------------------------------
 
-levels_V7 <- tibble(
+levels_V7 <- tibble::tibble(
   V7 = c(as.character(1:10), "NA"),
   V7_label = c(
     "North America",
@@ -17,7 +17,7 @@ levels_V7 <- tibble(
   )
 )
 
-levels_V10 <- tibble(
+levels_V10 <- tibble::tibble(
   V10 = c(
     "100", "110", "111", "112", "113", "114",
     "120", "121", "122", "124",
@@ -40,7 +40,7 @@ levels_V10 <- tibble(
   )
 )
 
-levels_V10_agg <- tibble(
+levels_V10_agg <- tibble::tibble(
   V10_agg = c("100", "110", "120", "130", "140", "150", "160", "200", "300", "400", "NA"),
   V10_agg_label = c(
     "Internet / online / social media (general)",
@@ -57,7 +57,7 @@ levels_V10_agg <- tibble(
   )
 )
 
-levels_V11 <- tibble(
+levels_V11 <- tibble::tibble(
   V11 = c(
     "10", "11","12","13","14","15","16","17","18",
     "20", "21","22","23","24","25","26",
@@ -72,7 +72,7 @@ levels_V11 <- tibble(
   )
 )
 
-levels_V12 <- tibble(
+levels_V12 <- tibble::tibble(
   V12 = c(
     "1",
     "0"
@@ -83,7 +83,7 @@ levels_V12 <- tibble(
   )
 )
 
-levels_V13 <- tibble(
+levels_V13 <- tibble::tibble(
   V13 = c(
     "1",
     "0"

@@ -5,11 +5,9 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
-source(here("R/logging.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
+source(here::here("R/logging.R"))
 
 library(readxl)
 library(dplyr)
@@ -19,21 +17,25 @@ library(purrr)
 library(openxlsx)
 
 log_df <- init_log()
+log_df <- log_event(log_df, "06a_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- if (exists("IN") && !is.null(IN$coded_full_sample_deduplicated)) {
-  IN$coded_full_sample_deduplicated
-} else {
-  here("data", "in", "full_paper_sample_coded_deduplicated.xlsx")
+input_file <- IN$coded_full_sample_deduplicated
+
+if (!file.exists(input_file)) {
+  stop(
+    "Missing required input file: ", input_file, "\n",
+    "Expected: coded full sample (deduplicated).\n",
+    "Check config.R -> IN$coded_full_sample_deduplicated",
+    call. = FALSE)
 }
-stopifnot(file.exists(input_file))
-df <- readxl::read_excel(input_file) 
+
+message("Reading deduplicated coded full sample from: ", input_file)
+df <- readxl::read_excel(input_file)
 
 df_clean <- df %>%
-  rename_with(
-    ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
-    starts_with("V")) 
+  rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))
 
 # 6.1 Check Values ----------------------------------------
 
@@ -84,8 +86,9 @@ df_clean <- df_clean %>%
     )
   )
 
-log_event(
-  step   = "03_V6_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V6_value_fix",
   action = "manual_edit_and_normalize",
   note   = "id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
 )
@@ -107,8 +110,9 @@ print(invalid_v7)
 df_clean <- df_clean %>%
   mutate(V7 = if_else(id_unique == "ID366", "1; 3", V7))
 
-log_event(
-  step   = "03_V7_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V7_value_fix",
   action = "manual_edit",
   note   = "id_unique ID366: V7 geändert von '1.3' zu '1; 3'"
 )
@@ -160,8 +164,9 @@ df_clean <- df_clean %>%
     )
   )
 
-log_event(
-  step   = "03_V8_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V8_value_fix",
   action = "manual_edit_and_normalize",
   note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert); gesamte Spalte V8 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
 )
@@ -211,8 +216,9 @@ df_clean <- df_clean %>%
     )
   )
 
-log_event(
-  step   = "03_V9_normalize",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V9_normalize",
   action = "format_standardization",
   note   = "V9 automatisch normalisiert: lowercase, Trenner auf '; ' vereinheitlicht, führende/abschließende Semikolons entfernt"
 )
@@ -235,19 +241,21 @@ df_clean <- df_clean %>%
          V10 = if_else(id_unique == "ID822", "300; 113; 112; 111; 100; 110", V10), # media types included traditional media (or affiliates), online partisan media, online nonpartisan media, activism/advocacy media, social media, and ephemeral websites
          V10 = if_else(id_unique == "ID98", "141; 131; 132; 124", V10)) # Twitter, Facebook, Instagram, and Reddit data were collected using Synthesio
 
-#log
-log_event(
-  step   = "03_V10_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V10_value_fix",
   action = "manual_edit",
   note   = "id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)"
 )
-log_event(
-  step   = "03_V10_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V10_value_fix",
   action = "manual_edit",
   note   = "id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (fehlende Kodierung)"
 )
-log_event(
-  step   = "03_V10_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V10_value_fix",
   action = "manual_edit",
   note   = "id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (fehlende Kodierung)"
 )
@@ -270,19 +278,21 @@ df_clean <- df_clean %>%
          V11 = if_else(id_unique == "ID2437", "21; 22", V11),
          V11 = if_else(id_unique == "ID83", "18; 12", V11)) 
 
-#log
-log_event(
-  step   = "03_V11_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V11_value_fix",
   action = "manual_edit",
   note   = "id_unique ID1494: V11 geändert von '24.' zu '24'"
 )
-log_event(
-  step   = "03_V11_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V11_value_fix",
   action = "manual_edit",
   note   = "id_unique ID2437: V11 geändert von ' ' zu '21; 22'"
 )
-log_event(
-  step   = "03_V11_value_fix",
+log_df <- log_event(
+  log_df,
+  step   = "06a_V11_value_fix",
   action = "manual_edit",
   note   = "id_unique ID83: V11 geändert von '18, 12' zu '18; 12'"
 )
@@ -339,49 +349,58 @@ df_clean <- df_clean %>%
          V11 = if_else(id_unique == "ID94", "24", V11)
          ) 
 
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID1462: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID1656: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID19: V11 geändert von '21; 22; 18' zu '21; 22' (Datensammlung ohne Spezifikation; Code 18 entfernt)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID1956: V11 geändert von '17; 21' zu '21' (Tracking-Code missverstanden)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID2327: V11 geändert von '21; 22; 18' zu '21; 22' (kein Scraping belegt; Code 18 entfernt)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID239: V11 geändert von '12; 24' zu '24' (Archivnutzung; API nicht eigenständig; Code 12 entfernt)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID413: V11 geändert von '21; 22; 13; 16; 18' zu '21' (ausschließlich qualitative Instagram-Analyse; übrige Codes entfernt)"
 )
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "manual_edit",
   note   = "id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)"
 )
 
-log_event(
-  step   = "04_consistency_CSS_in_method0",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
   action = "no_change_documented",
   note   = "IDs ID1199, ID202, ID2152, ID267, ID366, ID109: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
 )
@@ -405,8 +424,9 @@ df_clean <- df_clean %>%
 
 df_clean %>% count(method)
 
-log_event(
-  step   = "04_consistency_correction",
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_correction",
   action = "random_deletion",
   note   = paste0(
     "Randomly removed 12 cases from method == 1 to restore equal group sizes ",
@@ -415,18 +435,21 @@ log_event(
   )
 )
 
-# Output --------------------------------------------------------------------
+# Output -----------------------------------------------------------------------
 
-out_dir <- if (exists("OUT") && !is.null(OUT$intermediate)) {
-  file.path(OUT$intermediate, "cleaning")
-} else {
-  here("data", "out", "intermediate", "cleaning")
-}
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- PATHS$out_cleaning
 
 out_df_cleaned <- file.path(out_dir, "full_paper_sample_deduplicated_cleaned.xlsx")
 openxlsx::write.xlsx(df_clean, out_df_cleaned, overwrite = TRUE)
 
+log_file <- file.path(
+  PATHS$out_logs,
+  paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv")
+)
+write_log(log_df, log_file)
+
 message("06a completed.")
-message("- Randomly deleted IDs: ", ids_to_delete)
-message("- Cleaned dataset written to: ", out_df_cleaned)
+message("- Randomly deleted IDs: ", paste(ids_to_delete, collapse = ", "))
+message("- Cleaned dataset at: ", out_df_cleaned)
+message("- Log written to: ", log_file)
+

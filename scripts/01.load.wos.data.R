@@ -5,10 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -18,26 +16,24 @@ library(widyr)
 
 # 1.1 Load WoS data from Excel sheet & do some cleaning ------------------------
 
-if (exists("IN") && !is.null(IN$wos_abstracts) && file.exists(IN$wos_abstracts)) {
+if (file.exists(IN$wos_abstracts)) {
+  message("Loading WoS abstracts: ", IN$wos_abstracts)
   wos.abstracts <- readxl::read_excel(IN$wos_abstracts)
+  
+} else if (all(file.exists(IN$wos_legacy))) {
+  message("Loading WoS abstracts (legacy files):")
+  message("- ", paste(basename(IN$wos_legacy), collapse = "\n- "))
+  
+  wos.abstracts <- purrr::map_dfr(IN$wos_legacy, readxl::read_excel)
+  
 } else {
-  f1 <- here("raw_data_wos", "WoS_savedrecs_1-1000.xls")
-  f2 <- here("raw_data_wos", "WoS_savedrecs_1001-2000.xls")
-  f3 <- here("raw_data_wos", "WoS_savedrecs_2001-2765.xls")
-  
-  if (!file.exists(f1) || !file.exists(f2) || !file.exists(f3)) {
-    stop(
-      "Missing WoS input.\n",
-      "Expected either:\n",
-      "- data/in/wos_abstracts_2009_2023.xlsx (preferred), or\n",
-      "- legacy files in raw_data_wos/: WoS_savedrecs_1-1000.xls, WoS_savedrecs_1001-2000.xls, WoS_savedrecs_2001-2765.xls",
-      call. = FALSE
-    )
-  }
-  
-  wos.abstracts <- readxl::read_excel(f1) %>%
-    dplyr::bind_rows(readxl::read_excel(f2)) %>%
-    dplyr::bind_rows(readxl::read_excel(f3))
+  stop(
+    "Missing WoS input.\n",
+    "Expected either:\n",
+    "- ", IN$wos_abstracts, " (preferred), or\n",
+    "- legacy files:\n  - ", paste(IN$wos_legacy, collapse = "\n  - "),
+    call. = FALSE
+  )
 }
 
 # Inspect data
@@ -167,15 +163,10 @@ n_deduplicated <- nrow(wos.abstracts)
 
 # Export -----------------------------------------------------------------------
 
-out_file_rds <- if (exists("OUT") && !is.null(OUT$intermediate)) {
-  file.path(OUT$intermediate, "wos_abstracts_clean.rds")
-} else {
-  here("data", "out", "intermediate", "wos_abstracts_clean.rds")
-}
-dir.create(dirname(out_file_rds), recursive = TRUE, showWarnings = FALSE)
-
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
+out_file_rds <- file.path(PATHS$out_intermediate, paste0("wos_abstracts_clean_", stamp, ".rds"))
 saveRDS(wos.abstracts, out_file_rds)
+
 message("01 completed. Cleaned WoS abstracts saved to: ", out_file_rds)
 message("n_deduplicated = ", n_deduplicated)
-
 

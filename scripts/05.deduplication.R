@@ -5,10 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -16,14 +14,18 @@ library(openxlsx)
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- if (exists("IN") && !is.null(IN$coded_full_sample)) {
-  IN$coded_full_sample
-} else {
-  here("data", "in", "full_paper_sample_coded.xlsx")
-}
-stopifnot(file.exists(input_file))
+input_file <- IN$coded_full_sample
 
-df <- readxl::read_excel(input_file) 
+if (!file.exists(input_file)) {
+  stop(
+    "Missing required input file: ", input_file, "\n",
+    "Expected: coded full paper sample.\n",
+    "Check config.R -> IN$coded_full_sample",
+    call. = FALSE)
+}
+
+message("Reading coded full sample from: ", input_file)
+df <- readxl::read_excel(input_file)
 
 # 5.1 Identify Remaining Duplicates --------------------------------------------
 
@@ -51,31 +53,37 @@ n_dupe_ids <- dplyr::n_distinct(dupes$id_unique)
 
 # 5.2 Export Duplicates --------------------------------------------------------
 
-out_dir <- if (exists("OUT") && !is.null(OUT$intermediate)) {
-  file.path(OUT$intermediate, "deduplication")
-} else {
-  here("data", "out", "intermediate", "deduplication")
-}
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
-
+out_dir <- PATHS$out_dedup
 out_dupes <- file.path(out_dir, "full_paper_sample_coded_dupes.xlsx")
+
 openxlsx::write.xlsx(dupes, out_dupes, overwrite = TRUE)
 
 message("05: ", n_dupe_ids, " duplicated IDs detected.")
 message("Duplicates exported to: ", out_dupes)
-message("Made decision which duplicate to keep and saved as duplicates_check.xlsx in data/in/")
+message("Next step: decide which duplicates to keep and save as duplicates_check.xlsx in data/in/")
 
 # 5.3 Apply manual decision about duplicates -----------------------------------
 
-dupes_checked <- if (exists("IN") && !is.null(IN$dupes_checked)) {
-  IN$dupes_checked
-} else {
-  here("data", "in", "dupes_checked.xlsx")
-}
-stopifnot(file.exists(dupes_checked))
-dupes_checked <- readxl::read_excel(dupes_checked) 
+input_dupes_checked <- IN$dupes_checked
 
-stopifnot(all(c("id_unique_dup", "decision") %in% names(dupes_checked)))
+if (!file.exists(input_dupes_checked)) {
+  stop(
+    "Missing duplicate decision file: ", input_dupes_checked, "\n",
+    "Expected: manual keep/remove decisions for duplicate IDs.\n",
+    "Save the file in data/in/ or update config.R.",
+    call. = FALSE)
+}
+
+message("Reading duplicate decisions from: ", input_dupes_checked)
+dupes_checked <- readxl::read_excel(input_dupes_checked)
+
+required_cols <- c("id_unique_dup", "decision")
+if (!all(required_cols %in% names(dupes_checked))) {
+  stop(
+    "Duplicate decision file must contain columns: ",
+    paste(required_cols, collapse = ", "),
+    call. = FALSE)
+}
 
 to_remove <- dupes_checked %>%
   dplyr::filter(decision == 0) %>%
@@ -89,32 +97,19 @@ removed_duplicates <- df %>%
 
 # Output -----------------------------------------------------------------------
 
-out_dir <- if (exists("OUT") && !is.null(OUT$intermediate)) {
-  file.path(OUT$intermediate, "deduplication")
-} else {
-  here("data", "out", "intermediate", "deduplication")
-}
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- PATHS$out_dedup
 
-out_removed_dupes <- file.path(out_dir, "removed_dupes.xlsx")
+out_removed_dupes   <- file.path(out_dir, "removed_dupes.xlsx")
 out_df_deduplicated <- file.path(out_dir, "full_paper_sample_deduplicated.xlsx")
-
-if (file.exists(out_removed_dupes) || file.exists(out_df_deduplicated)) {
-  stop(
-    "Duplicate check file(s) already exist. I will not overwrite them.\n",
-    "Existing:\n",
-    "- ", if (file.exists(out_removed_dupes)) out_removed_dupes else "(removed dupes)", "\n",
-    "- ", if (file.exists(out_df_deduplicated)) out_df_deduplicated else "(deduplicated df)", "\n\n",
-    "If you really need to regenerate them, delete the existing files first."
-  )
-}
 
 openxlsx::write.xlsx(df_deduplicated, out_df_deduplicated, overwrite = TRUE)
 openxlsx::write.xlsx(removed_duplicates, out_removed_dupes, overwrite = TRUE)
 
 message("05 completed.")
 message("- Duplicated IDs detected: ", n_dupe_ids)
-message("- Deduplicated dataset written to: ", out_df_deduplicated)
+message("- Deduplicated dataset overwritten at: ", out_df_deduplicated)
+message("- Removed duplicates overwritten at: ", out_removed_dupes)
+
 
 
 
