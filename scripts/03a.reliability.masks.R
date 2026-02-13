@@ -3,13 +3,10 @@
 # Author: Miriam Milzner
 # Date: 2025-08-15
 #
-#
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -32,7 +29,7 @@ if (!file.exists(input_file)) {
 
 df <- readxl::read_excel(input_file)
 
-# 3.1 Draw Sample ------------------------------------------------------------------
+# 3.1 Draw Sample --------------------------------------------------------------
 
 set.seed(SEED)
 
@@ -45,13 +42,9 @@ sample2 <- sample_total[47:92, ]
 message("Seed used for sampling: ", SEED)
 message("N in input df: ", nrow(df))
 
-# Outpu ------------------------------------------------------------------------
+# Output -----------------------------------------------------------------------
 
-reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
-  OUT$reliability
-} else {
-  here("data", "out", "reliability")
-}
+reli_dir <- file.path(PATHS$out_reliability, "raw")
 dir.create(reli_dir, recursive = TRUE, showWarnings = FALSE)
 
 stamp <- format(Sys.time(), "%Y%m%d_%H%M")

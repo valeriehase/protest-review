@@ -5,10 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -18,12 +16,14 @@ library(stringr)
 library(openxlsx)
 library(tidycomm)
 
-# 3.3 Read Coded Reliability Test Samples ---------------------------------------
+# 3.2 Read Coded Reliability Test Samples ---------------------------------------
 
-reli_dir <- if (exists("OUT") && !is.null(OUT$reliability)) {
+message("03b: Reading coded reliability masks provided by coders.")
+
+reli_dir <- if (exists("OUT") && !is.null(IN$reliability)) {
   OUT$reliability
 } else {
-  here("data", "out", "reliability")
+  here("data", "out", "reliability", "coded")
 }
 
 if (!dir.exists(reli_dir)) {
@@ -74,7 +74,12 @@ if (length(missing_cols) > 0) {
 df_v10_long <- df_all %>%
   dplyr::select(id_unique, V5, V10) %>%
   tidyr::separate_rows(V10, sep = ";\\s*") %>%
-  dplyr::mutate(V10 = as.numeric(V10))
+  dplyr::mutate(
+    V10 = stringr::str_trim(V10),
+    V10 = dplyr::na_if(V10, "NA"),
+    V10 = stringr::str_replace(V10, "\\.0$", ""),
+    V10 = as.numeric(V10)
+  )
 
 df_v10_dummy <- df_v10_long %>%
   dplyr::mutate(value = 1) %>%
@@ -160,9 +165,10 @@ icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 out_dir <- reli_dir
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-out_date <- format(Sys.Date(), "%Y-%m-%d")
-out_xlsx <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".xlsx"))
-out_rds  <- file.path(PATHS$out_reliability, paste0("reli_values_", out_date, ".rds"))
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
+
+out_xlsx <- file.path(reli_dir, paste0("reli_values_", stamp, ".xlsx"))
+out_rds  <- file.path(reli_dir, paste0("reli_values_", stamp, ".rds"))
 
 openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
 saveRDS(icr, out_rds)
