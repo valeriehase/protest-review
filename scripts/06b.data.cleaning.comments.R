@@ -85,16 +85,22 @@ for (i in seq_len(nrow(fixes))) {
 
 no_change <- tibble::tribble(
   ~id_unique, ~note,
-  "ID1033", "method checked; keep coding",
+  "ID1033", "no method section; method checked; keep coding",
   "ID1092", "experiment checked; evidence in text; keep coding",
-  "ID1174", "method checked; keep coding",
+  "ID1174", "no method section; method checked; keep coding",
   "ID12",   "qualitative frame analysis clear; keep coding",
   "ID1273", "platform assignment supported; keep coding",
   "ID2054", "region assignment supported; keep coding",
   "ID2449", "UK single-country; not cross-national; keep coding",
   "ID391",  "website analysis fits code 111; keep coding",
   "ID13",   "pan-european fits; keep coding",
-  "ID1463", "global/diaspora fits; keep coding"
+  "ID1463", "global/diaspora fits; keep coding",
+  "ID1468", "no method section; method/platform checked; keep coding",
+  "ID1501", "no method section; method/platform checked; keep coding",
+  "ID1523", "no method section; method/platform checked; keep coding",
+  "ID1543", "no method section but analyzes 'how humour is discursively constituted'; keep coding",
+  "ID1553", "explanation of V6 protest case coding; keep coding",
+  "ID1616", "no method section; discussion of two researchers that could be labeled 'ethnographic observation'; keep coding"
 )
 
 for (i in seq_len(nrow(no_change))) {
