@@ -7,6 +7,17 @@ exclude_other_not_mentioned <- function(df) {
   df %>% dplyr::filter(!Category %in% c("Other", "Not mentioned"))
 }
 
+
+# Setup ----------------------------------------------------------
+
+require_file <- function(path, what = "input file") {
+  if (!file.exists(path)) {
+    stop("Missing ", what, ": ", path, call. = FALSE)
+  }
+  invisible(path)
+}
+
+
 # Transform Variables ----------------------------------------------------------
 
 make_df_V10agg <- function(df) {

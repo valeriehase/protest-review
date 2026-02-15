@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN")) source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -20,25 +20,16 @@ library(tidycomm)
 
 message("03b: Reading coded reliability masks provided by coders.")
 
-reli_dir <- if (exists("OUT") && !is.null(IN$reliability)) {
-  OUT$reliability
-} else {
-  here("data", "out", "reliability", "coded")
-}
-
-if (!dir.exists(reli_dir)) {
-  message("03b skipped: reliability folder does not exist: ", reli_dir)
-  return(invisible(NULL))
-}
+reli_dir <- PATHS$int
 
 files <- list.files(
   path = reli_dir,
-  pattern = "^relitest_full_paper_codebook_R\\d+(?:_.+)?\\.xlsx$",
+  pattern = "^03a_reliability_mask_R\\d+.*\\.xlsx$",
   full.names = TRUE
 )
 
 if (length(files) == 0) {
-  message("03b skipped: no reliability files found in: ", reli_dir)
+  message("03b skipped: no coded reliability files found in: ", reli_dir)
   return(invisible(NULL))
 }
 
@@ -47,15 +38,12 @@ df_all <- files %>%
   purrr::map_dfr(
     ~ readxl::read_excel(.x, .name_repair = "unique_quiet") %>%
       dplyr::mutate(dplyr::across(dplyr::everything(), as.character)),
-    .id = "source"
-  ) %>%
+    .id = "source") %>%
   dplyr::rename_with(
     ~ stringr::str_extract(.x, "^V\\d+"),
-    dplyr::starts_with("V")
-  ) %>%
+    dplyr::starts_with("V")) %>%
   dplyr::select(
-    -dplyr::any_of(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments"))
-  )
+    -dplyr::any_of(c("source", "authors", "title", "abstract", "keywords", "link", "method", "Comments")))
 
 needed_cols <- c("id_unique", "V5", "V7", "V8", "V10", "V11", "V12", "V13", "V14", "V15", "V16")
 missing_cols <- setdiff(needed_cols, names(df_all))
@@ -160,18 +148,17 @@ icr_v7v16 <- tidycomm::test_icr(
 
 icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
-# Output --------------------------------------------------------------------
+# Output -----------------------------------------------------------------------
 
-out_dir <- reli_dir
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- PATHS$int
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 
-stamp <- format(Sys.time(), "%Y%m%d_%H%M")
-
-out_xlsx <- file.path(reli_dir, paste0("reli_values_", stamp, ".xlsx"))
-out_rds  <- file.path(reli_dir, paste0("reli_values_", stamp, ".rds"))
+out_xlsx <- file.path(out_dir, paste0("03b_reliability_values_", stamp, ".xlsx"))
+out_rds  <- file.path(out_dir, paste0("03b_reliability_values_", stamp, ".rds"))
 
 openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
 saveRDS(icr, out_rds)
 
-message("Step 03b completed. Output: ", out_xlsx)
+message("03b completed. Output: ", out_xlsx)
+
 

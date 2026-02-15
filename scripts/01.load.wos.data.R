@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN"))    source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -17,23 +17,13 @@ library(widyr)
 # 1.1 Load WoS data from Excel sheet & do some cleaning ------------------------
 
 if (file.exists(IN$wos_abstracts)) {
-  message("Loading WoS abstracts: ", IN$wos_abstracts)
-  wos.abstracts <- readxl::read_excel(IN$wos_abstracts)
-  
-} else if (all(file.exists(IN$wos_legacy))) {
-  message("Loading WoS abstracts (legacy files):")
-  message("- ", paste(basename(IN$wos_legacy), collapse = "\n- "))
-  
-  wos.abstracts <- purrr::map_dfr(IN$wos_legacy, readxl::read_excel)
-  
+  input_file <- require_file(IN$wos_abstracts, "WoS abstracts (preferred export)")
+  message("Loading WoS abstracts: ", input_file)
+  wos.abstracts <- readxl::read_excel(input_file)
 } else {
-  stop(
-    "Missing WoS input.\n",
-    "Expected either:\n",
-    "- ", IN$wos_abstracts, " (preferred), or\n",
-    "- legacy files:\n  - ", paste(IN$wos_legacy, collapse = "\n  - "),
-    call. = FALSE
-  )
+  purrr::walk(IN$wos_legacy, require_file, what = "WoS legacy file")
+  message("Loading WoS abstracts (legacy files):\n- ", paste(basename(IN$wos_legacy), collapse = "\n- "))
+  wos.abstracts <- purrr::map_dfr(IN$wos_legacy, readxl::read_excel)
 }
 
 # Inspect data
@@ -163,10 +153,14 @@ n_deduplicated <- nrow(wos.abstracts)
 
 # Export -----------------------------------------------------------------------
 
-stamp <- format(Sys.time(), "%Y%m%d_%H%M")
-out_file_rds <- file.path(PATHS$out_intermediate, paste0("wos_abstracts_clean_", stamp, ".rds"))
-saveRDS(wos.abstracts, out_file_rds)
+out_dir <- PATHS$int
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
+out_file <- file.path(out_dir, paste0("01_wos_abstracts_clean_", stamp, ".rds"))
+saveRDS(wos.abstracts, out_file)
 
-message("01 completed. Cleaned WoS abstracts saved to: ", out_file_rds)
-message("n_deduplicated = ", n_deduplicated)
+message("01 completed.")
+message("- Cleaned WoS abstracts saved to: ", out_file)
+message("- n_deduplicated = ", n_deduplicated)
+
+
 

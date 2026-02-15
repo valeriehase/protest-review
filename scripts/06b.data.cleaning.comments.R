@@ -5,9 +5,9 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/logging.R"))
+if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
+if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+if (!exists("write_log", inherits = TRUE)) source(here::here("R/logging.R"))
 
 library(readxl)
 library(dplyr)
@@ -21,15 +21,7 @@ log_df <- log_event(log_df, "06b_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- IN$coded_full_sample_deduplicated_cleaned
-
-if (!file.exists(input_file)) {
-  stop(
-    "Missing required input file: ", input_file, "\n",
-    "Expected: cleaned deduplicated coded full sample.\n",
-    "Run step 06a first (or update config.R).",
-    call. = FALSE)
-}
+input_file <- require_file(file.path(PATHS$int, "full_paper_sample_deduplicated_cleaned.xlsx"), "cleaned deduplicated coded full-paper sample (output of step 06a)")
 
 message("Reading cleaned deduplicated sample from: ", input_file)
 df <- readxl::read_excel(input_file)
@@ -192,18 +184,19 @@ log_df <- log_event(
 
 # Output -----------------------------------------------------------------------
 
-out_df_cleaned_comments <- file.path(PATHS$out_cleaning, "full_paper_sample_deduplicated_cleaned_comments_checked.xlsx")
+out_dir <- PATHS$int
+log_dir <- PATHS$logs
+
+out_df_cleaned_comments <- file.path(out_dir, "full_paper_sample_deduplicated_cleaned_comments_checked.xlsx")
 openxlsx::write.xlsx(df_clean, out_df_cleaned_comments, overwrite = TRUE)
 
-log_file <- file.path(
-  PATHS$out_logs,
-  paste0("06b_comments_check_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv")
-)
+log_file <- file.path(log_dir, paste0("06b_comments_check_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
 write_log(log_df, log_file)
 
 message("06b completed.")
-message("- Cleaned dataset (comments checked) at: ", out_df_cleaned_06b)
+message("- Cleaned dataset (comments checked) at: ", out_df_cleaned_comments)
 message("- Log written to: ", log_file)
+
 
 
 

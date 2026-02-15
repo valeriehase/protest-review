@@ -5,9 +5,9 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/logging.R"))
+if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
+if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+if (!exists("write_log", inherits = TRUE)) source(here::here("R/logging.R"))
 
 library(readxl)
 library(dplyr)
@@ -21,15 +21,7 @@ log_df <- log_event(log_df, "06a_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- IN$coded_full_sample_deduplicated
-
-if (!file.exists(input_file)) {
-  stop(
-    "Missing required input file: ", input_file, "\n",
-    "Expected: coded full sample (deduplicated).\n",
-    "Check config.R -> IN$coded_full_sample_deduplicated",
-    call. = FALSE)
-}
+input_file <- require_file(file.path(PATHS$int, "05_deduplication_full_paper_sample_deduplicated.xlsx"), "deduplicated coded full-paper sample (output of step 05)")
 
 message("Reading deduplicated coded full sample from: ", input_file)
 df <- readxl::read_excel(input_file)
@@ -437,15 +429,13 @@ log_df <- log_event(
 
 # Output -----------------------------------------------------------------------
 
-out_dir <- PATHS$out_cleaning
+out_dir <- PATHS$int
+log_dir <- PATHS$logs
 
 out_df_cleaned <- file.path(out_dir, "full_paper_sample_deduplicated_cleaned.xlsx")
 openxlsx::write.xlsx(df_clean, out_df_cleaned, overwrite = TRUE)
 
-log_file <- file.path(
-  PATHS$out_logs,
-  paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv")
-)
+log_file <- file.path(log_dir, paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
 write_log(log_df, log_file)
 
 message("06a completed.")

@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN")) source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -14,19 +14,9 @@ library(openxlsx)
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- if (exists("IN") && !is.null(IN$full_paper_sample)) {
-  IN$full_paper_sample
-} else {
-  here("data", "in", "full_paper_sample.xlsx")
-}
+input_file <- require_file(IN$full_paper_sample, "full-paper sample (Excel)")
 
-if (!file.exists(input_file)) {
-  stop(
-    "Missing input file: ", input_file, "\n",
-    "Provide the full-paper sample Excel file before running 03a."
-  )
-}
-
+message("Reading full-paper sample from: ", input_file)
 df <- readxl::read_excel(input_file)
 
 # 3.1 Draw Sample --------------------------------------------------------------
@@ -44,12 +34,11 @@ message("N in input df: ", nrow(df))
 
 # Output -----------------------------------------------------------------------
 
-reli_dir <- file.path(PATHS$out_reliability, "raw")
-dir.create(reli_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- PATHS$int
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 
-stamp <- format(Sys.time(), "%Y%m%d_%H%M")
-output_file1 <- file.path(reli_dir, paste0("relitest_full_paper_codebook_R1_", stamp, ".xlsx"))
-output_file2 <- file.path(reli_dir, paste0("relitest_full_paper_codebook_R2_", stamp, ".xlsx"))
+output_file1 <- file.path(out_dir, paste0("03a_reliability_mask_R1_", stamp, ".xlsx"))
+output_file2 <- file.path(out_dir, paste0("03a_reliability_mask_R2_", stamp, ".xlsx"))
 
 openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
 openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)

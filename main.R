@@ -5,22 +5,20 @@
 #
 # Setup ------------------------------------------------------------------------
 
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-options(stringsAsFactors = FALSE)
+options(repos = c(CRAN = "https://cloud.r-project.org"), stringsAsFactors = FALSE)
 
 if (!requireNamespace("here", quietly = TRUE)) {
   stop("Package 'here' is required. Install it with install.packages('here').")
 }
 library(here)
 
-stopifnot(file.exists(here::here("renv.lock")))
-
+if (!file.exists(here::here("renv.lock"))) {
+  stop("Missing 'renv.lock' in project root. Please run from the repository root directory.")
+}
 if (!requireNamespace("renv", quietly = TRUE)) {
   stop("Package 'renv' is required. Install it with install.packages('renv').")
 }
-
-renv::restore(prompt = FALSE)
-sessionInfo()
+renv::activate()
 
 message("Project root: ", here::here())
 message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))

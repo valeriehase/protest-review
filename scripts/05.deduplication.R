@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN")) source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -14,15 +14,7 @@ library(openxlsx)
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- IN$coded_full_sample
-
-if (!file.exists(input_file)) {
-  stop(
-    "Missing required input file: ", input_file, "\n",
-    "Expected: coded full paper sample.\n",
-    "Check config.R -> IN$coded_full_sample",
-    call. = FALSE)
-}
+input_file <- require_file(IN$coded_full_sample, "coded full-paper sample")
 
 message("Reading coded full sample from: ", input_file)
 df <- readxl::read_excel(input_file)
@@ -97,18 +89,18 @@ removed_duplicates <- df %>%
 
 # Output -----------------------------------------------------------------------
 
-out_dir <- PATHS$out_dedup
+out_dir <- PATHS$int
 
-out_removed_dupes   <- file.path(out_dir, "removed_dupes.xlsx")
-out_df_deduplicated <- file.path(out_dir, "full_paper_sample_deduplicated.xlsx")
+out_removed_dupes   <- file.path(out_dir, "05_deduplication_removed_dupes.xlsx")
+out_df_deduplicated <- file.path(out_dir, "05_deduplication_full_paper_sample_deduplicated.xlsx")
 
-openxlsx::write.xlsx(df_deduplicated, out_df_deduplicated, overwrite = TRUE)
-openxlsx::write.xlsx(removed_duplicates, out_removed_dupes, overwrite = TRUE)
+openxlsx::write.xlsx(df_deduplicated, out_df_deduplicated, overwrite = T)
+openxlsx::write.xlsx(removed_duplicates, out_removed_dupes, overwrite = T)
 
 message("05 completed.")
 message("- Duplicated IDs detected: ", n_dupe_ids)
-message("- Deduplicated dataset overwritten at: ", out_df_deduplicated)
-message("- Removed duplicates overwritten at: ", out_removed_dupes)
+message("- Deduplicated dataset at: ", out_df_deduplicated)
+message("- Removed duplicates at: ", out_removed_dupes)
 
 
 

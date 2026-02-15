@@ -5,8 +5,8 @@
 #
 # Setup ---------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN")) source(here::here("R/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -14,30 +14,14 @@ library(openxlsx)
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- IN$full_paper_sample
-if (!file.exists(input_file)) {
-  stop(
-    "Missing required input file: ", input_file, "\n",
-    "Expected: full paper sample.\n",
-    "Check paths.R -> IN$full_paper_sample",
-    call. = FALSE
-  )
-}
+input_file <- require_file(IN$full_paper_sample, "full paper sample (Excel)")
 message("Reading full paper sample from: ", input_file)
 df <- readxl::read_excel(input_file)
 
-
-coded_reli_path <- IN$coded_reli
-if (!file.exists(coded_reli_path)) {
-  stop(
-    "Missing required input file: ", coded_reli_path, "\n",
-    "Expected: coded reliability dataset.\n",
-    "Make sure they are placed in /data/in/.",
-    call. = FALSE
-  )
-}
+coded_reli_path <- require_file(IN$coded_reli, "coded reliability dataset (Excel)")
 message("Reading coded reliability data from: ", coded_reli_path)
 coded_reli <- readxl::read_excel(coded_reli_path)
+
 
 # 4.1 Create Coding Masks  -------------------------------------------------
 #
@@ -120,18 +104,20 @@ cat("\nDoppelte IDs in Full Sample:\n"); print(duplicates_full)
 
 # Output -----------------------------------------------------------------------
 
-out_dir <- file.path(PATHS$out_intermediate, "final_coding_masks")
-dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+out_dir <- PATHS$int
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 
-stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 out_files <- c(
-  AZ = file.path(out_dir, paste0("df_sample_clean_AZ_", stamp, ".xlsx")),
-  VK = file.path(out_dir, paste0("df_sample_clean_VK_", stamp, ".xlsx")),
-  MM = file.path(out_dir, paste0("df_sample_clean_MM_", stamp, ".xlsx"))
+  AZ = file.path(out_dir, paste0("04_final_coding_mask_AZ_", stamp, ".xlsx")),
+  VK = file.path(out_dir, paste0("04_final_coding_mask_VK_", stamp, ".xlsx")),
+  MM = file.path(out_dir, paste0("04_final_coding_mask_MM_", stamp, ".xlsx"))
 )
-openxlsx::write.xlsx(df_sample1, out_files["AZ"])
-openxlsx::write.xlsx(df_sample2, out_files["VK"])
-openxlsx::write.xlsx(df_rest,    out_files["MM"])
 
-message("Step 04 completed. Coding masks written to: ", out_dir)
+openxlsx::write.xlsx(df_sample1, out_files["AZ"], overwrite = TRUE)
+openxlsx::write.xlsx(df_sample2, out_files["VK"], overwrite = TRUE)
+openxlsx::write.xlsx(df_rest,    out_files["MM"], overwrite = TRUE)
+
+message("04 completed. Final coding masks written to:")
+message("- ", paste(out_files, collapse = "\n- "))
+
 
