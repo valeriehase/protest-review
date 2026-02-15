@@ -35,26 +35,16 @@ Scripts are executed sequentially via `main.R`.
 
 - **02.abstract.screening**: Identifies CSS and non-CSS research using search strings, intercoder tests, and abstract-level coding.
 
-**03.reliability.testing**  
+- **03.reliability.testing**: Generates coding masks for intercoder reliability testing of full-paper coding. Reads the coded masks and computes intercoder reliability metrics.
 
-Generates coding masks for intercoder reliability testing of full-paper coding. Reads the coded masks and computes intercoder reliability metrics.
+- **04.final.coding.masks**: Generates final coding masks for full-paper coding of the main sample.
 
-**04.final.coding.masks**  
-
-Generates final coding masks for full-paper coding of the main sample.
-
-**05.deduplication**
-
-There were duplicates in the coded final sample (n=19). This file exports duplicates as a table for manual inspection.
+- **05.deduplication**: There were duplicates in the coded final sample (n=19). This file exports duplicates as a table for manual inspection.
 It then applies keep/remove decision to coded final sample.
 
-**06.data.cleaning**  
+- **06.data.cleaning**: Cleans the coded full-paper dataset and documents all cleaning steps in a log file.
 
-Cleans the coded full-paper dataset and documents all cleaning steps in a log file.
-
-**07.analysis**  
-
-Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
+- **07.analysis**: Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
 
 ### Required Input Data
 
