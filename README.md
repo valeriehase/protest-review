@@ -39,8 +39,7 @@ Scripts are executed sequentially via `main.R`.
 
 - **04.final.coding.masks**: Generates final coding masks for full-paper coding of the main sample.
 
-- **05.deduplication**: There were duplicates in the coded final sample (n=19). This file exports duplicates as a table for manual inspection.
-It then applies keep/remove decision to coded final sample.
+- **05.deduplication**: There were duplicates in the coded final sample (n=19). This file exports duplicates as a table for manual inspection. It then applies keep/remove decision to coded final sample.
 
 - **06.data.cleaning**: Cleans the coded full-paper dataset and documents all cleaning steps in a log file.
 
@@ -61,11 +60,11 @@ These files represent fixed research decisions.
 
 ### Output Data
 
-All generated files are written to `data/out/`:
+All generated files are written to `data/out/`
 
-- `data/out/intermediate/` – intermediate processing artifacts used by later pipeline steps
-- `data/out/final/` – analysis-ready datasets and final tables/figures
-- `logs/` – data-cleaning and processing logs
+- `data/out/intermediate/`: intermediate processing artifacts used by later pipeline steps
+- `data/out/final/`: analysis-ready datasets and final tables/figures
+- `data/out/logs/`: data-cleaning and processing logs
 
 ## Project Structure
 
