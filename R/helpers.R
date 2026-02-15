@@ -1,24 +1,34 @@
-# Helper functions: tables / figures ------------------------------------------
-# Only function definitions.
+# helpers.R --------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Small utilities 
+# ------------------------------------------------------------------------------
 
 `%||%` <- function(x, y) if (!is.null(x)) x else y
+`%!in%` <- Negate(`%in%`)   # if you use it in multiple scripts, define it here
 
-exclude_other_not_mentioned <- function(df) {
-  df %>% dplyr::filter(!Category %in% c("Other", "Not mentioned"))
-}
-
-
-# Setup ----------------------------------------------------------
+# ------------------------------------------------------------------------------
+# 1) Input / Output helpers
+# ------------------------------------------------------------------------------
 
 require_file <- function(path, what = "input file") {
-  if (!file.exists(path)) {
-    stop("Missing ", what, ": ", path, call. = FALSE)
+  if (is.null(path) || length(path) == 0) {
+    stop("Missing ", what, ": path is NULL/empty.", call. = FALSE)
+  }
+  missing <- path[!file.exists(path)]
+  if (length(missing) > 0) {
+    stop("Missing ", what, ":\n- ", paste(missing, collapse = "\n- "), call. = FALSE)
   }
   invisible(path)
 }
 
+# ------------------------------------------------------------------------------
+# 2) Data cleaning / transformations
+# ------------------------------------------------------------------------------
 
-# Transform Variables ----------------------------------------------------------
+exclude_other_not_mentioned <- function(df) {
+  df %>% dplyr::filter(!Category %in% c("Other", "Not mentioned"))
+}
 
 make_df_V10agg <- function(df) {
   stopifnot(is.data.frame(df))
@@ -48,8 +58,9 @@ make_df_V10agg <- function(df) {
     dplyr::mutate(V10_agg = as.character(V10_agg))
 }
 
-
-# Frequency table (APA optional) -----------------------------------------------
+# ------------------------------------------------------------------------------
+# 3) Tables (frequency tables, APA export)
+# ------------------------------------------------------------------------------
 
 make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, note = NULL) {
   var_sym <- rlang::sym(var)
@@ -116,67 +127,6 @@ apa_table <- function(doc, number, title, ft) {
     officer::body_add_flextable(ft) %>%
     officer::body_add_break()
 }
-
-# Chi-square helper (Cramér's V) -----------------------------------------------
-
-chi_method_table <- function(dataset, dep_var, table_caption, note_text, multi = FALSE) {
-  dep_sym <- rlang::sym(dep_var)
-  data_use <- dataset
-  
-  if (multi) {
-    data_use <- data_use %>%
-      tidyr::separate_rows(!!dep_sym, sep = ";") %>%
-      dplyr::mutate(
-        !!dep_sym := stringr::str_trim(as.character(!!dep_sym)),
-        !!dep_sym := dplyr::case_when(is.na(!!dep_sym) ~ "NA", !!dep_sym == "" ~ "NA", TRUE ~ !!dep_sym),
-        method = as.character(method)
-      ) %>%
-      dplyr::filter(.data[[dep_var]] != "NA")
-  }
-  
-  chi_obj <- data_use %>%
-    dplyr::mutate(
-      method = as.character(method),
-      !!dep_sym := as.character(.data[[dep_var]]),
-      !!dep_sym := dplyr::case_when(is.na(!!dep_sym) ~ "NA", .data[[dep_var]] == "" ~ "NA", TRUE ~ !!dep_sym)
-    ) %>%
-    dplyr::filter(.data[[dep_var]] != "NA") %>%
-    tidycomm::crosstab(method, !!dep_sym, chi_square = TRUE)
-  
-  mod <- attr(chi_obj, "model") %>% purrr::pluck(1)
-  
-  chi_sq <- as.numeric(mod$statistic)
-  obs <- mod$observed
-  n_total <- sum(obs)
-  r <- nrow(obs)
-  c <- ncol(obs)
-  k <- max(min(r, c) - 1, 1)
-  cramers_v <- sqrt(chi_sq / (n_total * k))
-  
-  chi_tib <- tibble::tibble(
-    Metric = c("Test", "df", "χ²", "p", "N", "Cramér's V"),
-    Value  = c(
-      paste0("Method (CSS vs. non-CSS) × ", dep_var),
-      as.character(mod$parameter),
-      formatC(chi_sq, format = "f", digits = 3),
-      formatC(as.numeric(mod$p.value), format = "f", digits = 3),
-      as.character(n_total),
-      formatC(cramers_v, format = "f", digits = 3)
-    )
-  )
-  
-  ft <- flextable::flextable(chi_tib) %>%
-    flextable::theme_vanilla() %>%
-    flextable::align(align = "center", part = "all") %>%
-    flextable::align(j = 1, align = "left", part = "body") %>%
-    flextable::set_caption(table_caption) %>%
-    flextable::autofit() %>%
-    flextable::add_footer_lines(values = note_text)
-  
-  list(ft = ft, chi_table = chi_tib, model = mod, chi_sq = chi_sq, cramers_v = cramers_v)
-}
-
-# Crosstab builder (% within column) -------------------------------------------
 
 build_crosstab_pct <- function(
     df_rows,
@@ -338,7 +288,84 @@ build_crosstab_pct <- function(
   ft
 }
 
-# Figures helpers ---------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# 4) Statistics helpers
+# ------------------------------------------------------------------------------
+
+chi_method_table <- function(dataset, dep_var, table_caption, note_text, multi = FALSE) {
+  dep_sym <- rlang::sym(dep_var)
+  data_use <- dataset
+  
+  if (multi) {
+    data_use <- data_use %>%
+      tidyr::separate_rows(!!dep_sym, sep = ";") %>%
+      dplyr::mutate(
+        !!dep_sym := stringr::str_trim(as.character(!!dep_sym)),
+        !!dep_sym := dplyr::case_when(is.na(!!dep_sym) ~ "NA", !!dep_sym == "" ~ "NA", TRUE ~ !!dep_sym),
+        method = as.character(method)
+      ) %>%
+      dplyr::filter(.data[[dep_var]] != "NA")
+  }
+  
+  chi_obj <- data_use %>%
+    dplyr::mutate(
+      method = as.character(method),
+      !!dep_sym := as.character(.data[[dep_var]]),
+      !!dep_sym := dplyr::case_when(is.na(!!dep_sym) ~ "NA", .data[[dep_var]] == "" ~ "NA", TRUE ~ !!dep_sym)
+    ) %>%
+    dplyr::filter(.data[[dep_var]] != "NA") %>%
+    tidycomm::crosstab(method, !!dep_sym, chi_square = TRUE)
+  
+  mod <- attr(chi_obj, "model") %>% purrr::pluck(1)
+  
+  chi_sq <- as.numeric(mod$statistic)
+  obs <- mod$observed
+  n_total <- sum(obs)
+  r <- nrow(obs)
+  c <- ncol(obs)
+  k <- max(min(r, c) - 1, 1)
+  cramers_v <- sqrt(chi_sq / (n_total * k))
+  
+  chi_tib <- tibble::tibble(
+    Metric = c("Test", "df", "χ²", "p", "N", "Cramér's V"),
+    Value  = c(
+      paste0("Method (CSS vs. non-CSS) × ", dep_var),
+      as.character(mod$parameter),
+      formatC(chi_sq, format = "f", digits = 3),
+      formatC(as.numeric(mod$p.value), format = "f", digits = 3),
+      as.character(n_total),
+      formatC(cramers_v, format = "f", digits = 3)
+    )
+  )
+  
+  ft <- flextable::flextable(chi_tib) %>%
+    flextable::theme_vanilla() %>%
+    flextable::align(align = "center", part = "all") %>%
+    flextable::align(j = 1, align = "left", part = "body") %>%
+    flextable::set_caption(table_caption) %>%
+    flextable::autofit() %>%
+    flextable::add_footer_lines(values = note_text)
+  
+  list(ft = ft, chi_table = chi_tib, model = mod, chi_sq = chi_sq, cramers_v = cramers_v)
+}
+
+share_one <- function(.df, var) {
+  .df %>%
+    dplyr::mutate(val = as.character(.data[[var]]), method = as.character(method)) %>%
+    dplyr::filter(method %in% c("0", "1")) %>%
+    dplyr::group_by(method) %>%
+    dplyr::summarise(
+      n_total = dplyr::n(),
+      n_one   = sum(val == "1", na.rm = TRUE),
+      pct_one = dplyr::if_else(n_total > 0, round(100 * n_one / n_total, 1), 0),
+      .groups = "drop"
+    ) %>%
+    dplyr::mutate(variable = var)
+}
+
+# ------------------------------------------------------------------------------
+# 5) Figures helpers
+# ------------------------------------------------------------------------------
 
 apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) {
   df_long <- df %>%
@@ -374,18 +401,4 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
     officer::body_add_par(title, style = "Normal") %>%
     officer::body_add_gg(value = p, width = 9, height = 6) %>%
     officer::body_add_break()
-}
-
-share_one <- function(.df, var) {
-  .df %>%
-    dplyr::mutate(val = as.character(.data[[var]]), method = as.character(method)) %>%
-    dplyr::filter(method %in% c("0", "1")) %>%
-    dplyr::group_by(method) %>%
-    dplyr::summarise(
-      n_total = dplyr::n(),
-      n_one   = sum(val == "1", na.rm = TRUE),
-      pct_one = dplyr::if_else(n_total > 0, round(100 * n_one / n_total, 1), 0),
-      .groups = "drop"
-    ) %>%
-    dplyr::mutate(variable = var)
 }
