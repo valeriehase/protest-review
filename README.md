@@ -46,7 +46,7 @@ It then applies keep/remove decision to coded final sample.
 
 - **07.analysis**: Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
 
-### Required Input Data
+### Required Input Data (important: subject to update)
 
 Before running `main.R`, all manually coded data from the literature review process must be placed in `data/in/`.
 These files represent fixed research decisions.
