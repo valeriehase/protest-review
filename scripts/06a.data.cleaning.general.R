@@ -433,7 +433,7 @@ log_df <- log_event(
 out_dir <- PATHS$int
 log_dir <- PATHS$logs
 
-out_df_cleaned <- file.path(out_dir, "full_paper_sample_deduplicated_cleaned.xlsx")
+out_df_cleaned <- file.path(out_dir, "06a_full_paper_sample_deduplicated_cleaned.xlsx")
 openxlsx::write.xlsx(df_clean, out_df_cleaned, overwrite = TRUE)
 
 log_file <- file.path(log_dir, paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
