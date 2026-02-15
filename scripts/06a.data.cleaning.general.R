@@ -5,9 +5,10 @@
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
-if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
-if (!exists("write_log", inherits = TRUE)) source(here::here("R/logging.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
+source(here::here("R/logging.R"))
+source(here::here("R/helpers.R"))
 
 library(readxl)
 library(dplyr)
