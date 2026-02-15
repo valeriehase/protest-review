@@ -7,10 +7,12 @@
 
 if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
 if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
-if (!exists("require_file", inherits = TRUE)) source(here::here("R/helpers.R"))
+source(here::here("R/helpers.R"))
 source(here::here("R/codebook.R"))
 
 library(readxl)
+library(tidyverse)
+library(ggplot2)
 library(tidycomm)
 library(janitor)
 library(stringr)

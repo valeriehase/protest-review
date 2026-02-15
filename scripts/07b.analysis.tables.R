@@ -7,7 +7,7 @@
 
 if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
 if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
-if (!exists("require_file", inherits = TRUE)) source(here::here("R/helpers.R"))
+source(here::here("R/helpers.R"))
 source(here::here("R/codebook.R"))
 
 library(readxl)
@@ -18,9 +18,6 @@ library(stringr)
 library(openxlsx)
 library(flextable)
 library(officer)
-library(sf)
-library(rnaturalearth)
-library(rnaturalearthdata)
 
 # Load Input -------------------------------------------------------------------
 
