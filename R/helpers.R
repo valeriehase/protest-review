@@ -62,7 +62,52 @@ make_df_V10agg <- function(df) {
 # 3) Tables (frequency tables, APA export)
 # ------------------------------------------------------------------------------
 
-make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, note = NULL) {
+make_complete_table_figures <- function(df, var, levels_df, apa = FALSE, title = NULL, note = NULL) {
+  var_sym <- rlang::sym(var)
+  lab_col <- paste0(var, "_label")
+  df <- df %>% mutate(!!var_sym := as.character(.data[[var]]))
+  levels_df <- levels_df %>% mutate(!!var_sym := as.character(.data[[var]]))
+  
+  tab <- df %>%
+    
+    ##TO CHECK: this create several observations for each study with, e.g., several regions: Do we want that?
+    tidyr::separate_rows(!!var_sym, sep = ";") %>%
+    mutate(!!var_sym := dplyr::coalesce(trimws(!!var_sym), "Missing")) %>%
+    count(method, !!var_sym, name = "n") %>%
+    group_by(method) %>%
+    mutate(pct = round(100 * n / sum(n), 1)) %>%
+    ungroup()
+  
+  totals <- tab %>%
+    group_by(method) %>%
+    summarise(N = sum(n), .groups = "drop") %>%
+    tidyr::pivot_wider(names_from = method, values_from = N, names_prefix = "N_")
+  
+  tab_complete <- tidyr::expand_grid(!!var_sym := levels_df[[var]], method = c("0","1")) %>%
+    left_join(tab, by = c(var, "method")) %>%
+    mutate(across(c(n, pct), ~ tidyr::replace_na(.x, 0))) %>%
+    left_join(levels_df, by = var) %>%
+    tidyr::pivot_wider(names_from = method, values_from = c(n, pct), names_glue = "{.value}_{method}") %>%
+    rename(
+      Code = !!var_sym,
+      Category = !!sym(lab_col),
+      !!paste0("Non-CSS n (n=", totals$N_0, ")") := n_0,
+      "Non-CSS %" = pct_0,
+      !!paste0("CSS n (n=", totals$N_1, ")") := n_1,
+      "CSS %" = pct_1
+    ) %>%
+    select(Code, Category, tidyselect::everything())
+  
+  if (!apa) return(tab_complete)
+  
+  ft <- tab_complete %>% flextable() %>% theme_vanilla() %>%
+    align(align = "center", part = "all") %>% set_caption(title %||% paste("Table for", var)) %>% autofit()
+  if (!is.null(note)) ft <- add_footer_lines(ft, values = note)
+  ft
+}
+
+make_complete_table_table <- make_complete_table <- function(df, var, levels_df, 
+                                                             apa = FALSE, title = NULL, note = NULL) {
   var_sym <- rlang::sym(var)
   lab_col <- paste0(var, "_label")
   
@@ -84,7 +129,7 @@ make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, n
   
   n0 <- totals$N_0 %||% 0
   n1 <- totals$N_1 %||% 0
-  
+
   tab_complete <- tidyr::expand_grid(!!var_sym := levels_df[[var]], method = c("0", "1")) %>%
     dplyr::left_join(tab, by = c(var, "method")) %>%
     dplyr::mutate(dplyr::across(c(n, pct), ~ tidyr::replace_na(.x, 0))) %>%
@@ -114,9 +159,12 @@ make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, n
     flextable::set_caption(title %||% paste("Table for", var)) %>%
     flextable::autofit()
   
-  if (!is.null(note)) ft <- flextable::add_footer_lines(ft, values = note)
+  if (!is.null(note)) {
+    ft <- flextable::add_footer_lines(ft, values = note)
+  }
   ft
 }
+
 
 apa_table <- function(doc, number, title, ft) {
   ft <- ft %>% flextable::autofit() %>% flextable::width(width = 1)

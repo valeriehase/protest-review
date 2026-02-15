@@ -1,32 +1,36 @@
-########################
 #
-# Figures
+# Final Analysis - Figures
 # Author: Miriam Milzner, Valerie Hase
 # Date: 2025-10-24
 #
-########################
-#
-# Packages ---------------------------------------------------------------------
+# Setup ------------------------------------------------------------------------
 
-suppressPackageStartupMessages({
-  library(readxl)
-  library(tidyverse)
-  library(tidycomm)
-  library(janitor)
-  library(stringr)
-  library(openxlsx)
-  library(flextable)
-  library(officer)
-  library(sf)
-  library(rnaturalearth)
-  library(rnaturalearthdata)
-})
+if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
+if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+if (!exists("require_file", inherits = TRUE)) source(here::here("R/helpers.R"))
+source(here::here("R/codebook.R"))
 
-# 1. Prepare Data -----------------------------------------------------------------
+library(readxl)
+library(tidycomm)
+library(janitor)
+library(stringr)
+library(openxlsx)
+library(flextable)
+library(officer)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
 
-df_full_sample_coded <- read_excel("data/processed/full_paper_sample_coded_clean.xlsx")
+# Load Input -------------------------------------------------------------------
 
-df <- df_full_sample_coded %>%
+input_file <- require_file(file.path(PATHS$int, "full_paper_sample_deduplicated_cleaned_comments_checked_codes_checked.xlsx"), "analysis input dataset (output of step 06b)")
+
+message("Reading analysis dataset from: ", input_file)
+df <- readxl::read_excel(input_file)
+
+# 7.1 Prepare Data ------------------------------------------------------------
+
+df <- df %>%
   rename_with(
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
@@ -39,219 +43,11 @@ df <- df %>%
   mutate(method = str_trim(method)) %>%    
   filter(method %in% c("0", "1")) %>%
   filter(!is.na(method)) %>%
-  distinct(id_unique, .keep_all = TRUE) # remove duplicates. Note to self double check duplicates while cleaning the data
+  distinct(id_unique, .keep_all = TRUE) 
 
-levels_V7 <- tibble(
-  V7 = c(as.character(1:10), "NA"),
-  V7_label = c(
-    "North America",
-    "South America",
-    "Europe",
-    "Russia and former Soviet Republics",
-    "Middle East and North Africa",
-    "East Asia",
-    "Central and South (East) Asia",
-    "Sub-Saharan Africa",
-    "Oceania",
-    "Global",
-    "Not mentioned"
-  )
-)
+df_V10agg <- make_df_V10agg(df)
 
-levels_V10 <- tibble(
-  V10 = c(
-    "100", "110", "111", "112", "113", "114",
-    "120", "121", "122", "124",
-    "130", "131", "132", "133", "134",
-    "140", "141", "142",
-    "150", "151", "152", "153",
-    "160", "161", "162",
-    "200", "201", "202", "203", "204",
-    "300", "400", "NA"
-  ),
-  V10_label = c(
-    "Internet / online / social media (general)", "Websites (general)", "Websites of activist groups / NGOs / parties / companies", "News Media (online)", "Partisan news outlets", "Blogs",
-    "Knowledge communities & discussion", "Specific discussion forum(s)", "Discord", "Reddit",
-    "Social networking sites (general)", "Facebook", "Instagram", "TikTok", "VKontakte",
-    "Microblogs", "X/Twitter", "Weibo", 
-    "Video-sharing sites", "YouTube", "Vimeo", "Twitch",
-    "Photo-sharing sites", "Flickr", "Tumblr",
-    "Messengers (general)", "WhatsApp", "Telegram", "Signal", "WeChat",
-    "News Media (offline)", "Other", "Not mentioned"
-  )
-)
-
-df_V10agg <- df %>%
-  tidyr::separate_rows(V10, sep = ";") %>%
-  dplyr::mutate(V10 = stringr::str_trim(as.character(V10))) %>%
-  dplyr::mutate(
-    V10_agg = dplyr::case_when(
-      V10 == "100" ~ "100",
-      V10 %in% c("110","111","112","113","114") ~ "110",
-      V10 %in% c("120","121","122","124") ~ "120",
-      V10 %in% c("130","131","132","133","134") ~ "130",
-      V10 %in% c("140","141","142") ~ "140",
-      V10 %in% c("150","151","152","153") ~ "150",
-      V10 %in% c("160","161","162") ~ "160",
-      V10 %in% c("200","201","202","203","204") ~ "200",
-      V10 == "300" ~ "300",
-      V10 == "400" ~ "400",
-      V10 %in% c("NA", NA) ~ "NA",
-      TRUE ~ "Other"
-    )
-  ) %>%
-  dplyr::mutate(V10_agg = as.character(V10_agg))
-
-levels_V10_agg <- tibble(
-  V10_agg = c("100", "110", "120", "130", "140", "150", "160", "200", "300", "400", "NA"),
-  V10_agg_label = c(
-    "Internet / online / social media (general)",
-    "Websites generally",
-    "Knowledge communities & discussion",
-    "Social networking sites",
-    "Microblogs",
-    "Video-sharing sites",
-    "Photo-sharing sites",
-    "Messengers",
-    "News Media (offline)",
-    "Other",
-    "Not mentioned"
-  )
-)
-
-
-levels_V11 <- tibble(
-  V11 = c(
-    "10", "11","12","13","14","15","16","17","18",
-    "20", "21","22","23","24","25","26",
-    "99","NA"
-  ),
-  V11_label = c(
-    "CSS-related (general)", 
-    "Agent-based models / simulations", "API access", "Automated content analysis", "Data donation", "Eye-tracking", "Network analysis", "Tracking", "Web scraping",
-    "Not-CSS-related (general)",
-    "Qualitative content analysis", "Qualitative interviews / focus groups", "Qualitative observation", "Quantitative content analysis", "Quantitative observation", "Quantitative survey",
-    "Other", "Not mentioned"
-  )
-)
-
-levels_V12 <- tibble(
-  V12 = c(
-    "1",
-    "0"
-  ),
-  V12_label = c(
-    "cross-national",
-    "not cross-national"
-  )
-)
-
-levels_V13 <- tibble(
-  V13 = c(
-    "1",
-    "0"
-  ),
-  V13_label = c(
-    "experiment",
-    "not experiment"
-  )
-)
-
-# 2. Helper APA Figures  ----------------------------------------------------------
-
-exclude <- function(df) df %>% filter(!Category %in% c("Other", "Not mentioned"))
-
-make_complete_table <- function(df, var, levels_df, apa = FALSE, title = NULL, note = NULL) {
-  var_sym <- rlang::sym(var)
-  lab_col <- paste0(var, "_label")
-  df <- df %>% mutate(!!var_sym := as.character(.data[[var]]))
-  levels_df <- levels_df %>% mutate(!!var_sym := as.character(.data[[var]]))
-  
-  tab <- df %>%
-    
-    ##TO CHECK: this create several observations for each study with, e.g., several regions: Do we want that?
-    tidyr::separate_rows(!!var_sym, sep = ";") %>%
-    mutate(!!var_sym := dplyr::coalesce(trimws(!!var_sym), "Missing")) %>%
-    count(method, !!var_sym, name = "n") %>%
-    group_by(method) %>%
-    mutate(pct = round(100 * n / sum(n), 1)) %>%
-    ungroup()
-  
-  totals <- tab %>%
-    group_by(method) %>%
-    summarise(N = sum(n), .groups = "drop") %>%
-    tidyr::pivot_wider(names_from = method, values_from = N, names_prefix = "N_")
-  
-  tab_complete <- tidyr::expand_grid(!!var_sym := levels_df[[var]], method = c("0","1")) %>%
-    left_join(tab, by = c(var, "method")) %>%
-    mutate(across(c(n, pct), ~ tidyr::replace_na(.x, 0))) %>%
-    left_join(levels_df, by = var) %>%
-    tidyr::pivot_wider(names_from = method, values_from = c(n, pct), names_glue = "{.value}_{method}") %>%
-    rename(
-      Code = !!var_sym,
-      Category = !!sym(lab_col),
-      !!paste0("Non-CSS n (n=", totals$N_0, ")") := n_0,
-      "Non-CSS %" = pct_0,
-      !!paste0("CSS n (n=", totals$N_1, ")") := n_1,
-      "CSS %" = pct_1
-    ) %>%
-    select(Code, Category, tidyselect::everything())
-  
-  if (!apa) return(tab_complete)
-  
-  ft <- tab_complete %>% flextable() %>% theme_vanilla() %>%
-    align(align = "center", part = "all") %>% set_caption(title %||% paste("Table for", var)) %>% autofit()
-  if (!is.null(note)) ft <- add_footer_lines(ft, values = note)
-  ft
-}
-
-apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) {
-  df_long <- df %>%
-    select(Category, matches("%$")) %>%
-    tidyr::pivot_longer(cols = matches("%$"), names_to = "Method", values_to = "Percentage") %>%
-    mutate(Method = recode(Method, "Non-CSS %" = "Non-CSS", "CSS %" = "CSS")) %>%
-    exclude()
-  
-  if (!is.null(levels_vec)) df_long$Category <- factor(df_long$Category, levels = levels_vec)
-  
-  p <- ggplot(df_long, aes(x = Category, y = Percentage, fill = Method)) +
-    geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-    geom_text(aes(label = paste0(round(Percentage, 1), "%")),
-              position = position_dodge(0.8), vjust = -0.8, size = 2) +
-    scale_fill_manual(values = c("grey70","white")) +
-    labs(x = category_var, y = "Percentage", fill = "Method Group") +
-    theme_minimal(base_size = 12) +
-    theme(
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor = element_blank(),
-      legend.position = "top",
-      legend.title = element_text(face = "bold"),
-      axis.text.x = element_text(angle = 50, hjust = 1),
-      plot.margin = margin(10, 10, 10, 100)
-    )
-  
-  doc %>%
-    body_add_par(paste0("Figure ", number), style = "Normal") %>%
-    body_add_par(title, style = "Normal") %>%
-    body_add_gg(value = p, width = 9, height = 6) %>%
-    body_add_break()
-}
-
-share_one <- function(.df, var) {
-  .df %>%
-    mutate(val = as.character(.data[[var]]), method = as.character(method)) %>%
-    filter(method %in% c("0","1")) %>%
-    group_by(method) %>%
-    summarise(
-      n_total = n(),
-      n_one   = sum(val == "1", na.rm = TRUE),
-      pct_one = if_else(n_total > 0, round(100 * n_one / n_total, 1), 0),
-      .groups = "drop"
-    ) %>%
-    mutate(variable = var)
-}
-
-# 3. Descriptive Figures  ----------------------------------------------------------
+# 7.2 Descriptive Figures  -----------------------------------------------------
 
 landscape <- prop_section(page_size = page_size(orient = "landscape"))
 doc <- read_docx() %>% body_add_par("", style = "Normal") %>% body_set_default_section(landscape)
@@ -318,7 +114,7 @@ doc <- doc %>%
   body_add_break()
 
 
-# 4. World Map  ------------------------------------------------------------
+# 7.3 World Map  ---------------------------------------------------------------
 
 #create the world map
 worldmap_data <- df %>%
@@ -507,7 +303,7 @@ doc <- doc %>%
   body_add_gg(value = worldmap, width = 9, height = 5) %>%
   body_add_break()
 
-# 5. Combined: Cross-national / Cross-Platform/ Experimental --------------------------------
+# 7.3 Combined: Cross-national / Cross-Platform/ Experimental --------------------------------
 
 df_platform_scope <- df %>%
   mutate(V10 = as.character(V10), method = as.character(method)) %>%
@@ -568,7 +364,7 @@ doc <- doc %>%
   body_add_gg(value = p_design3, width = 9, height = 5) %>%
   body_add_break()
 
-# 6. Cross Tables Figures ----------------------------------------------------------------
+# 7.4 Cross Tables Figures ----------------------------------------------------------------
 method_levels_vec <- c("0","1")  # Non-CSS, CSS
 selected_platforms <- c("100","110","130","140")
 
@@ -657,7 +453,7 @@ doc <- doc %>%
   body_add_gg(value = p_v10_cross, width = 9, height = 5) %>%
   body_add_break()
 
-# 7. MethodCombo ------------------------------------------------------------------------
+# 7.5 MethodCombo ------------------------------------------------------------------------
 
 qual_codes  <- c("21","22","23")
 quant_codes <- c("24","25","26")
@@ -736,6 +532,14 @@ doc <- doc %>%
   body_add_gg(value = p_methodcombo, width = 9, height = 5) %>%
   body_add_break()
 
-# Export to Word ------------------------------------------------------------------------
+# Export -----------------------------------------------------------------------
 
-print(doc, target = "output/figures/All_Figures.docx")
+out_dir <- PATHS$final
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
+
+out_file <- file.path(out_dir, paste0("07_analysis_figures_", stamp, ".docx"))
+
+print(doc, target = out_file)
+
+message("07 figures completed.")
+message("- Word document saved to: ", out_file)

@@ -5,11 +5,9 @@
 #
 # Setup ------------------------------------------------------------------------
 
-library(here)
-
-source(here("R/paths.R"))
-source(here("R/config.R"))
-source(here("R/logging.R"))
+if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
+if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+if (!exists("write_log", inherits = TRUE)) source(here::here("R/logging.R"))
 
 library(readxl)
 library(dplyr)
@@ -19,17 +17,14 @@ library(purrr)
 library(openxlsx)
 
 log_df <- init_log()
+log_df <- log_event(log_df, "06c_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- if (exists("OUT") && !is.null(OUT$coded_full_sample_deduplicated_cleaned_comments)) {
-  OUT$coded_full_sample_deduplicated_cleaned_comments
-} else {
-  here("data", "out", "coded_full_sample_deduplicated_cleaned_comments.xlsx")
-}
-stopifnot(file.exists(input_file))
-df <- readxl::read_excel(input_file) 
+input_file <- require_file(file.path(PATHS$int, "full_paper_sample_deduplicated_cleaned_comments_checked.xlsx"), "cleaned full-paper sample with comments checked (output of step 06b)")
 
+message("Reading cleaned dataset (comments checked) from: ", input_file)
+df <- readxl::read_excel(input_file)
 
 # 6.4 Check code distributions -----------------------------------------
 
@@ -82,3 +77,5 @@ log_event(
     "Code-Verteilungen V10–V13 getrennt nach Kodiererin auf Auffälligkeiten geprüft."
   )
 )
+
+#tbc
