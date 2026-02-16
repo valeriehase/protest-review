@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
-if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 source(here::here("R/logging.R"))
 source(here::here("R/helpers.R"))
 
@@ -61,7 +61,9 @@ fixes <- tibble::tribble(
   "ID83",     "V11", "13; 16; 99",  "archive/database + network analysis; removed scraping/API codes",
   "ID131",    "V11", "20",          "theoretical discussion of case studies",
   "ID1355",   "V11", "20",          "theoretical discussion of case studies",
-  "ID1390",   "V11", "20",          "theoretical case-study discussion"
+  "ID1390",   "V11", "20",          "theoretical case-study discussion",
+  "ID1846",   "V11", "20; 21",      "uses cyber-cartography to evaluate images; different to qualitative content analysis",
+  
 )
 
 for (i in seq_len(nrow(fixes))) {
@@ -85,22 +87,30 @@ for (i in seq_len(nrow(fixes))) {
 
 no_change <- tibble::tribble(
   ~id_unique, ~note,
-  "ID1033", "no method section; method checked; keep coding",
-  "ID1092", "experiment checked; evidence in text; keep coding",
-  "ID1174", "no method section; method checked; keep coding",
-  "ID12",   "qualitative frame analysis clear; keep coding",
-  "ID1273", "platform assignment supported; keep coding",
-  "ID2054", "region assignment supported; keep coding",
-  "ID2449", "UK single-country; not cross-national; keep coding",
-  "ID391",  "website analysis fits code 111; keep coding",
-  "ID13",   "pan-european fits; keep coding",
-  "ID1463", "global/diaspora fits; keep coding",
-  "ID1468", "no method section; method/platform checked; keep coding",
-  "ID1501", "no method section; method/platform checked; keep coding",
-  "ID1523", "no method section; method/platform checked; keep coding",
-  "ID1543", "no method section but analyzes 'how humour is discursively constituted'; keep coding",
-  "ID1553", "explanation of V6 protest case coding; keep coding",
-  "ID1616", "no method section; discussion of two researchers that could be labeled 'ethnographic observation'; keep coding"
+  "ID1033",  "no method section; method checked; keep coding for V10/V11",
+  "ID1092",  "experiment checked; evidence in text; keep coding",
+  "ID1174",  "no method section; method checked; keep coding for V10/V11",
+  "ID12",    "V11 qualitative frame analysis clear; keep coding",
+  "ID1273",  "V10 platform assignment supported; keep coding",
+  "ID2054",  "V7 region assignment supported; keep coding",
+  "ID2449",  "UK single-country; not cross-national; keep coding",
+  "ID391",   "website analysis fits code V10 = 111; keep coding",
+  "ID13",    "V7 pan-european fits; keep coding",
+  "ID1463",  "V7 global/diaspora fits; keep coding",
+  "ID1468",  "no method section; method/platform checked; keep coding for V10/V11",
+  "ID1501",  "no method section; method/platform checked; keep coding for V10/V11",
+  "ID1523",  "no method section; method/platform checked; keep coding for V10/V11",
+  "ID1543",  "no method section but analyzes 'how humour is discursively constituted'; keep coding for V10/V11",
+  "ID1553",  "comment is explanation of V6 protest case coding; keep coding",
+  "ID1616",  "no method section; discussion of two researchers that could be labeled 'ethnographic observation'; keep coding for V10/V11",
+  "ID162",   "comment is explanation for V7 coding; agent-based modeling of non-real-world data (no region present) = NA",
+  "ID1621",  "no method section; qualitative interviews and articles/pictures; keep coding for V10/V11",
+  "ID1723",  "no method section; moral evaluation of the question 'Can we think of Anonymous as being good/bad?'; keep coding for V10/V11",
+  "ID1810",  "comment gives full list of countries 'Germany, Greece, Spain, France, Italy, Poland, Switzerland, the United Kingdom, Sweden'; keep coding",
+  "ID1835",  "no method section; ethnographic field work and qualitative eval of lyrics/material/song distributed on Facebook; keep coding for V10/V11",
+  "ID184",   "no method section; but method is very well documented; keep coding for V10/V11",
+  "ID1956",  "no method section; but qualitative analysis of image on social media is present; keep coding for V10/V11",
+  "ID1957",  "no methiod section; but qual analysis of two audio memes from TikTok; keep coding for V10/V11"
 )
 
 for (i in seq_len(nrow(no_change))) {

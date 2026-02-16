@@ -5,8 +5,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS", inherits = TRUE)) source(here::here("R/paths.R"))
-if (!exists("IN",    inherits = TRUE)) source(here::here("R/config.R"))
+source(here::here("R/paths.R"))
+source(here::here("R/config.R"))
 source(here::here("R/helpers.R"))
 source(here::here("R/codebook.R"))
 
