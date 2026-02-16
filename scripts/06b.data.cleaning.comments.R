@@ -54,7 +54,7 @@ if ("Comment_CODER" %in% names(df)) {
 fixes <- tibble::tribble(
   ~id_unique, ~var,  ~value,        ~note,
   "ID11",     "V13", "1",           "quasi-experiment meets experiment criterion", 
-  "ID1072",   "V10", "100",         "focus on digital comm (memes); not platform-specific analysis",
+  "ID1072",   "V10", "100",         "focus on digital comm (memes); no platform-specific analysis",
   "ID1703",   "V7",  "10",          "global/diaspora focus; no clear regional assignment",
   "ID1703",   "V8",  "NA",          "no clear country assignment",
   "ID248",    "V11", "13; 16",      "semantic network with Gephi -> network analysis added",
@@ -62,7 +62,7 @@ fixes <- tibble::tribble(
   "ID131",    "V11", "20",          "theoretical discussion of case studies",
   "ID1355",   "V11", "20",          "theoretical discussion of case studies",
   "ID1390",   "V11", "20",          "theoretical case-study discussion",
-  "ID1846",   "V11", "20; 21",      "uses cyber-cartography to evaluate images; different to qualitative content analysis",
+  "ID1846",   "V11", "20; 21",      "uses cyber-cartography to evaluate images; different to qualitative content analysis; added code 20",
   
 )
 
