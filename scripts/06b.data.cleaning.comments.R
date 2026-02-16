@@ -49,7 +49,7 @@ if ("Comment_CODER" %in% names(df)) {
   print(comments_long)
 }
 
-# --- Manual fixes -------------------------------------------------------
+# --- Manual fixes -------------------------------------------------------------
 
 fixes <- tibble::tribble(
   ~id_unique, ~var,  ~value,        ~note,
@@ -83,7 +83,7 @@ for (i in seq_len(nrow(fixes))) {
   )
 }
 
-# --- Reviewed, no change --------------------------------------------
+# --- Reviewed, no change ------------------------------------------------------
 
 no_change <- tibble::tribble(
   ~id_unique, ~note,
