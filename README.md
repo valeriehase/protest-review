@@ -45,7 +45,7 @@ Scripts are executed sequentially via `main.R`.
 
 - **07.analysis**: Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
 
-### `data/in/`: Required Input Data (important: subject to update)
+### Required Input Data (important: subject to update)
 
 | File | Description |
 |------|------------|
@@ -55,7 +55,7 @@ Scripts are executed sequentially via `main.R`.
 | `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
 | `df_sample_coded_reli.xlsx` | Reliability coded cases used to exclude papers before final coding |
 
-### `data/out/`: Output Paths
+### Output Paths
 
 | Path | Description |
 |------|------------|
