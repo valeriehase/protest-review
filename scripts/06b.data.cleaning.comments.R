@@ -3,6 +3,10 @@
 # Author: Miriam Milzner
 # Date: 2025-10-20
 #
+# Performs post-coding clarification based on coder comments indicating uncertainty or codebook misinterpretation. 
+# Revisions were made through centralized adjudication by the senior coder (MM) using consistent decision rules.
+# All changes are logged for transparency.
+#
 # Setup ------------------------------------------------------------------------
 
 source(here::here("R/paths.R"))
@@ -52,25 +56,33 @@ if ("Comment_CODER" %in% names(df)) {
 # --- Manual fixes -------------------------------------------------------------
 
 fixes <- tibble::tribble(
-  ~id_unique, ~var,  ~value,        ~note,
-  "ID11",     "V13", "1",           "quasi-experiment meets experiment criterion", 
-  "ID1072",   "V10", "100",         "focus on digital comm (memes); no platform-specific analysis",
-  "ID1703",   "V7",  "10",          "global/diaspora focus; no clear regional assignment",
-  "ID1703",   "V8",  "NA",          "no clear country assignment",
-  "ID248",    "V11", "13; 16",      "semantic network with Gephi -> network analysis added",
-  "ID83",     "V11", "13; 16; 99",  "archive/database + network analysis; removed scraping/API codes",
-  "ID131",    "V11", "20",          "no method section; theoretical discussion of case studies; change code to 20",
-  "ID1355",   "V11", "20",          "no method section; theoretical discussion of case studies; change code to 20",
-  "ID1390",   "V11", "20",          "no method section; theoretical case-study discussion; change code to 20",
-  "ID1846",   "V11", "20; 21",      "uses cyber-cartography and evaluate images; added code 20",
-  "ID206",    "V11", "20",          "no method section; theoretical discussion of feminist literature; change code to 20",
-  "ID2394",   "V13", "0",           "agent-based modeling no experiment; change code to 0"
+  ~id_unique, ~var,      ~or_value,              ~new_value,   ~note,
+  "ID11",     "V13",     "0",                    "1",          "quasi-experiment meets experiment criterion", 
+  "ID1072",   "V10",     "NA",                   "100",        "focus on digital comm (memes); no platform-specific analysis",
+  "ID1703",   "V7",      "5; 7",                 "10",         "global/diaspora focus",
+  "ID1703",   "V8",      "Sri Lanka; Palestine", "NA",         "no clear country assignment",
+  "ID248",    "V11",     "13",                   "13; 16",     "semantic network with Gephi -> network analysis added",
+  "ID83",     "V11",     "18; 12",               "13; 16; 99", "archive/database + network analysis; removed scraping/API codes",
+  "ID131",    "V11",     "NA",                   "20",         "no method section; theoretical discussion of case studies; change code to 20",
+  "ID1355",   "V11",     "NA",                   "20",         "no method section; theoretical discussion of case studies; change code to 20",
+  "ID1390",   "V11",     "21",                   "20",         "no method section; theoretical case-study discussion; change code to 20",
+  "ID1846",   "V11",     "21",                   "20; 21",     "uses cyber-cartography and evaluate images; added code 20",
+  "ID206",    "V11",     "23",                   "20",         "no method section; theoretical discussion of feminist literature; change code to 20",
+  "ID2394",   "V13",     "1",                    "0",          "agent-based modeling no experiment; change code to 0",
+  "ID866",    "V11",     "23",                   "20",         "no method section; historical and theoretical article; change code to 20",
+  "ID907",    "V11",     "23",                   "21",         "no method section; broad qual analysis of online posts; change code to 21",
+  "ID2438",   "V11",     "23",                   "21",         "no method section; analyzes  public  statements,  media accounts,  and  secondary  literature; change code from 23 to 21",
+  "ID306",    "V11",     "24; 13",               "13",         "no method section; method article using forecasting (machine learning), human coding as training data; delete 24 and keep only code 13 for V11",
+  "ID447",    "V10",     "151",                  "100",        "no method section; refers to transmedia testimonio through social media (general); change code 151 to 100 for V10; keep code for V11",
+  "ID700",    "V10",     "100",                  "131",        "comment says 'no method section', but there is; change V10 coding from 100 to 131 (Facebook) accordingly; keep code '12; 21' for V11", 
+  "ID2286",   "V11",     "23",                   "20",         "no method section; theoretical discussion of case studies; change code to 20",
+  "ID2281",   "V11",     "21; 22",               "20; 21; 22", "no comment section; but describes clearly what it does 'theoretical piece with data/analysis from previous studies; add code 20"
   )
 
 for (i in seq_len(nrow(fixes))) {
   id  <- fixes$id_unique[i]
   var <- fixes$var[i]
-  val <- fixes$value[i]
+  val <- fixes$new_value[i]
   
   df[[var]] <- ifelse(df$id_unique == id, val, as.character(df[[var]]))
 }
@@ -80,7 +92,7 @@ for (i in seq_len(nrow(fixes))) {
     log_df,
     step   = "06b_comment_review",
     action = "manual_edit",
-    note   = paste0(fixes$id_unique[i], ": ", fixes$var[i], " -> ", fixes$value[i], " | ", fixes$note[i])
+    note   = paste0(fixes$id_unique[i], ": ", fixes$var[i], " | ", fixes$or_value[i], " -> ", fixes$new_value[i], " | ", fixes$note[i])
   )
 }
 
@@ -114,13 +126,20 @@ no_change <- tibble::tribble(
   "ID1957",  "no methiod section; but qual analysis of two audio memes from TikTok; keep coding for V10/V11",
   "ID2086",  "no method section; but examines mediated discourse; keep coding for V10/V11",
   "ID2141",  "no method section; examines key texts; keep coding for V10/V11",
-  "ID2130",
-  "ID2217",
-  "ID2281",
-  "ID2286",
-  "ID23",
-  "ID2438"
-  
+  "ID2217",  "no method section; theoretical discussion and illustration; keep code 20 for V10/V11",
+  "ID347",   "no method section; commentary; keep code 20 for V11 and code 100 for V10",
+  "ID403",   "comment is explanatin for V7 coding; 'rallies showing solidarity with the movement were held in more than 64 cities across the world'; keep code 10 for V7", 
+  "ID423",   "comment is explanation for V12 coding; transnational = crossnational; keep code 1 for V12",
+  "ID495",   "explanation of code 21 in V11 = argumentative analysis; keep coding",
+  "ID50",    "explanation for V7 coding; case involves not only local protests but also international grievances; keep code 10 for V7",
+  "ID561",   "no method section; theory article; keep code 20 for V11 and code 100 for V10",
+  "ID631",   "this article reviews sampling strategies; keep code 20 for V11",
+  "ID82",    "comment is explanation for V11 coding; spatial analysis as network = 16; keep coding",
+  "ID947",   "explanation for V11 coding; conceptual paper but relies on findings from a previous project and methods; keep code",
+  "ID109",   "comment is note on CSS code in non-CSS sample; checked in 06a; no changes here",
+  "ID879",   "comment is explanation for V12 coding; environmental websites from several countries but not analyzed as cross-national; keep code 0 for V12",
+  "ID23",    "no method section; but abstract describes method clearly; keep coding for V10 and V11",
+  "ID2130",  "no method section; but abstract describes method clearly; keep coding for V10 and V11"
 )
 
 for (i in seq_len(nrow(no_change))) {
@@ -161,7 +180,7 @@ log_file <- file.path(log_dir, paste0("06b_comments_check_log_", format(Sys.time
 write_log(log_df, log_file)
 
 message("06b completed.")
-message("- Cleaned dataset (comments checked) at: ", out_df_cleaned_comments)
+message("- Cleaned dataset (comments checked) at: ", out_df_comments)
 message("- Log written to: ", log_file)
 
 
