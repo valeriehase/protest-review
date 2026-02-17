@@ -59,12 +59,13 @@ fixes <- tibble::tribble(
   "ID1703",   "V8",  "NA",          "no clear country assignment",
   "ID248",    "V11", "13; 16",      "semantic network with Gephi -> network analysis added",
   "ID83",     "V11", "13; 16; 99",  "archive/database + network analysis; removed scraping/API codes",
-  "ID131",    "V11", "20",          "theoretical discussion of case studies",
-  "ID1355",   "V11", "20",          "theoretical discussion of case studies",
-  "ID1390",   "V11", "20",          "theoretical case-study discussion",
-  "ID1846",   "V11", "20; 21",      "uses cyber-cartography to evaluate images; different to qualitative content analysis; added code 20",
-  
-)
+  "ID131",    "V11", "20",          "no method section; theoretical discussion of case studies; change code to 20",
+  "ID1355",   "V11", "20",          "no method section; theoretical discussion of case studies; change code to 20",
+  "ID1390",   "V11", "20",          "no method section; theoretical case-study discussion; change code to 20",
+  "ID1846",   "V11", "20; 21",      "uses cyber-cartography and evaluate images; added code 20",
+  "ID206",    "V11", "20",          "no method section; theoretical discussion of feminist literature; change code to 20",
+  "ID2394",   "V13", "0",           "agent-based modeling no experiment; change code to 0"
+  )
 
 for (i in seq_len(nrow(fixes))) {
   id  <- fixes$id_unique[i]
@@ -110,7 +111,16 @@ no_change <- tibble::tribble(
   "ID1835",  "no method section; ethnographic field work and qualitative eval of lyrics/material/song distributed on Facebook; keep coding for V10/V11",
   "ID184",   "no method section; but method is very well documented; keep coding for V10/V11",
   "ID1956",  "no method section; but qualitative analysis of image on social media is present; keep coding for V10/V11",
-  "ID1957",  "no methiod section; but qual analysis of two audio memes from TikTok; keep coding for V10/V11"
+  "ID1957",  "no methiod section; but qual analysis of two audio memes from TikTok; keep coding for V10/V11",
+  "ID2086",  "no method section; but examines mediated discourse; keep coding for V10/V11",
+  "ID2141",  "no method section; examines key texts; keep coding for V10/V11",
+  "ID2130",
+  "ID2217",
+  "ID2281",
+  "ID2286",
+  "ID23",
+  "ID2438"
+  
 )
 
 for (i in seq_len(nrow(no_change))) {
