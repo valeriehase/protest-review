@@ -45,10 +45,7 @@ Scripts are executed sequentially via `main.R`.
 
 - **07.analysis**: Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
 
-### Required Input Data (important: subject to update)
-
-Before running `main.R`, all manually coded data from the literature review process must be placed in `data/in/`.
-These files represent fixed research decisions.
+### `data/in/`: Required Input Data (important: subject to update)
 
 | File | Description |
 |------|------------|
@@ -58,13 +55,13 @@ These files represent fixed research decisions.
 | `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
 | `df_sample_coded_reli.xlsx` | Reliability coded cases used to exclude papers before final coding |
 
-### Output Data
+### `data/out/`: Output Paths
 
-All generated files are written to `data/out/`
-
-- `data/out/intermediate/`: intermediate processing artifacts used by later pipeline steps
-- `data/out/final/`: analysis-ready datasets and final tables/figures
-- `data/out/logs/`: data-cleaning and processing logs
+| Path | Description |
+|------|------------|
+| `data/out/intermediate/` | intermediate processing artifacts used by later pipeline steps | 
+| `data/out/final/` | analysis-ready datasets and final tables/figures | 
+| `data/out/logs/` | data-cleaning and processing logs | 
 
 ## Project Structure
 
