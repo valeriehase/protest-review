@@ -156,17 +156,27 @@ for (i in seq_len(nrow(no_change))) {
 
 checked_ids <- unique(c(fixes$id_unique, no_change$id_unique))
 
-df <- df %>%
-  dplyr::mutate(
-    Comment_CODER = dplyr::if_else(id_unique %in% checked_ids, NA_character_, Comment_CODER)
-  )
-
-log_df <- log_event(
-  log_df,
-  step   = "06b_comment_review",
-  action = "clear_reviewed_comments",
-  note   = paste0("Comment_CODER emptied for checked IDs: ", toString(checked_ids))
-)
+if ("Comment_CODER" %in% names(df)) {
+  
+  df <- df %>%
+    dplyr::mutate(
+      Comment_CODER = dplyr::if_else(
+        id_unique %in% checked_ids, NA_character_, Comment_CODER)
+      )
+  
+  if (all(is.na(df$Comment_CODER))) {
+    
+    df <- df %>% dplyr::select(-Comment_CODER)
+    
+    message("All coder comments have been reviewed, logged, and the Comment_CODER column was removed.")
+    
+    log_df <- log_event(
+      log_df,
+      step   = "06b_comment_review",
+      action = "drop_comment_column",
+      note   = "All Comment_CODER entries are NA after review; column removed.")
+  }
+}
 
 # Output -----------------------------------------------------------------------
 

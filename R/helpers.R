@@ -58,6 +58,22 @@ make_df_V10agg <- function(df) {
     dplyr::mutate(V10_agg = as.character(V10_agg))
 }
 
+explode_codes <- function(data, var, coder_col) {
+  data %>%
+    transmute(
+      id_unique,
+      coder = as.character(.data[[coder_col]]),
+      variable = var,
+      raw_value = as.character(.data[[var]])
+    ) %>%
+    filter(!is.na(coder), coder != "") %>%
+    filter(!is.na(raw_value), str_trim(raw_value) != "") %>%
+    separate_rows(raw_value, sep = ";\\s*") %>%
+    mutate(code = str_trim(raw_value)) %>%
+    filter(code != "") %>%
+    select(id_unique, coder, variable, code)
+}
+
 # ------------------------------------------------------------------------------
 # 3) Tables (frequency tables, APA export)
 # ------------------------------------------------------------------------------

@@ -21,7 +21,7 @@ library(officer)
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- require_file(file.path(PATHS$int, "full_paper_sample_deduplicated_cleaned_comments_checked_codes_checked.xlsx"), "analysis input dataset (output of step 06b)")
+input_file <- require_file(file.path(PATHS$final, "full_paper_sample_final.xlsx"), "analysis input dataset (output of 06 steps)")
 
 message("Reading analysis dataset from: ", input_file)
 df <- readxl::read_excel(input_file)

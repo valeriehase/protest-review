@@ -3,6 +3,10 @@
 # Author: Miriam Milzner
 # Date: 2025-10-20
 #
+# Performs systematic post-coding cleaning of the deduplicated full-paper dataset.
+# Includes (1) value checks and normalization for selected variables and (2) cross-variable consistency checks.
+# Manual corrections are done by senior coder (MM) using consistent decision rules and fully logged.
+#
 # Setup ------------------------------------------------------------------------
 
 source(here::here("R/paths.R"))
@@ -28,12 +32,17 @@ message("Reading deduplicated coded full sample from: ", input_file)
 df <- readxl::read_excel(input_file)
 
 df_clean <- df %>%
-  rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))
+  rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))%>%
+  mutate(
+    method = as.character(method),
+    V12 = as.character(V12),
+    V13 = as.character(V13)
+  )
+
+# Sanity check: IDs must be unique; fail loudly if not.
+stopifnot(n_distinct(df_clean$id_unique) == nrow(df_clean))
 
 # 6.1 Check Values ----------------------------------------
-
-# sanity check
-n_distinct(df_clean$id_unique) == nrow(df_clean)
 
 # --- V6 ------------------------------------
 
