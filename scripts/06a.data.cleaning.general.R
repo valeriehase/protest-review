@@ -42,7 +42,7 @@ df_clean <- df %>%
 # Sanity check: IDs must be unique; fail loudly if not.
 stopifnot(n_distinct(df_clean$id_unique) == nrow(df_clean))
 
-# 6.1 Check Values ----------------------------------------
+# 6.1 Check Values -------------------------------------------------------------
 
 # --- V6 ------------------------------------
 
@@ -323,22 +323,44 @@ print(invalid_v12)
 
 # 6.2 Check Consistency ----------------------------------------------------
 
-### Wenn method == "0", dürfen in V11 keine 10:18 stehen
+### Wenn method == "0", dürfen in V11 keine 10:18 stehen; Wenn method == "1", muss in V11 eine 10:18 stehen
 
 method_col <- "method"
 
-invalid_v11_method0_ids <- df_clean %>%
-  filter(.data[[method_col]] == "0") %>%    
-  separate_rows(V11, sep = ";\\s*") %>%                   
-  mutate(V11 = str_trim(V11)) %>%                         
-  filter(V11 %in% as.character(10:18)) %>%                
-  distinct(id_unique) %>%                                 
+target_codes <- as.character(10:18)
+
+v11_flags <- df_clean %>%
+  select(id_unique, method = all_of(method_col), V11) %>%
+  separate_rows(V11, sep = ";\\s*") %>%
+  mutate(V11 = str_trim(V11)) %>%
+  group_by(id_unique, method) %>%
+  summarise(
+    has_10_18 = any(V11 %in% target_codes, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+invalid_v11_method0_ids <- v11_flags %>%
+  filter(method == "0", has_10_18) %>%
+  distinct(id_unique) %>%
   arrange(id_unique)
 
 invalid_v11_method0 <- df_clean %>%
   filter(id_unique %in% invalid_v11_method0_ids$id_unique)
 
 print(invalid_v11_method0)
+
+missing_v11_method1_ids <- v11_flags %>%
+  filter(method == "1", !has_10_18) %>%
+  distinct(id_unique) %>%
+  arrange(id_unique)
+
+missing_v11_method1 <- df_clean %>%
+  filter(id_unique %in% missing_v11_method1_ids$id_unique)
+
+print(missing_v11_method1)
+
+
+#####
 
 df_clean <- df_clean %>% 
   mutate(V11 = if_else(id_unique == "ID1462", "21", V11), 
@@ -348,9 +370,10 @@ df_clean <- df_clean %>%
          V11 = if_else(id_unique == "ID2327", "21; 22", V11),
          V11 = if_else(id_unique == "ID239", "24", V11),
          V11 = if_else(id_unique == "ID413", "21", V11),
-         V11 = if_else(id_unique == "ID94", "24", V11)
+         V11 = if_else(id_unique == "ID94", "24", V11),
+         V11 = if_else(id_unique == "ID13", "13;24", V11),
+         V11 = if_else(id_unique == "ID1474", "21; 18", V11)
          ) 
-
 log_df <- log_event(
   log_df,
   step   = "06a_consistency_CSS_in_method0",
@@ -399,6 +422,21 @@ log_df <- log_event(
   action = "manual_edit",
   note   = "id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)"
 )
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID13: V11 geändert von '21; 24; 25' zu '13;24' (content and computer-mediated discourse analysis)"
+)
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
+  action = "manual_edit",
+  note   = "id_unique ID1474: V11 geändert von '21' zu '21; 18' (content and computer-mediated discourse analysis)"
+)
+
+
+
 
 log_df <- log_event(
   log_df,

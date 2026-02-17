@@ -85,14 +85,17 @@ suspect_cases <- codes_long %>%
 # --- Manual fixes -------------------------------------------------------------
 
 fixes <- tibble::tribble(
-  ~id_unique,  ~or_value,             ~new_value,        ~note,
-  "ID69",      "12; 13; 16; 17; 24",  "12; 13; 16; 24",  "Study doesn't do tracking, removed code; they 'identify and track social media communities on social media",
-  "ID825",     "17; 16; 18",          "16; 18",          "Misunderstanding, study doesn't do tracking; they track social media communities",
-  "ID26",      "13; 16; 17",          "13; 16",          "Misunderstanding, study doenst do tracking; use a method to monitor Twitter activity around the protests",
-  "ID267",     "13; 16; 17; 26",      "13; 16; 26",      "they use a custom-built software to track Facebook’s tracking",
-  "ID13",      "21; 24; 25",          "13; 24",          "content and computer-mediated discourse analysis on the one hand and correlational and logistic regression analysis",
-  "ID156",     "25",                  "  ",     
-  
+  ~id_unique,  ~or_value,               ~new_value,               ~note,
+  "ID69",      "12; 13; 16; 17; 24",    "12; 13; 16; 24",         "Study doesn't do tracking, removed code; they 'identify and track social media communities on social media",
+  "ID825",     "17; 16; 18",            "16; 18",                 "Misunderstanding, study doesn't do tracking; they track social media communities",
+  "ID26",      "13; 16; 17",            "13; 16",                 "Misunderstanding, study doenst do tracking; use a method to monitor Twitter activity around the protests",
+  "ID267",     "13; 16; 17; 26",        "13; 16; 26",             "they use a custom-built software to track Facebook’s tracking",
+  "ID1367",    "13; 14",                "13",                     "data was provided by bit.ly (platform operator) to the researchers",
+  "ID625",     "25; 99",                "99",                     "controlled online field experiment",
+  "ID156",     "25",                    "99",                     "one-shot public goods game laboratory experiment undertaken",
+  "ID993",     "21; 13; 26; 12; 25; 23","22; 23; 26; 12; 21; 13", "must be a misunderstanding/typo; they did surveys",
+  "ID2142",    "21; 22; 25",            "21; 22; 26",             "they did surveys; typo",
+  "ID1970",    "21; 25; 26",            "26",                     "All experiment analyses rely on the same data source, an online survey"
 )
 
 for (i in seq_len(nrow(fixes))) {
@@ -116,8 +119,6 @@ for (i in seq_len(nrow(fixes))) {
 
 no_change <- tibble::tribble(
   ~id_unique,  ~or_value,       ~new_value,      ~note,
-  "ID1367",   "14",             "14",            "data was provided by bit.ly (platform operator) to the researchers",
-
 )
 
 for (i in seq_len(nrow(no_change))) {
@@ -143,11 +144,5 @@ write_log(log_df, log_file)
 message("06c completed.")
 message("- Final dataset at: ", out_df_final)
 message("- Log written to: ", log_file)
-
-
-
-
-
-
 
 
