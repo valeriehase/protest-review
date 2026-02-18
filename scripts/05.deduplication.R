@@ -7,6 +7,7 @@
 
 source(here::here("R/paths.R"))
 source(here::here("R/config.R"))
+source(here::here("R/helpers.R"))
 
 library(readxl)
 library(dplyr)
@@ -45,8 +46,8 @@ n_dupe_ids <- dplyr::n_distinct(dupes$id_unique)
 
 # 5.2 Export Duplicates --------------------------------------------------------
 
-out_dir <- PATHS$out_dedup
-out_dupes <- file.path(out_dir, "full_paper_sample_coded_dupes.xlsx")
+out_dir <- PATHS$int
+out_dupes <- file.path(out_dir, "05_full_paper_sample_coded_dupes.xlsx")
 
 openxlsx::write.xlsx(dupes, out_dupes, overwrite = TRUE)
 
