@@ -79,22 +79,16 @@ fixes <- tibble::tribble(
   "ID2281",   "V11",     "21; 22",               "20; 21; 22", "no comment section; but describes clearly what it does 'theoretical piece with data/analysis from previous studies; add code 20"
   )
 
-for (i in seq_len(nrow(fixes))) {
-  id  <- fixes$id_unique[i]
-  var <- fixes$var[i]
-  val <- fixes$new_value[i]
-  
-  df[[var]] <- ifelse(df$id_unique == id, val, as.character(df[[var]]))
-}
+fixes_apply <- fixes %>% dplyr::select(id_unique, var, new_value, note)
 
-for (i in seq_len(nrow(fixes))) {
-  log_df <- log_event(
-    log_df,
-    step   = "06b_comment_review",
-    action = "manual_edit",
-    note   = paste0(fixes$id_unique[i], ": ", fixes$var[i], " | ", fixes$or_value[i], " -> ", fixes$new_value[i], " | ", fixes$note[i])
-  )
-}
+tmp <- apply_manual_edits(
+  df = df,
+  edits = fixes_apply,
+  log_df = log_df,
+  step = "06b_comment_review",
+  action = "manual_edit"
+)
+df <- tmp$df; log_df <- tmp$log_df
 
 # --- Reviewed, no change ------------------------------------------------------
 

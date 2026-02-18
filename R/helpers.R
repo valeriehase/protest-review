@@ -74,6 +74,74 @@ explode_codes <- function(data, var, coder_col) {
     select(id_unique, coder, variable, code)
 }
 
+normalize_semicolon_field <- function(x, to_lower = FALSE) {
+  if (isTRUE(to_lower)) x <- stringr::str_to_lower(x)
+  
+  x %>%
+    stringr::str_squish() %>%
+    stringr::str_replace_all("\\s*[,/|]+\\s*", "; ") %>%  # alternative separators -> '; '
+    stringr::str_replace_all("\\s*;\\s*", "; ") %>%       # standardize spaces around ;
+    stringr::str_replace_all("^(;\\s*)+", "") %>%         # leading ;
+    stringr::str_replace_all("(;\\s*)+$", "") %>%         # trailing ;
+    stringr::str_replace_all("(;\\s*){2,}", "; ")         # collapse repeats
+}
+
+make_long_tokens <- function(df, var, sep = ";\\s*") {
+  df %>%
+    dplyr::mutate(.row = dplyr::row_number()) %>%
+    dplyr::filter(!is.na(.data[[var]])) %>%
+    tidyr::separate_rows(!!rlang::sym(var), sep = sep) %>%
+    dplyr::mutate(!!rlang::sym(var) := stringr::str_trim(.data[[var]]))
+}
+
+find_invalid_token_ids <- function(df, var, max_tokens = 3, numeric_ok = c("NA")) {
+  long <- make_long_tokens(df, var)
+  
+  counts <- long %>% dplyr::count(.row, name = "n_tokens")
+  empty  <- long %>% dplyr::filter(.data[[var]] == "")
+  num_weird <- long %>%
+    dplyr::filter(stringr::str_detect(.data[[var]], "^[0-9]+$")) %>%
+    dplyr::filter(!(.data[[var]] %in% numeric_ok))
+  
+  df %>%
+    dplyr::mutate(.row = dplyr::row_number()) %>%
+    dplyr::left_join(counts, by = ".row") %>%
+    dplyr::mutate(n_tokens = dplyr::coalesce(.data$n_tokens, 0L)) %>%
+    dplyr::filter(.data$n_tokens > max_tokens) %>%
+    dplyr::select(id_unique) %>%
+    dplyr::bind_rows(empty %>% dplyr::select(id_unique)) %>%
+    dplyr::bind_rows(num_weird %>% dplyr::select(id_unique)) %>%
+    dplyr::distinct() %>%
+    dplyr::arrange(id_unique)
+}
+
+find_invalid_codes <- function(df, var, allowed, sep = ";\\s*") {
+  df %>%
+    dplyr::filter(!is.na(.data[[var]])) %>%
+    tidyr::separate_rows(!!rlang::sym(var), sep = sep) %>%
+    dplyr::mutate(!!rlang::sym(var) := stringr::str_trim(.data[[var]])) %>%
+    dplyr::filter(!(.data[[var]] %in% allowed))
+}
+
+apply_manual_edits <- function(df, edits, log_df, step, action = "manual_edit") {
+  
+  for (i in seq_len(nrow(edits))) {
+    id  <- edits$id_unique[i]
+    var <- edits$var[i]
+    val <- edits$new_value[i]
+    
+    df[[var]] <- dplyr::if_else(df$id_unique == id, val, as.character(df[[var]]))
+    
+    log_df <- log_event(
+      log_df,
+      step   = step,
+      action = action,
+      note   = paste0(id, ": ", var, " -> ", val, if (!is.na(edits$note[i])) paste0(" | ", edits$note[i]) else "")
+    )
+  }
+  list(df = df, log_df = log_df)
+}
+
 # ------------------------------------------------------------------------------
 # 3) Tables (frequency tables, APA export)
 # ------------------------------------------------------------------------------

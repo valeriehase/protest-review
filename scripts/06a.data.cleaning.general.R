@@ -39,425 +39,204 @@ df_clean <- df %>%
     V13 = as.character(V13)
   )
 
-# Sanity check: IDs must be unique; fail loudly if not.
+# Sanity check
 stopifnot(n_distinct(df_clean$id_unique) == nrow(df_clean))
 
-# 6.1 Check Values -------------------------------------------------------------
+# Check Values -------------------------------------------------------------
 
-# --- V6 ------------------------------------
+# --- V6 ----------------------------------------------------------------------
 
-v6_long <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  filter(!is.na(V6)) %>%
-  tidyr::separate_rows(V6, sep = ";\\s*") %>%
-  mutate(V6 = stringr::str_trim(V6))
+invalid_v6_ids <- find_invalid_token_ids(df_clean, "V6", max_tokens = 3, numeric_ok = c("1"))
+invalid_v6 <- df_clean %>% dplyr::filter(id_unique %in% invalid_v6_ids$id_unique)
+print(invalid_v6)
 
-v6_counts <- v6_long %>% count(.row, name = "n_tokens")
-v6_empty <- v6_long %>% filter(V6 == "")
-v6_num_weird <- v6_long %>%
-  filter(stringr::str_detect(V6, "^[0-9]+$"), V6 != "1")
-
-invalid_v6_ids <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  left_join(v6_counts, by = ".row") %>%
-  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%  
-  filter(n_tokens > 3) %>%                              
-  select(id_unique) %>%
-  bind_rows(v6_empty %>% select(id_unique)) %>%
-  bind_rows(v6_num_weird %>% select(id_unique)) %>%
-  distinct() %>%
-  arrange(id_unique)
-
-invalid_v6 <- df_clean %>%
-  filter(id_unique %in% invalid_v6_ids$id_unique)
-
-invalid_v6
-
-df_clean <- df_clean %>%
-  mutate(V6 = if_else(id_unique == "ID413", "18 Million Rising (18MR); Asian American Feminist Collective (AAFC); Black Women Radicals (BWR)", V6), # too many strings, reduced to first three
-         V6 = if_else(id_unique == "ID44", "Euromaidan; Occupy Wall Street (OWS; unionsq); Gezi park", V6), # too many strings, reduced to first three  
-         V6 = if_else(id_unique == "ID94", "1", V6), # protest general coded as protest cases
-         ) %>%
-  mutate(V6 = if_else(is.na(V6), V6, V6 %>%
-        str_squish() %>%                         
-        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # andere trenner
-        str_replace_all("\\s*;\\s*", "; ") %>%   # spaces
-        str_replace_all("^(;\\s*)+", "") %>%     # führende/trailing semikolons 
-        str_replace_all("(;\\s*)+$", "") %>% 
-        str_replace_all("(;\\s*){2,}", "; ")     # doppelte semikolons
-    )
-  )
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V6_value_fix",
-  action = "manual_edit_and_normalize",
-  note   = "id_unique ID413, ID44, ID94: V6 manuell angepasst (zu viele Protest Cases bzw. Recode); gesamte Spalte V6 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
+v6_edits <- tibble::tribble(
+  ~id_unique, ~var, ~new_value, ~note,
+  "ID413", "V6", "18 Million Rising (18MR); Asian American Feminist Collective (AAFC); Black Women Radicals (BWR)", "too many strings; reduced to first three",
+  "ID44",  "V6", "Euromaidan; Occupy Wall Street (OWS; unionsq); Gezi park", "too many strings; reduced to first three",
+  "ID94",  "V6", "1", "protest general recoded as protest cases"
 )
 
+tmp <- apply_manual_edits(df_clean, v6_edits, log_df, step = "06a_V6_value_fix", action = "manual_edit")
+df_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V7 ------------------------------------
+# --- V7 ----------------------------------------------------------------------
 
-allowed_v7 <- as.character(1:10) |> c("NA")  
-
-invalid_v7 <- df_clean %>%
-  filter(!is.na(V7)) %>%                        
-  separate_rows(V7, sep = ";\\s*") %>%         
-  mutate(V7 = str_trim(V7)) %>%
-  filter(!(V7 %in% allowed_v7))  
-
+allowed_v7 <- c(as.character(1:10), "NA")
+invalid_v7 <- find_invalid_codes(df_clean, "V7", allowed = allowed_v7)
 print(invalid_v7)
-# Typo bei ID366
 
-df_clean <- df_clean %>%
-  mutate(V7 = if_else(id_unique == "ID366", "1; 3", V7))
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V7_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID366: V7 geändert von '1.3' zu '1; 3'"
+v7_edits <- tibble::tribble(
+  ~id_unique, ~var, ~new_value, ~note,
+  "ID366", "V7", "1; 3", "typo fix: '1.3' -> '1; 3'"
 )
 
-# --- V8 ------------------------------------
+tmp <- apply_manual_edits(df_clean, v7_edits, log_df, step = "06a_V7_value_fix")
+df_clean <- tmp$df; log_df <- tmp$log_df
 
-v8_long <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  filter(!is.na(V8)) %>%
-  tidyr::separate_rows(V8, sep = ";\\s*") %>%
-  mutate(V8 = stringr::str_trim(V8))
+# --- V8 ----------------------------------------------------------------------
 
-v8_counts <- v8_long %>% count(.row, name = "n_tokens")
-v8_empty <- v8_long %>% filter(V8 == "")
-v8_num_weird <- v8_long %>%
-  filter(stringr::str_detect(V8, "^[0-9]+$"), V8 != "NA")
-
-invalid_v8_ids <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  left_join(v8_counts, by = ".row") %>%
-  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%
-  filter(n_tokens > 3) %>%                        
-  select(id_unique) %>%
-  bind_rows(v8_empty %>% select(id_unique)) %>%
-  bind_rows(v8_num_weird %>% select(id_unique)) %>%
-  distinct() %>%
-  arrange(id_unique)
-
-invalid_v8 <- df_clean %>%
-  filter(id_unique %in% invalid_v8_ids$id_unique) 
-
+invalid_v8_ids <- find_invalid_token_ids(df_clean, "V8", max_tokens = 3, numeric_ok = c("NA"))
+invalid_v8 <- df_clean %>% dplyr::filter(id_unique %in% invalid_v8_ids$id_unique)
 print(invalid_v8)
 
-df_clean <- df_clean %>%
-  mutate(V8 = if_else(id_unique == "ID1224", "Iraq; Egypt; Yemen", V8), # too many strings, reduced to first three
-         V8 = if_else(id_unique == "ID202", "Ireland; Malta; Netherlands", V8), # too many strings, reduced to first three  
-         V8 = if_else(id_unique == "ID44", "Turkey; Ukraine; United States of America", V8) # too many strings, reduced to first three
-         ) %>%
-  mutate(
-    V8 = if_else(
-      is.na(V8), V8,
-      V8 %>%
-        str_squish() %>%                         
-        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # alternative trenner
-        str_replace_all("\\s*;\\s*", "; ") %>%   # semikolons vereinheitlichen
-        str_replace_all("^(;\\s*)+", "") %>%     # führende/trailing semikolons 
-        str_replace_all("(;\\s*)+$", "") %>% 
-        str_replace_all("(;\\s*){2,}", "; ")     # doppelte semikolons 
-    )
-  )
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V8_value_fix",
-  action = "manual_edit_and_normalize",
-  note   = "id_unique ID1224, ID202, ID44: V8 manuell angepasst (zu viele Strings, jeweils auf drei reduziert); gesamte Spalte V8 anschließend normalisiert (Trenner vereinheitlicht, führende/abschließende Semikolons entfernt)"
+v8_edits <- tibble::tribble(
+  ~id_unique, ~var, ~new_value, ~note,
+  "ID1224", "V8", "Iraq; Egypt; Yemen", "too many strings; reduced to first three",
+  "ID202",  "V8", "Ireland; Malta; Netherlands", "too many strings; reduced to first three",
+  "ID44",   "V8", "Turkey; Ukraine; United States of America", "too many strings; reduced to first three"
 )
 
-# --- V9 ------------------------------------
+tmp <- apply_manual_edits(df_clean, v8_edits, log_df, step = "06a_V8_value_fix", action = "manual_edit")
+df_clean <- tmp$df; log_df <- tmp$log_df
 
-v9_long <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  filter(!is.na(V9)) %>%
-  tidyr::separate_rows(V9, sep = ";\\s*") %>%
-  mutate(V9 = stringr::str_trim(V9))
+# --- V9 ----------------------------------------------------------------------
 
-v9_counts <- v9_long %>% count(.row, name = "n_tokens")
-v9_empty  <- v9_long %>% filter(V9 == "")
-v9_num_weird <- v9_long %>%
-  filter(stringr::str_detect(V9, "^[0-9]+$"), V9 != "NA")
-
-invalid_v9_ids <- df_clean %>%
-  mutate(.row = dplyr::row_number()) %>%
-  left_join(v9_counts, by = ".row") %>%
-  mutate(n_tokens = dplyr::coalesce(n_tokens, 0L)) %>%
-  filter(n_tokens > 3) %>%
-  select(id_unique) %>%
-  bind_rows(v9_empty %>% select(id_unique)) %>%
-  bind_rows(v9_num_weird %>% select(id_unique)) %>%
-  distinct() %>%
-  arrange(id_unique)
-
-invalid_v9 <- df_clean %>%
-  filter(id_unique %in% invalid_v9_ids$id_unique) %>%
-  select(id_unique, V9, dplyr::everything())
-
+invalid_v9_ids <- find_invalid_token_ids(df_clean, "V9", max_tokens = 3, numeric_ok = c("NA"))
+invalid_v9 <- df_clean %>% dplyr::filter(id_unique %in% invalid_v9_ids$id_unique)
 print(invalid_v9)
 
-df_clean <- df_clean %>%
-  mutate(
-    V9 = if_else(
-      is.na(V9), V9,
-      V9 %>%
-        str_squish() %>%                        
-        str_to_lower() %>%                      
-        str_replace_all("\\s*[,/|]+\\s*", "; ") %>% # andere trenner zwischen strings
-        str_replace_all("\\s*;\\s*", "; ") %>% # semikolon spaces vereinheitlichen
-        str_replace_all("^(;\\s*)+", "") %>% # führende/trailing semikolons entfernen
-        str_replace_all("(;\\s*)+$", "") %>% 
-        str_replace_all("(;\\s*){2,}", "; ") # doppelte semikolons
-    )
-  )
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V9_normalize",
-  action = "format_standardization",
-  note   = "V9 automatisch normalisiert: lowercase, Trenner auf '; ' vereinheitlicht, führende/abschließende Semikolons entfernt"
-)
-
-
-# --- V10 ------------------------------------
+# --- V10 ---------------------------------------------------------------------
 
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
-
-invalid_v10 <- df_clean %>%
-  filter(!is.na(V10)) %>%                        
-  separate_rows(V10, sep = ";\\s*") %>%          
-  mutate(V10 = str_trim(V10)) %>%
-  filter(!(V10 %in% allowed_v10))
-
+invalid_v10 <- find_invalid_codes(df_clean, "V10", allowed = allowed_v10)
 print(invalid_v10)
 
-df_clean <- df_clean %>% 
-  mutate(V10 = if_else(id_unique == "ID1680", "100", V10), # survey on use of ICT
-         V10 = if_else(id_unique == "ID822", "300; 113; 112; 111; 100; 110", V10), # media types included traditional media (or affiliates), online partisan media, online nonpartisan media, activism/advocacy media, social media, and ephemeral websites
-         V10 = if_else(id_unique == "ID98", "141; 131; 132; 124", V10)) # Twitter, Facebook, Instagram, and Reddit data were collected using Synthesio
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V10_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID1680: V10 geändert von '99' zu '100' (survey on use of ICT)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_V10_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID822: V10 geändert von ' ' zu '300; 113; 112; 111; 100; 110' (fehlende Kodierung)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_V10_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID98: V10 geändert von ' ' zu '141; 131; 132; 124' (fehlende Kodierung)"
+v10_edits <- tibble::tribble(
+  ~id_unique, ~var,  ~new_value,                 ~note,
+  "ID1680",   "V10", "100",                      "survey on use of ICT; '99' -> '100'",
+  "ID822",    "V10", "300; 113; 112; 111; 100; 110", "filled missing coding based on methods described",
+  "ID98",     "V10", "141; 131; 132; 124",       "Synthesio used for Twitter/Facebook/Instagram/Reddit"
 )
 
+tmp <- apply_manual_edits(df_clean, v10_edits, log_df, step = "06a_V10_value_fix")
+df_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V11 ------------------------------------
+# --- V11 ---------------------------------------------------------------------
 
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
-
-invalid_v11 <- df_clean %>%
-  filter(!is.na(V11)) %>%                 
-  separate_rows(V11, sep = ";\\s*") %>%   
-  mutate(V11 = str_trim(V11)) %>%         
-  filter(!(V11 %in% allowed_v11))         
-
+invalid_v11 <- find_invalid_codes(df_clean, "V11", allowed = allowed_v11)
 print(invalid_v11)
 
-df_clean <- df_clean %>% 
-  mutate(V11 = if_else(id_unique == "ID1494", "24", V11), 
-         V11 = if_else(id_unique == "ID2437", "21; 22", V11),
-         V11 = if_else(id_unique == "ID83", "18; 12", V11)) 
-
-log_df <- log_event(
-  log_df,
-  step   = "06a_V11_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID1494: V11 geändert von '24.' zu '24'"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_V11_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID2437: V11 geändert von ' ' zu '21; 22'"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_V11_value_fix",
-  action = "manual_edit",
-  note   = "id_unique ID83: V11 geändert von '18, 12' zu '18; 12'"
+v11_edits <- tibble::tribble(
+  ~id_unique, ~var,  ~new_value, ~note,
+  "ID1494",   "V11", "24",       "removed trailing dot",
+  "ID2437",   "V11", "21; 22",    "filled missing coding",
+  "ID83",     "V11", "18; 12",    "comma to semicolon"
 )
 
+tmp <- apply_manual_edits(df_clean, v11_edits, log_df, step = "06a_V11_value_fix")
+df_clean <- tmp$df; log_df <- tmp$log_df
 
 # --- V12 ------------------------------------
 
-allowed_v12 <- c("0", "1")
-
-invalid_v12 <- df_clean %>%           
-  mutate(V12 = str_trim(as.character(V12))) %>%
-  filter(!(V12 %in% allowed_v12))       
-
+allowed_v12 <- as.character(c(0:1))
+invalid_v12 <- find_invalid_codes(df_clean, "V12", allowed = allowed_v12)
 print(invalid_v12)
 
 # --- V13 ------------------------------------
 
-allowed_v13 <- c("0", "1")
+allowed_v13 <- as.character(c(0:1))
+invalid_v13 <- find_invalid_codes(df_clean, "V13", allowed = allowed_v13)
+print(invalid_v13)
 
-invalid_v13 <- df_clean %>%
-  mutate(V13 = str_trim(as.character(V13))) %>%
-  filter(!(V13 %in% allowed_v13))      
+# --- Standardization ------------------------------------
 
-print(invalid_v12)
+df_clean <- df_clean %>%
+  dplyr::mutate(
+    V6  = dplyr::if_else(is.na(V6),  V6,  normalize_semicolon_field(V6, to_lower = FALSE)),
+    V7  = dplyr::if_else(is.na(V7),  V7,  normalize_semicolon_field(V7)),
+    V8  = dplyr::if_else(is.na(V8),  V8,  normalize_semicolon_field(V8)),
+    V9  = dplyr::if_else(is.na(V9),  V9,  normalize_semicolon_field(V9, to_lower = TRUE)),
+    V10 = dplyr::if_else(is.na(V10), V10, normalize_semicolon_field(V10)),
+    V11 = dplyr::if_else(is.na(V11), V11, normalize_semicolon_field(V11)),
+    V12 = stringr::str_trim(as.character(V12)),
+    V13 = stringr::str_trim(as.character(V13))
+  )
 
+log_df <- log_event(
+  log_df,
+  step   = "06a_normalize_multi_code_fields",
+  action = "format_standardization",
+  note   = "Normalized delimiters to '; ' and trimmed whitespace/semicolons"
+)
 
-# 6.2 Check Consistency ----------------------------------------------------
+# Check Consistency ----------------------------------------------------
 
-### Wenn method == "0", dürfen in V11 keine 10:18 stehen; Wenn method == "1", muss in V11 eine 10:18 stehen
-
-method_col <- "method"
+# If method == "0", V11 must NOT contain any codes 10:18
+# If method == "1", V11 MUST contain at least one code 10:18
 
 target_codes <- as.character(10:18)
 
 v11_flags <- df_clean %>%
-  select(id_unique, method = all_of(method_col), V11) %>%
-  separate_rows(V11, sep = ";\\s*") %>%
-  mutate(V11 = str_trim(V11)) %>%
-  group_by(id_unique, method) %>%
-  summarise(
-    has_10_18 = any(V11 %in% target_codes, na.rm = TRUE),
-    .groups = "drop"
-  )
+  dplyr::select(id_unique, method, V11) %>%
+  tidyr::separate_rows(V11, sep = ";\\s*") %>%
+  dplyr::mutate(V11 = stringr::str_trim(V11)) %>%
+  dplyr::group_by(id_unique, method) %>%
+  dplyr::summarise(has_10_18 = any(V11 %in% target_codes, na.rm = TRUE), .groups = "drop")
 
-invalid_v11_method0_ids <- v11_flags %>%
-  filter(method == "0", has_10_18) %>%
-  distinct(id_unique) %>%
-  arrange(id_unique)
+invalid_v11_method0_ids <- v11_flags %>% dplyr::filter(method == "0", has_10_18) %>% dplyr::pull(id_unique)
+missing_v11_method1_ids <- v11_flags %>% dplyr::filter(method == "1", !has_10_18) %>% dplyr::pull(id_unique)
 
-invalid_v11_method0 <- df_clean %>%
-  filter(id_unique %in% invalid_v11_method0_ids$id_unique)
+invalid_v11_method0 <- df_clean %>% dplyr::filter(id_unique %in% invalid_v11_method0_ids)
+missing_v11_method1 <- df_clean %>% dplyr::filter(id_unique %in% missing_v11_method1_ids)
 
-print(invalid_v11_method0)
-
-missing_v11_method1_ids <- v11_flags %>%
-  filter(method == "1", !has_10_18) %>%
-  distinct(id_unique) %>%
-  arrange(id_unique)
-
-missing_v11_method1 <- df_clean %>%
-  filter(id_unique %in% missing_v11_method1_ids$id_unique)
-
-print(missing_v11_method1)
-
-
-#####
-
-df_clean <- df_clean %>% 
-  mutate(V11 = if_else(id_unique == "ID1462", "21", V11), 
-         V11 = if_else(id_unique == "ID1656", "21", V11),
-         V11 = if_else(id_unique == "ID19", "21; 22", V11),
-         V11 = if_else(id_unique == "ID1956", "21", V11),
-         V11 = if_else(id_unique == "ID2327", "21; 22", V11),
-         V11 = if_else(id_unique == "ID239", "24", V11),
-         V11 = if_else(id_unique == "ID413", "21", V11),
-         V11 = if_else(id_unique == "ID94", "24", V11),
-         V11 = if_else(id_unique == "ID13", "13;24", V11),
-         V11 = if_else(id_unique == "ID1474", "21; 18", V11)
-         ) 
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID1462: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID1656: V11 geändert von '13; 21' zu '21' (kein Automated Content Analysis nachweisbar)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID19: V11 geändert von '21; 22; 18' zu '21; 22' (Datensammlung ohne Spezifikation; Code 18 entfernt)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID1956: V11 geändert von '17; 21' zu '21' (Tracking-Code missverstanden)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID2327: V11 geändert von '21; 22; 18' zu '21; 22' (kein Scraping belegt; Code 18 entfernt)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID239: V11 geändert von '12; 24' zu '24' (Archivnutzung; API nicht eigenständig; Code 12 entfernt)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID413: V11 geändert von '21; 22; 13; 16; 18' zu '21' (ausschließlich qualitative Instagram-Analyse; übrige Codes entfernt)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID94: V11 geändert von '12; 18; 24' zu '24' (quantitative Inhaltsanalyse bestehender Website-Daten; 12/18 entfernt)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID13: V11 geändert von '21; 24; 25' zu '13;24' (content and computer-mediated discourse analysis)"
-)
-log_df <- log_event(
-  log_df,
-  step   = "06a_consistency_CSS_in_method0",
-  action = "manual_edit",
-  note   = "id_unique ID1474: V11 geändert von '21' zu '21; 18' (content and computer-mediated discourse analysis)"
+consistency_edits <- tibble::tribble(
+  ~id_unique, ~var,  ~old_value,           ~new_value,    ~note,
+  "ID1462",   "V11", "13; 21",             "21",         "no evidence of automated content analysis",
+  "ID1656",   "V11", "13; 21",             "21",         "no evidence of automated content analysis",
+  "ID19",     "V11", "21; 22; 18",         "21; 22",     "removed code 18 (data collection without specification)",
+  "ID1956",   "V11", "17; 21",             "21",         "tracking code was misunderstood",
+  "ID2327",   "V11", "21; 22; 18",         "21; 22",     "removed code 18 (no scraping documented)",
+  "ID239",    "V11", "12; 24",             "24",         "removed code 12 (API not used independently)",
+  "ID413",    "V11", "21; 22; 13; 16; 18", "21",         "purely qualitative Instagram analysis; removed other codes",
+  "ID94",     "V11", "12; 18; 24",         "24",         "removed 12/18",
+  
+  "ID13",     "V11", "21; 24; 25",         "13; 24",     "added 13 because of Content and computer-mediated discourse analysis",
+  "ID1474",   "V11", "21",                 "21; 18",     "added 18 because web scraping was used as a method",
+  "ID1494",   "V11", "24",                 "24; 18; 12", "added 18 because a website scraper was used; added 12 for API use",
+  "ID1716",   "V11", "26",                 "26; 16",     "added 16 because network analysis was present",
+  "ID489",    "V11", "23; 21",             "23; 21; 18", "added 18 because MAXQDA Web Collector was used as a manual scraping tool"
 )
 
-
+tmp <- apply_manual_edits(df_clean, consistency_edits, log_df, step = "06a_consistency_CSS_in_method0")
+df_clean <- tmp$df
+log_df   <- tmp$log_df
 
 
 log_df <- log_event(
   log_df,
   step   = "06a_consistency_CSS_in_method0",
   action = "no_change_documented",
-  note   = "IDs ID1199, ID202, ID2152, ID267, ID366, ID109: V11 überprüft – keine Änderungen; CSS-Methoden erscheinen hier fälschlich bei method == 0"
+  note   = "Checked IDs ID1199, ID202, ID2152, ID267, ID366, ID109: no edits; CSS methods appear in method == 0"
 )
-
 ids_method_css <- c("ID1199", "ID202", "ID2152", "ID267", "ID366", "ID109")
 
+log_df <- log_event(
+  log_df,
+  step   = "06a_consistency_CSS_in_method0",
+  action = "no_change_documented",
+  note   = "Checked ID2382: no edits; no CSS methods appear even though method == 1"
+)
+ids_method_non_css <- c("ID2382")
+
 df_clean <- df_clean %>%
-  mutate(
-    method = if_else(id_unique %in% ids_method_css, 1, method)
+  dplyr::mutate(
+    method = dplyr::if_else(id_unique %in% ids_method_css, "1", method),
+    method = dplyr::if_else(id_unique %in% ids_method_non_css, "0", method)
   )
 
+# Resampling ----------------------------------------------------
+
 set.seed(SEED)
+
+table(df_clean$method)
+
 ids_to_delete <- df_clean %>%
-  filter(method == 1) %>%
-  distinct(id_unique) %>%
-  slice_sample(n = 12) %>%
-  pull(id_unique)
+  dplyr::filter(method == "1") %>%
+  dplyr::distinct(id_unique) %>%
+  dplyr::slice_sample(n = 10) %>%
+  dplyr::pull(id_unique)
 
 df_clean <- df_clean %>%
   filter(!id_unique %in% ids_to_delete)
@@ -469,8 +248,8 @@ log_df <- log_event(
   step   = "06a_consistency_correction",
   action = "random_deletion",
   note   = paste0(
-    "Randomly removed 12 cases from method == 1 to restore equal group sizes ",
-    "(n = 220 each). Draw reproducible via predefined seed. IDs removed: ",
+    "Randomly removed 10 cases from method == 1 to restore equal group sizes ",
+    "(n = 221 each). Draw reproducible via predefined seed. IDs removed: ",
     paste(ids_to_delete, collapse = ", ")
   )
 )
