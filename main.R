@@ -25,11 +25,11 @@ message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 
 # Source project files ---------------------------------------------------------
 
-source(here("R/paths.R"))
-source(here("R/config.R"))
-source(here("R/codebook.R"))
-source(here("R/logging.R"))
-source(here("R/helpers.R"))
+source(here("function helpers/paths.R"))
+source(here("function helpers/config.R"))
+source(here("function helpers/codebook.R"))
+source(here("function helpers/logging.R"))
+source(here("function helpers/helpers.R"))
 
 message("Seed: ", SEED)
 set.seed(SEED)

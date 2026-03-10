@@ -41,7 +41,7 @@ All paths are project-relative. The pipeline is deterministic given the input fi
 
 ### Pipeline Scripts
 
-Scripts are executed sequentially via `main.R`.
+Scripts are executed sequentially via `main.R` and stored in `/scripts`.
 
 - **01.load.WoS.data**: Imports raw abstract data retrieved from Web of Science (2009–2023) and performs basic cleaning.
 
@@ -55,9 +55,23 @@ Scripts are executed sequentially via `main.R`.
 
 - **06.data.cleaning**: Cleans the coded full-paper dataset and documents all cleaning steps in a log file.
 
-- **07.analysis.figures**: Produces descriptive statistics with figures from the cleaned dataset.
+- **07a.analysis.figures**: Produces descriptive statistics with figures from the cleaned dataset.
 
-- **07.analysis.tables**: Produces descriptive statistics with APA-style tables from the cleaned dataset.
+- **07b.analysis.tables**: Produces descriptive statistics with APA-style tables from the cleaned dataset.
+
+### Helper functions
+
+Scripts are loaded via `main.R` and stored in `/helper functions`.
+
+- **paths**: Defines relative paths for the project and output messages to be printed when executing code
+
+- **config**: Defines names of input data files
+
+- **codebook**: Defines variables and codes coded manually, as defined in our codebook
+
+- **logging**: Defines a function for logging all manual changes to data for error spotting after the manual coding (e.g., impossible codes)
+
+- **helpers**: Various helper functions for cleaning data, printing outputs, etc. used in the main script
 
 ### Required Input Data (important: subject to update)
 
