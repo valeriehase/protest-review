@@ -1,6 +1,6 @@
 #
 # Main Script Systematic Literature Review "Online Protest"
-# Date: 2026-03-08
+# Date: 2026-03-10
 #
 # Setup ------------------------------------------------------------------------
 
@@ -24,11 +24,11 @@ message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 
 # Source helper functions we need throughout this script  ---------------------------------------------------------
 
-source(here("helper functions/paths.R"))
-source(here("helper functions/config.R"))
-source(here("helper functions/codebook.R"))
-source(here("helper functions/logging.R"))
-source(here("helper functions/helpers.R"))
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/codebook.R"))
+source(here::here("helper functions/logging.R"))
+source(here::here("helper functions/helpers.R"))
 
 message("Seed: ", SEED)
 set.seed(SEED)

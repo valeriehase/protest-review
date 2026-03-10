@@ -24,10 +24,6 @@ if (file.exists(IN$wos_abstracts)) {
   wos.abstracts <- purrr::map_dfr(IN$wos_legacy, readxl::read_excel)
 }
 
-# Inspect data
-#glimpse(wos_abstracts)
-
-table(wos.abstracts$Language)
 
 # Clean data (e.g., rename variable, filter relevant variables, filter relevant cases)
 wos.abstracts <- wos.abstracts %>%
@@ -52,7 +48,7 @@ wos.abstracts <- wos.abstracts %>%
          issue = Issue,
          doi = DOI) %>%
   
-  #filter out non-English abstracts not idenfied as such
+  #filter out non-English abstracts not idenfied as such before
   dplyr::filter(id_wos != "WOS:000338130200005") %>%
   
   #create placeholder for unique, shorter id
@@ -90,12 +86,13 @@ wos.abstracts <- wos.abstracts %>%
                          id_wos %in% check$id_wos,
                           NA),
          
-         #expect for those already published in 2021
+         #except for those already published in 2021
          year = replace(year,
                         id_wos %in% c("WOS:000730401500001", "WOS:000621157300001", "WOS:000721544900001",
                                   "WOS:000715965000001"),
                         2021),
-         #expect for those already publised in 2022
+         
+         #except for those already publised in 2022
          year = replace(year,
                         id_wos %in% c("WOS:000882767000001", "WOS:000795946700001", "WOS:000797400200001",
                                   "WOS:000773468100001", "WOS:000781753400001"),
@@ -159,6 +156,3 @@ saveRDS(wos.abstracts, out_file)
 message("01 completed.")
 message("- Cleaned WoS abstracts saved to: ", out_file)
 message("- n_deduplicated = ", n_deduplicated)
-
-
-
