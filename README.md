@@ -2,13 +2,30 @@
 
 This repository contains the complete analysis pipeline for the protest literature review conducted within the DFG Network on Protest & CSS Methods.
 
-The workflow follows a linear, script-based pipeline with clearly defined inputs and outputs.
-All analytical steps are reproducible given the required manually coded input files provided in `data/in/`.
-
-To run the full pipeline:
+The workflow follows a linear, script-based pipeline with clearly defined inputs and outputs. To run the full pipeline, open the R project to execute the main script:
 
 ```r
 source("main.R")
+```
+
+All analytical steps are reproducible given the required manually coded input files provided in `data/in/`. Please note that we cannot share the full data for all steps given terms of use by respective literature databases. 
+As such, data can only be provided from step XX onwards. We recommending running the code in `main.R` from thereon (as indicated in the script).
+
+
+## Project Structure
+
+```text
+.
+├── data/
+│   ├── in/              # manually provided input data (required)
+│   ├── out/             # output files
+│   │   ├── intermediate/
+│   │   └── final/
+│   │   └── logs/
+│
+├── helper functions/                   # helper functions and configuration
+├── scripts/             # analysis pipeline
+└── main.R               # entry point
 ```
 
 ### Reproducibility
@@ -20,12 +37,7 @@ If required, restore the environment with:
 install.packages("renv")
 renv::restore()
 ```
-All paths are project-relative. The pipeline is deterministic given the input files.
-
-### Manual Coding & Researcher Decisions
-
-Several stages of the literature review require manual coding or researcher judgment (e.g., abstract screening, full-paper coding, deduplication decisions, reliability testing).
-All results of these manual steps must be provided as input data in `data/in/` before running the pipeline.
+All paths are project-relative. The pipeline is deterministic given the input files. Make sure to open all scripts from within the R project.
 
 ### Pipeline Scripts
 
@@ -55,6 +67,9 @@ Scripts are executed sequentially via `main.R`.
 | `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
 | `df_sample_coded_reli.xlsx` | Reliability coded cases used to exclude papers before final coding |
 
+Several stages of the literature review require manual coding or researcher judgment (e.g., abstract screening, full-paper coding, deduplication decisions, reliability testing).
+All results of these manual steps must be provided as input data in `data/in/` before running the pipeline.
+
 ### Output Paths
 
 | Path | Description |
@@ -62,21 +77,3 @@ Scripts are executed sequentially via `main.R`.
 | `data/out/intermediate/` | intermediate processing artifacts used by later pipeline steps | 
 | `data/out/final/` | analysis-ready datasets and final tables/figures | 
 | `data/out/logs/` | data-cleaning and processing logs | 
-
-## Project Structure
-
-```text
-.
-├── data/
-│   ├── in/              # manually provided input data (required)
-│   ├── out/             # output files
-│   │   ├── intermediate/
-│   │   └── final/
-│   │   └── logs/
-│
-├── R/                   # helper functions and configuration
-├── scripts/             # analysis pipeline
-└── main.R               # entry point
-```
-
-

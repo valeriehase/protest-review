@@ -18,6 +18,7 @@ venv/*
 *.Renviron
 *.Rapp.history
 *.RData
+*.DS_Store
 *.RDataTmp
 *.Ruserdata
 *-Ex.R
