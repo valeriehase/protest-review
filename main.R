@@ -33,11 +33,11 @@ source(here::here("helper functions/helpers.R"))
 message("Seed: ", SEED)
 set.seed(SEED)
 
-# Pipeline switches: Prepare list of relevant data to be loaded  ------------------------------------------------------------
+# Pipeline switches: Prepare list of relevant data to be loaded, to be adjusted based on individual needs  ------------------------------------------------------------
 
 RUN <- list(
-  wos_import = FALSE,
-  abstract_screening = FALSE,
+  wos_import = TRUE,
+  abstract_screening = TRUE,
   reliability_masks = TRUE,
   reliability_tests = TRUE,
   final_masks = TRUE,
@@ -51,7 +51,7 @@ RUN <- list(
 
 # Loads Web of Science data (2019-2023, downloaded on 03.04.2024)
 # Does some initial data cleaning (removing duplicates and other irrelevant abstracts)
-if (RUN$wos_import) source(here("scripts/01.load.wos.data.R"))
+if (RUN$wos_import) source(here::here("scripts/01.load.wos.data.R"))
 
 # 02 Abstract Screening --------------------------------------------------------
 

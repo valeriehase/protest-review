@@ -17,11 +17,19 @@ library(widyr)
 if (file.exists(IN$wos_abstracts)) {
   input_file <- require_file(IN$wos_abstracts, "WoS abstracts (preferred export)")
   message("Loading WoS abstracts: ", input_file)
-  wos.abstracts <- readxl::read_excel(input_file)
+  
+  wos.abstracts <- readxl::read_excel(input_file, col_types = "text")
+  
 } else {
   purrr::walk(IN$wos_legacy, require_file, what = "WoS legacy file")
-  message("Loading WoS abstracts (legacy files):\n- ", paste(basename(IN$wos_legacy), collapse = "\n- "))
-  wos.abstracts <- purrr::map_dfr(IN$wos_legacy, readxl::read_excel)
+  
+  message("Loading WoS abstracts (legacy files):\n- ",
+          paste(basename(IN$wos_legacy), collapse = "\n- "))
+  
+  wos.abstracts <- purrr::map_dfr(
+    IN$wos_legacy,
+    ~ readxl::read_excel(.x, col_types = "text")
+  )
 }
 
 
