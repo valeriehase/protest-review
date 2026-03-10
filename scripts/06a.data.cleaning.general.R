@@ -234,7 +234,7 @@ table(df_clean$method)
 ids_to_delete <- df_clean %>%
   dplyr::filter(method == "1") %>%
   dplyr::distinct(id_unique) %>%
-  dplyr::slice_sample(n = 10) %>%
+  dplyr::slice_sample(n = 15) %>%
   dplyr::pull(id_unique)
 
 df_clean <- df_clean %>%
@@ -247,8 +247,8 @@ log_df <- log_event(
   step   = "06a_consistency_correction",
   action = "random_deletion",
   note   = paste0(
-    "Randomly removed 10 cases from method == 1 to restore equal group sizes ",
-    "(n = 221 each). Draw reproducible via predefined seed. IDs removed: ",
+    "Randomly removed 15 cases from method == 1 to restore equal group sizes ",
+    "(n = 215 each). Draw reproducible via predefined seed. IDs removed: ",
     paste(ids_to_delete, collapse = ", ")
   )
 )
