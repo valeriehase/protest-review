@@ -23,7 +23,7 @@ As such, data can only be provided from step XX onwards. We recommending running
 │   │   └── final/
 │   │   └── logs/
 │
-├── helper functions/                   # helper functions and configuration
+├── helper functions/     # helper functions and configuration
 ├── scripts/             # analysis pipeline
 └── main.R               # entry point
 ```
@@ -55,7 +55,9 @@ Scripts are executed sequentially via `main.R`.
 
 - **06.data.cleaning**: Cleans the coded full-paper dataset and documents all cleaning steps in a log file.
 
-- **07.analysis**: Produces descriptive statistics, APA-style tables, and figures from the cleaned dataset.
+- **07.analysis.figures**: Produces descriptive statistics with figures from the cleaned dataset.
+
+- **07.analysis.tables**: Produces descriptive statistics with APA-style tables from the cleaned dataset.
 
 ### Required Input Data (important: subject to update)
 
