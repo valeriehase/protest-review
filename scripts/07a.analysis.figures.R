@@ -1,6 +1,5 @@
 #
 # Final Analysis - Figures
-# Author: Miriam Milzner, Valerie Hase
 # Date: 2025-10-24
 #
 # Setup ------------------------------------------------------------------------

@@ -1,6 +1,5 @@
 #
 # Data Cleaning of Final Coded Data - Distribution of Rare Codes
-# Author: Miriam Milzner
 # Date: 2025-10-20
 #
 # Setup ------------------------------------------------------------------------

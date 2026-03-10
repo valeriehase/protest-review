@@ -1,6 +1,5 @@
 #
 # Data Cleaning of Final Coded Data - Comments Check
-# Author: Miriam Milzner
 # Date: 2025-10-20
 #
 # Performs post-coding clarification based on coder comments indicating uncertainty or codebook misinterpretation. 

@@ -1,6 +1,5 @@
 #
 # Data Cleaning of Final Coded Data - General
-# Author: Miriam Milzner
 # Date: 2025-10-20
 #
 # Performs systematic post-coding cleaning of the deduplicated full-paper dataset.

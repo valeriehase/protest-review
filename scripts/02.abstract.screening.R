@@ -1,6 +1,5 @@
 #
 # Sort into CSS/non-CSS sample & abstract screening
-# Author: Valerie Hase
 # Date: 2025-01-10
 #
 # Setup ------------------------------------------------------------------------

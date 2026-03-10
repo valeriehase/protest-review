@@ -1,6 +1,5 @@
 #
 # Main Script Systematic Literature Review "Online Protest"
-# Author: Miriam Milzner, Valerie Hase
 # Date: 2026-03-08
 #
 # Setup ------------------------------------------------------------------------

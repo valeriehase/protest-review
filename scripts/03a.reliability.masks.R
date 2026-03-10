@@ -1,6 +1,5 @@
 #
 # Reliability test subsamples
-# Author: Miriam Milzner
 # Date: 2025-08-15
 #
 # Setup ------------------------------------------------------------------------

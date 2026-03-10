@@ -1,7 +1,5 @@
 #
 # Load raw Web of Science data & check for duplicates
-# Author: Valerie Hase
-# Date: 2024-04-05
 #
 # Setup ------------------------------------------------------------------------
 
