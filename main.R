@@ -23,18 +23,18 @@ renv::activate()
 message("Project root: ", here::here())
 message("Run started: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 
-# Source project files ---------------------------------------------------------
+# Source helper functions we need throughout this script  ---------------------------------------------------------
 
-source(here("function helpers/paths.R"))
-source(here("function helpers/config.R"))
-source(here("function helpers/codebook.R"))
-source(here("function helpers/logging.R"))
-source(here("function helpers/helpers.R"))
+source(here("helper functions/paths.R"))
+source(here("helper functions/config.R"))
+source(here("helper functions/codebook.R"))
+source(here("helper functions/logging.R"))
+source(here("helper functions/helpers.R"))
 
 message("Seed: ", SEED)
 set.seed(SEED)
 
-# Pipeline switches ------------------------------------------------------------
+# Pipeline switches: Prepare list of relevant data to be loaded  ------------------------------------------------------------
 
 RUN <- list(
   wos_import = FALSE,
