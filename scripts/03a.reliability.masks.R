@@ -4,8 +4,8 @@
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS")) source(here::here("R/paths.R"))
-if (!exists("IN")) source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
+if (!exists("IN")) source(here::here("helper functions/config.R"))
 
 library(readxl)
 library(dplyr)
