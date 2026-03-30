@@ -11,6 +11,7 @@ library(widyr)
 
 if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
 if (!exists("IN"))    source(here::here("helper functions/config.R"))
+if (!exists("require_file")) source(here::here("helper functions/helpers.R"))
 
 # 1.1 Load WoS data from Excel sheet & do some cleaning ------------------------
 
