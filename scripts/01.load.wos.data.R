@@ -151,10 +151,7 @@ rm(duplicates, similarity, titles)
 wos.abstracts <- wos.abstracts %>%
   dplyr::mutate(id_unique = paste0("ID", 1:nrow(wos.abstracts)))
 
-# 1.4 Create N preliminary sample for PRISMA flow ------------------------------
-n_deduplicated <- nrow(wos.abstracts)
-
-# Export -----------------------------------------------------------------------
+# 1.4 Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$int
 stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
@@ -163,4 +160,3 @@ saveRDS(wos.abstracts, out_file)
 
 message("01 completed.")
 message("- Cleaned WoS abstracts saved to: ", out_file)
-message("- n_deduplicated = ", n_deduplicated)
