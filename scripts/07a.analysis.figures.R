@@ -1,13 +1,8 @@
 #
 # Final Analysis - Figures
-# Date: 2025-10-24
+# Date: 2026-30-03
 #
 # Setup ------------------------------------------------------------------------
-
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/helpers.R"))
-source(here::here("R/codebook.R"))
 
 library(readxl)
 library(tidyverse)
@@ -22,16 +17,59 @@ library(sf)
 library(rnaturalearth)
 library(rnaturalearthdata)
 
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/helpers.R"))
+source(here::here("helper functions/codebook.R"))
+
 # Load Input -------------------------------------------------------------------
 
-input_file <- require_file(file.path(PATHS$final, "full_paper_sample_final.xlsx"), "analysis input dataset (final output of 06 steps)")
+# Load data from 06c, if necessary
 
-message("Reading analysis dataset from: ", input_file)
-df <- readxl::read_excel(input_file)
+if (!exists("coding_paper_clean_6c", inherits = FALSE)) {
+  
+  # Directory
+  dir_path <- PATHS$final
+  
+  # List matching files
+  files <- list.files(
+    dir_path,
+    pattern = "^full_paper_sample_final(_\\d{8}_\\d{4})?\\.xlsx$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No final data set found, please run script 06c.cleaning.codes first.")
+  }
+  
+  # Extract timestamps (if present)
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.xlsx$",
+    "\\1",
+    files
+  )
+  
+  # Convert to POSIXct
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  # Select latest file
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading final sample from: ", timestamps[which.max(timestamps)])
+  
+  final_sample <- readxl::read_excel(latest_file)
+  
+  #clean house
+  rm(timestamps, dir_path, files, latest_file)
+}
 
 # 7.1 Prepare Data ------------------------------------------------------------
 
-df <- df %>%
+df <- final_sample %>%
   rename_with(
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
@@ -40,6 +78,7 @@ str(df)
 
 vars <- c("V7", "V10", "V10_agg", "V11", "V12", "V13", "method")
 
+# final check for any wrong data still being included
 df <- df %>%
   mutate(method = str_trim(method)) %>%    
   filter(method %in% c("0", "1")) %>%
@@ -51,7 +90,9 @@ df_V10agg <- make_df_V10agg(df)
 # 7.2 Descriptive Figures  -----------------------------------------------------
 
 landscape <- prop_section(page_size = page_size(orient = "landscape"))
-doc <- read_docx() %>% body_add_par("", style = "Normal") %>% body_set_default_section(landscape)
+doc <- read_docx() %>% 
+  body_add_par("", style = "Normal") %>% 
+  body_set_default_section(landscape)
 
 table_specs <- list(
   V7       = "Frequencies of Regions",
