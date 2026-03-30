@@ -27,7 +27,7 @@ log_df <- log_event(log_df, "06a_start", "script_started")
 
 # Load data from 05, if necessary
 
-if (!exists("coding_paper", inherits = FALSE)) {
+if (!exists("coding_full_paper_deduplicated", inherits = FALSE)) {
   
   # Directory
   dir_path <- PATHS$int
@@ -60,16 +60,16 @@ if (!exists("coding_paper", inherits = FALSE)) {
   # Select latest file
   latest_file <- files[which.max(timestamps)]
   
-  message("Loading codings of full papers from: ", timestamps[which.max(timestamps)])
+  message("Loading deduplicated codings of full papers from: ", timestamps[which.max(timestamps)])
   
-  coding_paper <- readxl::read_excel(latest_file)
+  coding_full_paper_deduplicated <- readxl::read_excel(latest_file)
   
   #clean house
   rm(timestamps, dir_path, files, latest_file)
 }
 
 # prepare for analysis
-coding_paper_clean <- coding_paper %>%
+coding_paper_clean <- coding_full_paper_deduplicated %>%
   rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))%>%
   mutate(
     method = as.character(method),
