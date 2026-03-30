@@ -1,17 +1,12 @@
 #
 # Data Cleaning of Final Coded Data - Comments Check
-# Date: 2025-10-20
+# Date: 2026-03-30
 #
 # Performs post-coding clarification based on coder comments indicating uncertainty or codebook misinterpretation. 
-# Revisions were made through centralized adjudication by the senior coder (MM) using consistent decision rules.
+# Revisions were made through centralized adjudication by the senior coder (anonymized for rview) using consistent decision rules.
 # All changes are logged for transparency.
 #
 # Setup ------------------------------------------------------------------------
-
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/logging.R"))
-source(here::here("R/helpers.R"))
 
 library(readxl)
 library(dplyr)
@@ -20,20 +15,63 @@ library(stringr)
 library(purrr)
 library(openxlsx)
 
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/logging.R"))
+source(here::here("helper functions/helpers.R"))
+
 log_df <- init_log()
 log_df <- log_event(log_df, "06b_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- require_file(file.path(PATHS$int, "06a_full_paper_sample_deduplicated_cleaned.xlsx"), "cleaned deduplicated coded full-paper sample (output of step 06a)")
+# Load data from 06a, if necessary
 
-message("Reading cleaned deduplicated sample from: ", input_file)
-df <- readxl::read_excel(input_file)
+if (!exists("coding_paper_clean_6a", inherits = FALSE)) {
+  
+  # Directory
+  dir_path <- PATHS$int
+  
+  # List matching files
+  files <- list.files(
+    dir_path,
+    pattern = "^06a_full_paper_sample_deduplicated_cleaned(_\\d{8}_\\d{4})?\\.xlsx$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No matching cleaned codings of full papers found, please run script 06a.cleaning.general first.")
+  }
+  
+  # Extract timestamps (if present)
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.xlsx$",
+    "\\1",
+    files
+  )
+  
+  # Convert to POSIXct
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  # Select latest file
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading cleaned, deduplicated codings of full papers from: ", timestamps[which.max(timestamps)])
+  
+  coding_paper_clean_6b <- readxl::read_excel(latest_file)
+  
+  #clean house
+  rm(timestamps, dir_path, files, latest_file)
+}
 
-# 6.3 Check Comments -----------------------------------------------------------
+# 6.1 Check Comments -----------------------------------------------------------
 
-if ("Comment_CODER" %in% names(df)) {
-  comments_long <- df %>%
+if ("Comment_CODER" %in% names(coding_paper_clean_6b)) {
+  comments_long <- coding_paper_clean_6b %>%
     dplyr::filter(!is.na(Comment_CODER), stringr::str_trim(Comment_CODER) != "") %>%
     dplyr::mutate(Comment = stringr::str_squish(Comment_CODER)) %>%
     tidyr::separate_rows(Comment, sep = ";\\s*") %>%
@@ -52,7 +90,7 @@ if ("Comment_CODER" %in% names(df)) {
   print(comments_long)
 }
 
-# --- Manual fixes -------------------------------------------------------------
+# 6.2 Manual fixes based on comments -------------------------------------------------------------
 
 fixes <- tibble::tribble(
   ~id_unique, ~var,      ~or_value,              ~new_value,   ~note,
@@ -78,18 +116,20 @@ fixes <- tibble::tribble(
   "ID2281",   "V11",     "21; 22",               "20; 21; 22", "no comment section; but describes clearly what it does 'theoretical piece with data/analysis from previous studies; add code 20"
   )
 
-fixes_apply <- fixes %>% dplyr::select(id_unique, var, new_value, note)
+fixes_apply <- fixes %>% 
+  dplyr::select(id_unique, var, new_value, note)
 
 tmp <- apply_manual_edits(
-  df = df,
+  df = coding_paper_clean_6b,
   edits = fixes_apply,
   log_df = log_df,
   step = "06b_comment_review",
   action = "manual_edit"
 )
-df <- tmp$df; log_df <- tmp$log_df
 
-# --- Reviewed, no change ------------------------------------------------------
+coding_paper_clean_6b <- tmp$df; log_df <- tmp$log_df
+
+# 6.3 Reviewed, no change ------------------------------------------------------
 
 no_change <- tibble::tribble(
   ~id_unique, ~note,
@@ -145,21 +185,21 @@ for (i in seq_len(nrow(no_change))) {
 }
 
 
-# --- Clear reviewed comments --------------------------------------------------
+# 6.4 Clear reviewed comments --------------------------------------------------
 
 checked_ids <- unique(c(fixes$id_unique, no_change$id_unique))
 
-if ("Comment_CODER" %in% names(df)) {
+if ("Comment_CODER" %in% names(coding_paper_clean_6b)) {
   
-  df <- df %>%
+  coding_paper_clean_6b <- coding_paper_clean_6b %>%
     dplyr::mutate(
       Comment_CODER = dplyr::if_else(
         id_unique %in% checked_ids, NA_character_, Comment_CODER)
       )
   
-  if (all(is.na(df$Comment_CODER))) {
+  if (all(is.na(coding_paper_clean_6b$Comment_CODER))) {
     
-    df <- df %>% dplyr::select(-Comment_CODER)
+    coding_paper_clean_6b <- coding_paper_clean_6b %>% dplyr::select(-Comment_CODER)
     
     message("All coder comments have been reviewed, logged, and the Comment_CODER column was removed.")
     
@@ -171,21 +211,18 @@ if ("Comment_CODER" %in% names(df)) {
   }
 }
 
-# Output -----------------------------------------------------------------------
+# 6.5 Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$int
 log_dir <- PATHS$logs
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 
-out_df_comments <- file.path(out_dir, "06b_full_paper_sample_deduplicated_cleaned_comments_checked.xlsx")
-openxlsx::write.xlsx(df, out_df_comments, overwrite = TRUE)
+out_coding_paper_cleaned_6b <- file.path(out_dir, paste0("06b_full_paper_sample_deduplicated_cleaned_comments_checked_", stamp, ".xlsx"))
+openxlsx::write.xlsx(coding_paper_clean_6b, out_coding_paper_cleaned_6b, overwrite = TRUE)
 
 log_file <- file.path(log_dir, paste0("06b_comments_check_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
 write_log(log_df, log_file)
 
 message("06b completed.")
-message("- Cleaned dataset (comments checked) at: ", out_df_comments)
+message("- Cleaned dataset (comments checked) at: ", out_coding_paper_cleaned_6b)
 message("- Log written to: ", log_file)
-
-
-
-
