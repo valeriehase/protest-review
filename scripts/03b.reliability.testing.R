@@ -1,11 +1,11 @@
 #
 # Reliability Tests
-# Date: 2025-08-15
+# Date: 2025-03-30
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS")) source(here::here("R/paths.R"))
-if (!exists("IN")) source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
+if (!exists("IN")) source(here::here("helper functions/config.R"))
 
 library(readxl)
 library(dplyr)
@@ -19,11 +19,11 @@ library(tidycomm)
 
 message("03b: Reading coded reliability masks provided by coders.")
 
-reli_dir <- PATHS$int
+reli_dir <- PATHS$IN
 
 files <- list.files(
   path = reli_dir,
-  pattern = "^03a_reliability_mask_R\\d+.*\\.xlsx$",
+  pattern = "^03b_reliability_mask_R\\d+.*\\.xlsx$",
   full.names = TRUE
 )
 
@@ -159,5 +159,3 @@ openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
 saveRDS(icr, out_rds)
 
 message("03b completed. Output: ", out_xlsx)
-
-
