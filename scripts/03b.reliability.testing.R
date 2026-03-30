@@ -145,7 +145,7 @@ icr_v7v16 <- tidycomm::test_icr(
   V7, V8, V12, V13, V14, V15, V16
 )
 
-icr <- bind_rows(icr_v10, icr_v11, icr_v7v16)
+icr_paper <- bind_rows(icr_v10, icr_v11, icr_v7v16)
 
 # Output -----------------------------------------------------------------------
 
@@ -155,7 +155,7 @@ stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 out_xlsx <- file.path(out_dir, paste0("03b_reliability_values_", stamp, ".xlsx"))
 out_rds  <- file.path(out_dir, paste0("03b_reliability_values_", stamp, ".rds"))
 
-openxlsx::write.xlsx(icr, out_xlsx, overwrite = TRUE)
-saveRDS(icr, out_rds)
+openxlsx::write.xlsx(icr_paper, out_xlsx, overwrite = TRUE)
+saveRDS(icr_paper, out_rds)
 
 message("03b completed. Output: ", out_xlsx)
