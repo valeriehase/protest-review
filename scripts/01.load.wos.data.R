@@ -3,14 +3,14 @@
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS")) source(here::here("R/paths.R"))
-if (!exists("IN"))    source(here::here("R/config.R"))
-
 library(readxl)
 library(dplyr)
 library(tidyr)
 library(tidytext)
 library(widyr)
+
+if (!exists("PATHS")) source(here::here("R/paths.R"))
+if (!exists("IN"))    source(here::here("R/config.R"))
 
 # 1.1 Load WoS data from Excel sheet & do some cleaning ------------------------
 
