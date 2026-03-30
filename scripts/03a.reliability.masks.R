@@ -1,6 +1,6 @@
 #
 # Reliability test subsamples
-# Date: 2025-08-15
+# Date: 2026-03-30
 #
 # Setup ------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@ input_file <- require_file(IN$full_paper_sample, "full-paper sample (Excel)")
 message("Reading full-paper sample from: ", input_file)
 df <- readxl::read_excel(input_file)
 
-# 3.1 Draw Sample --------------------------------------------------------------
+# 3.1 Draw sample for reliability coding --------------------------------------------------------------
 
 set.seed(SEED)
 
@@ -39,8 +39,8 @@ stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 output_file1 <- file.path(out_dir, paste0("03a_reliability_mask_R1_", stamp, ".xlsx"))
 output_file2 <- file.path(out_dir, paste0("03a_reliability_mask_R2_", stamp, ".xlsx"))
 
-openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
-openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)
+#openxlsx::write.xlsx(sample1, output_file1, overwrite = TRUE)
+#openxlsx::write.xlsx(sample2, output_file2, overwrite = TRUE)
 
 message("03a completed. Reliability masks created:")
 message("- ", output_file1)
