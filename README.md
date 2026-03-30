@@ -84,9 +84,8 @@ Scripts are loaded via `main.R` and stored in `/helper functions`.
 | `03a_full_paper_sample.xlsx` | Full-paper sample | 03a.reliability.masks (and following) |
 | `03b_reliability_mask_R1_coder1.xlsx`, `03b_reliability_mask_R1_coder2.xlsx`, `03b_reliability_mask_R1_coder3.xlsx`, `03b_reliability_mask_R2_coder1.xlsx`, `03b_reliability_mask_R2_coder2.xlsx`, `03b_reliability_mask_R2_coder3.xlsx` | Full-paper sample | 03a.reliability.masks (and following) |
 | `04_df_sample_coded_reli.xlsx` | Reliability coded cases used to exclude papers before final coding | 04.final.coding.masks |
-| `full_paper_sample_coded.xlsx` | Coded full-paper sample (pre-deduplication) |
-| `dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication |
-| `03a_reliability_mask_R1_coder1.xlsx`, `03a_reliability_mask_R1_coder2.xlsx`, `03a_reliability_mask_R1_coder3.xlsx`, `03a_reliability_mask_R2_coder1.xlsx`, `03a_reliability_mask_R2_coder2.xlsx`, `03a_reliability_mask_R2_coder3.xlsx` | Reliability coding for full papers |
+| `05_full_paper_sample_coded.xlsx` | Coded full-paper sample (pre-deduplication) | 05.deduplication |
+| `05_dupes_checked.xlsx` | Manually curated list of IDs to retain during deduplication | 05.deduplication |
 
 Several stages of the literature review require manual coding or researcher judgment (e.g., abstract screening, full-paper coding, deduplication decisions, reliability testing).
 All results of these manual steps must be provided as input data in `data/in/` before running the pipeline.
