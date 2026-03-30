@@ -1,14 +1,8 @@
 #
 # Data Cleaning of Final Coded Data - Distribution of Rare Codes
-# Date: 2025-10-20
+# Date: 2026-30-03
 #
 # Setup ------------------------------------------------------------------------
-
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/logging.R"))
-source(here::here("R/helpers.R"))
-source(here::here("R/codebook.R"))
 
 library(readxl)
 library(dplyr)
@@ -17,22 +11,67 @@ library(stringr)
 library(purrr)
 library(openxlsx)
 
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/logging.R"))
+source(here::here("helper functions/helpers.R"))
+source(here::here("helper functions/codebook.R"))
+
 log_df <- init_log()
 log_df <- log_event(log_df, "06c_start", "script_started")
 
 # Load Input -------------------------------------------------------------------
 
-input_file <- require_file(file.path(PATHS$int, "06b_full_paper_sample_deduplicated_cleaned_comments_checked.xlsx"), "cleaned full-paper sample with comments checked (output of step 06b)")
+# Load data from 06b, if necessary
 
-message("Reading cleaned dataset (comments checked) from: ", input_file)
-df <- readxl::read_excel(input_file)
+if (!exists("coding_paper_clean_6b", inherits = FALSE)) {
+  
+  # Directory
+  dir_path <- PATHS$int
+  
+  # List matching files
+  files <- list.files(
+    dir_path,
+    pattern = "^06b_full_paper_sample_deduplicated_cleaned_comments_checked(_\\d{8}_\\d{4})?\\.xlsx$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No matching cleaned and comment addressed codings of full papers found, please run script 06b.cleaning.comments first.")
+  }
+  
+  # Extract timestamps (if present)
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.xlsx$",
+    "\\1",
+    files
+  )
+  
+  # Convert to POSIXct
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  # Select latest file
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading cleaned, deduplicated codings of full papers from: ", timestamps[which.max(timestamps)])
+  
+  coding_paper_clean_6c <- readxl::read_excel(latest_file)
+  
+  #clean house
+  rm(timestamps, dir_path, files, latest_file)
+}
 
-# Parameters -------------------------------------------------------------------
+
+# 6.1 Check Parameters -------------------------------------------------------------------
 
 coder_col <- "V5"
 vars_to_check <- c("V10","V11","V12","V13")
 
-codes_long <- purrr::map_dfr(vars_to_check, ~explode_codes(df, .x, coder_col))
+codes_long <- purrr::map_dfr(vars_to_check, ~explode_codes(coding_paper_clean_6c, .x, coder_col))
 
 levels_long <- bind_rows(
   levels_V7 %>% transmute(variable = "V7", code = as.character(V7), label = V7_label),
@@ -42,7 +81,7 @@ levels_long <- bind_rows(
   levels_V13 %>% transmute(variable = "V13", code = as.character(V13), label = V13_label)
 )
 
-# Distributions ----------------------------------------------------------------
+# 6.2 Check Distributions ----------------------------------------------------------------
 
 dist_by_coder <- codes_long %>%
   count(variable, coder, code, name = "n") %>%
@@ -60,7 +99,7 @@ dist_total <- codes_long %>%
   left_join(levels_long, by = c("variable","code")) %>%
   arrange(variable, n_total)
 
-# Manually identified codes to double-check ------------------------------------
+# 6.3 Manually identified codes to double-check ------------------------------------
 
 suspect_codes <- tibble::tribble(
   ~variable, ~code, ~label,                    
@@ -78,10 +117,10 @@ log_df <- log_event(
 
 suspect_cases <- codes_long %>%
   inner_join(suspect_codes, by = c("variable","code")) %>%
-  left_join(df, by = "id_unique") %>%
+  left_join(coding_paper_clean_6c, by = "id_unique") %>%
   arrange(variable, code, coder, id_unique)
 
-# --- Manual fixes -------------------------------------------------------------
+# 6.4 Manual fixes -------------------------------------------------------------
 
 fixes <- tibble::tribble(
   ~id_unique, ~var,   ~or_value,               ~new_value,               ~note,
@@ -100,15 +139,15 @@ fixes <- tibble::tribble(
 fixes_apply <- fixes %>% dplyr::select(id_unique, var, new_value, note)
 
 tmp <- apply_manual_edits(
-  df = df,
+  df = coding_paper_clean_6c,
   edits = fixes_apply,
   log_df = log_df,
   step = "06c_code_review",
   action = "manual_edit"
 )
-df <- tmp$df; log_df <- tmp$log_df
+coding_paper_clean_6c <- tmp$df; log_df <- tmp$log_df
 
-# --- Reviewed, no change ------------------------------------------------------
+# 6.5 Reviewed, no change ------------------------------------------------------
 
 no_change <- tibble::tribble(
   ~id_unique,  ~or_value,       ~new_value,      ~note,
@@ -123,19 +162,18 @@ for (i in seq_len(nrow(no_change))) {
   )
 }
 
-# Output -----------------------------------------------------------------------
+# 6.6 Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$final
 log_dir <- PATHS$logs
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 
-out_df_final <- file.path(out_dir, "full_paper_sample_final.xlsx")
-openxlsx::write.xlsx(df, out_df_final, overwrite = TRUE)
+out_coding_paper_cleaned_6c <- file.path(out_dir, paste0("full_paper_sample_final_", stamp, ".xlsx"))
+openxlsx::write.xlsx(coding_paper_clean_6c, out_coding_paper_cleaned_6c, overwrite = TRUE)
 
 log_file <- file.path(log_dir, paste0("06c_code_check_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
 write_log(log_df, log_file)
 
 message("06c completed.")
-message("- Final dataset at: ", out_df_final)
+message("- Final dataset at: ", out_coding_paper_cleaned_6c)
 message("- Log written to: ", log_file)
-
-
