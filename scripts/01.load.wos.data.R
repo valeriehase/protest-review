@@ -18,7 +18,7 @@ if (file.exists(IN$wos_abstracts)) {
   input_file <- require_file(IN$wos_abstracts, "WoS abstracts (preferred export)")
   message("Loading WoS abstracts: ", input_file)
   
-  wos.abstracts <- readxl::read_excel(input_file, col_types = "text")
+  wos_abstracts <- readxl::read_excel(input_file, col_types = "text")
   
 } else {
   purrr::walk(IN$wos_legacy, require_file, what = "WoS legacy file")
@@ -26,7 +26,7 @@ if (file.exists(IN$wos_abstracts)) {
   message("Loading WoS abstracts (legacy files):\n- ",
           paste(basename(IN$wos_legacy), collapse = "\n- "))
   
-  wos.abstracts <- purrr::map_dfr(
+  wos_abstracts <- purrr::map_dfr(
     IN$wos_legacy,
     ~ readxl::read_excel(.x, col_types = "text")
   )
@@ -34,7 +34,7 @@ if (file.exists(IN$wos_abstracts)) {
 
 
 # Clean data (e.g., rename variable, filter relevant variables, filter relevant cases)
-wos.abstracts <- wos.abstracts %>%
+wos_abstracts <- wos_abstracts %>%
   
   #reduce to relevant cases
   dplyr::filter(Language == "English") %>%
@@ -70,7 +70,7 @@ wos.abstracts <- wos.abstracts %>%
          year, volume, issue, doi) 
 
 #for articles with 2024 as year: were they originally published in 2023?
-check <- wos.abstracts %>%
+check <- wos_abstracts %>%
   dplyr::filter(year == 2024) %>%
   dplyr::select(title, id_wos, doi) %>%
   dplyr::mutate(link = paste0("https://doi.org/", doi))
@@ -79,7 +79,7 @@ check <- wos.abstracts %>%
 #browseURL(check$link[48])
 
 #set years to online first year, set volume and issue to NA
-wos.abstracts <- wos.abstracts %>%
+wos_abstracts <- wos_abstracts %>%
   
   #all years to 2023
   dplyr::mutate(year = replace(year,
@@ -111,20 +111,20 @@ rm(check)
 # 1.2: Check for duplicates ----------------------------------------------------
 
 #by ID: looks good
-length(unique(wos.abstracts$id_wos))
+length(unique(wos_abstracts$id_wos))
 
 #by DOI
-wos.abstracts %>%
+wos_abstracts %>%
   dplyr::filter(!is.na(doi)) %>%
   dplyr::count(doi) %>%
   dplyr::filter(n>1)
 
 #we drop 1 article included both as early access and as regular article based on same doi
-wos.abstracts <- wos.abstracts %>%
+wos_abstracts <- wos_abstracts %>%
     dplyr::filter(id_wos != "WOS:000953595300001")
 
 #by title similarity
-titles <- wos.abstracts %>%
+titles <- wos_abstracts %>%
   dplyr::mutate(title = tolower(title)) %>% 
   dplyr::select(title, id_wos) %>%
   tidytext::unnest_tokens(word, title) %>%
@@ -136,11 +136,11 @@ similarity <- titles %>%
                   dplyr::arrange(desc(similarity)) %>% 
                   dplyr::filter(similarity >= .8)
 
-duplicates <- wos.abstracts %>%
+duplicates <- wos_abstracts %>%
   dplyr::filter(id_wos %in% similarity$item1 | id_wos %in% similarity$item2)
 
 #we drop 3 more articles included both as early access and as regular article based on same title
-wos.abstracts <- wos.abstracts %>%
+wos_abstracts <- wos_abstracts %>%
   dplyr::filter(id_wos != "WOS:000209845700001" & id_wos != "WOS:000209845600001" & id_wos != "WOS:000777856400001")
 
 #clean house
@@ -148,15 +148,15 @@ rm(duplicates, similarity, titles)
 
 # 1.3 Create unique ID per article ---------------------------------------------
 
-wos.abstracts <- wos.abstracts %>%
-  dplyr::mutate(id_unique = paste0("ID", 1:nrow(wos.abstracts)))
+wos_abstracts <- wos_abstracts %>%
+  dplyr::mutate(id_unique = paste0("ID", 1:nrow(wos_abstracts)))
 
 # 1.4 Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$int
 stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 out_file <- file.path(out_dir, paste0("01_wos_abstracts_clean_", stamp, ".rds"))
-saveRDS(wos.abstracts, out_file)
+saveRDS(wos_abstracts, out_file)
 
 message("01 completed.")
 message("- Cleaned WoS abstracts saved to: ", out_file)
