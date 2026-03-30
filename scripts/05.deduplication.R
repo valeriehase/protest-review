@@ -8,9 +8,9 @@ library(readxl)
 library(dplyr)
 library(openxlsx)
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/helpers.R"))
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/helpers.R"))
 
 # Input data -------------------------------------------------------------------
 
@@ -131,7 +131,6 @@ coding_full_paper <- coding_full_paper %>%
   dplyr::select(-n) %>%
   dplyr::ungroup()
 
-
 dupes <- coding_full_paper %>%
   dplyr::group_by(id_unique) %>%
   dplyr::filter(dplyr::n() > 1) %>%
@@ -143,7 +142,8 @@ n_dupe_ids <- dplyr::n_distinct(dupes$id_unique)
 # 5.2 Export Duplicates --------------------------------------------------------
 
 out_dir <- PATHS$int
-out_dupes <- file.path(out_dir, "05_full_paper_sample_coded_dupes.xlsx")
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
+out_dupes <- file.path(out_dir, paste0("05_full_paper_sample_coded_dupes_", stamp, ".xlsx"))
 
 openxlsx::write.xlsx(dupes, out_dupes, overwrite = TRUE)
 
@@ -187,9 +187,10 @@ removed_duplicates <- coding_full_paper %>%
 # Output -----------------------------------------------------------------------
 
 out_dir <- PATHS$int
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 
-out_removed_dupes   <- file.path(out_dir, "05_deduplication_removed_dupes.xlsx")
-out_coding_full_paper_deduplicated <- file.path(out_dir, "05_deduplication_full_paper_sample_deduplicated.xlsx")
+out_removed_dupes <- file.path(out_dir, paste0("05_deduplication_removed_dupes_", stamp, ".xlsx"))
+out_coding_full_paper_deduplicated <- file.path(out_dir, paste0("05_deduplication_full_paper_sample_deduplicated_", stamp, ".xlsx"))
 
 openxlsx::write.xlsx(coding_full_paper_deduplicated, out_coding_full_paper_deduplicated, overwrite = T)
 openxlsx::write.xlsx(removed_duplicates, out_removed_dupes, overwrite = T)
@@ -198,7 +199,3 @@ message("05 completed.")
 message("- Duplicated IDs detected: ", n_dupe_ids)
 message("- Deduplicated dataset at: ", out_coding_full_paper_deduplicated)
 message("- Removed duplicates at: ", out_removed_dupes)
-
-
-
-
