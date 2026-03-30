@@ -69,7 +69,7 @@ if (!exists("coding_full_paper_deduplicated", inherits = FALSE)) {
 }
 
 # prepare for analysis
-coding_paper_clean <- coding_full_paper_deduplicated %>%
+coding_paper_clean_6a <- coding_full_paper_deduplicated %>%
   rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))%>%
   mutate(
     method = as.character(method),
@@ -78,12 +78,12 @@ coding_paper_clean <- coding_full_paper_deduplicated %>%
   )
 
 # Sanity check
-stopifnot(n_distinct(coding_paper_clean$id_unique) == nrow(coding_paper_clean))
+stopifnot(n_distinct(coding_paper_clean_6a$id_unique) == nrow(coding_paper_clean_6a))
 
 # --- 6.1. Check: V6 ----------------------------------------------------------------------
 
-invalid_v6_ids <- find_invalid_token_ids(coding_paper_clean, "V6", max_tokens = 3, numeric_ok = c("1"))
-invalid_v6 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v6_ids$id_unique)
+invalid_v6_ids <- find_invalid_token_ids(coding_paper_clean_6a, "V6", max_tokens = 3, numeric_ok = c("1"))
+invalid_v6 <- coding_paper_clean_6a %>% dplyr::filter(id_unique %in% invalid_v6_ids$id_unique)
 print(invalid_v6)
 
 v6_edits <- tibble::tribble(
@@ -93,13 +93,13 @@ v6_edits <- tibble::tribble(
   "ID94",  "V6", "1", "protest general recoded as protest cases"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, v6_edits, log_df, step = "06a_V6_value_fix", action = "manual_edit")
-coding_paper_clean <- tmp$df; log_df <- tmp$log_df
+tmp <- apply_manual_edits(coding_paper_clean_6a, v6_edits, log_df, step = "06a_V6_value_fix", action = "manual_edit")
+coding_paper_clean_6a <- tmp$df; log_df <- tmp$log_df
 
 # --- 6.2. Check: V7 ----------------------------------------------------------------------
 
 allowed_v7 <- c(as.character(1:10), "NA")
-invalid_v7 <- find_invalid_codes(coding_paper_clean, "V7", allowed = allowed_v7)
+invalid_v7 <- find_invalid_codes(coding_paper_clean_6a, "V7", allowed = allowed_v7)
 print(invalid_v7)
 
 v7_edits <- tibble::tribble(
@@ -107,13 +107,13 @@ v7_edits <- tibble::tribble(
   "ID366", "V7", "1; 3", "typo fix: '1.3' -> '1; 3'"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, v7_edits, log_df, step = "06a_V7_value_fix")
-coding_paper_clean <- tmp$df; log_df <- tmp$log_df
+tmp <- apply_manual_edits(coding_paper_clean_6a, v7_edits, log_df, step = "06a_V7_value_fix")
+coding_paper_clean_6a <- tmp$df; log_df <- tmp$log_df
 
 # --- 6.3. Check: V8 ----------------------------------------------------------------------
 
-invalid_v8_ids <- find_invalid_token_ids(coding_paper_clean, "V8", max_tokens = 3, numeric_ok = c("NA"))
-invalid_v8 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v8_ids$id_unique)
+invalid_v8_ids <- find_invalid_token_ids(coding_paper_clean_6a, "V8", max_tokens = 3, numeric_ok = c("NA"))
+invalid_v8 <- coding_paper_clean_6a %>% dplyr::filter(id_unique %in% invalid_v8_ids$id_unique)
 print(invalid_v8)
 
 v8_edits <- tibble::tribble(
@@ -123,19 +123,19 @@ v8_edits <- tibble::tribble(
   "ID44",   "V8", "Turkey; Ukraine; United States of America", "too many strings; reduced to first three"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, v8_edits, log_df, step = "06a_V8_value_fix", action = "manual_edit")
-coding_paper_clean <- tmp$df; log_df <- tmp$log_df
+tmp <- apply_manual_edits(coding_paper_clean_6a, v8_edits, log_df, step = "06a_V8_value_fix", action = "manual_edit")
+coding_paper_clean_6a <- tmp$df; log_df <- tmp$log_df
 
 # --- 6.4. Check: V9 ----------------------------------------------------------------------
 
-invalid_v9_ids <- find_invalid_token_ids(coding_paper_clean, "V9", max_tokens = 3, numeric_ok = c("NA"))
-invalid_v9 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v9_ids$id_unique)
+invalid_v9_ids <- find_invalid_token_ids(coding_paper_clean_6a, "V9", max_tokens = 3, numeric_ok = c("NA"))
+invalid_v9 <- coding_paper_clean_6a %>% dplyr::filter(id_unique %in% invalid_v9_ids$id_unique)
 print(invalid_v9)
 
 # --- 6.5. Check: V10 ---------------------------------------------------------------------
 
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
-invalid_v10 <- find_invalid_codes(coding_paper_clean, "V10", allowed = allowed_v10)
+invalid_v10 <- find_invalid_codes(coding_paper_clean_6a, "V10", allowed = allowed_v10)
 print(invalid_v10)
 
 v10_edits <- tibble::tribble(
@@ -145,13 +145,13 @@ v10_edits <- tibble::tribble(
   "ID98",     "V10", "141; 131; 132; 124",       "Synthesio used for Twitter/Facebook/Instagram/Reddit"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, v10_edits, log_df, step = "06a_V10_value_fix")
-coding_paper_clean <- tmp$df; log_df <- tmp$log_df
+tmp <- apply_manual_edits(coding_paper_clean_6a, v10_edits, log_df, step = "06a_V10_value_fix")
+coding_paper_clean_6a <- tmp$df; log_df <- tmp$log_df
 
 # --- 6.6. Check: V11 ---------------------------------------------------------------------
 
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
-invalid_v11 <- find_invalid_codes(coding_paper_clean, "V11", allowed = allowed_v11)
+invalid_v11 <- find_invalid_codes(coding_paper_clean_6a, "V11", allowed = allowed_v11)
 print(invalid_v11)
 
 v11_edits <- tibble::tribble(
@@ -161,24 +161,24 @@ v11_edits <- tibble::tribble(
   "ID83",     "V11", "18; 12",    "comma to semicolon"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, v11_edits, log_df, step = "06a_V11_value_fix")
-coding_paper_clean <- tmp$df; log_df <- tmp$log_df
+tmp <- apply_manual_edits(coding_paper_clean_6a, v11_edits, log_df, step = "06a_V11_value_fix")
+coding_paper_clean_6a <- tmp$df; log_df <- tmp$log_df
 
 # --- 6.7. Check: V12 ------------------------------------
 
 allowed_v12 <- as.character(c(0:1))
-invalid_v12 <- find_invalid_codes(coding_paper_clean, "V12", allowed = allowed_v12)
+invalid_v12 <- find_invalid_codes(coding_paper_clean_6a, "V12", allowed = allowed_v12)
 print(invalid_v12)
 
 # --- 6.8. Check: V13 ------------------------------------
 
 allowed_v13 <- as.character(c(0:1))
-invalid_v13 <- find_invalid_codes(coding_paper_clean, "V13", allowed = allowed_v13)
+invalid_v13 <- find_invalid_codes(coding_paper_clean_6a, "V13", allowed = allowed_v13)
 print(invalid_v13)
 
 # --- 6.9. Standardization ------------------------------------
 
-coding_paper_clean <- coding_paper_clean %>%
+coding_paper_clean_6a <- coding_paper_clean_6a %>%
   dplyr::mutate(
     V6  = dplyr::if_else(is.na(V6),  V6,  normalize_semicolon_field(V6, to_lower = FALSE)),
     V7  = dplyr::if_else(is.na(V7),  V7,  normalize_semicolon_field(V7)),
@@ -204,7 +204,7 @@ log_df <- log_event(
 
 target_codes <- as.character(10:18)
 
-v11_flags <- coding_paper_clean %>%
+v11_flags <- coding_paper_clean_6a %>%
   dplyr::select(id_unique, method, V11) %>%
   tidyr::separate_rows(V11, sep = ";\\s*") %>%
   dplyr::mutate(V11 = stringr::str_trim(V11)) %>%
@@ -214,8 +214,8 @@ v11_flags <- coding_paper_clean %>%
 invalid_v11_method0_ids <- v11_flags %>% dplyr::filter(method == "0", has_10_18) %>% dplyr::pull(id_unique)
 missing_v11_method1_ids <- v11_flags %>% dplyr::filter(method == "1", !has_10_18) %>% dplyr::pull(id_unique)
 
-invalid_v11_method0 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v11_method0_ids)
-missing_v11_method1 <- coding_paper_clean %>% dplyr::filter(id_unique %in% missing_v11_method1_ids)
+invalid_v11_method0 <- coding_paper_clean_6a %>% dplyr::filter(id_unique %in% invalid_v11_method0_ids)
+missing_v11_method1 <- coding_paper_clean_6a %>% dplyr::filter(id_unique %in% missing_v11_method1_ids)
 
 consistency_edits <- tibble::tribble(
   ~id_unique, ~var,  ~old_value,           ~new_value,    ~note,
@@ -235,8 +235,8 @@ consistency_edits <- tibble::tribble(
   "ID489",    "V11", "23; 21",             "23; 21; 18", "added 18 because MAXQDA Web Collector was used as a manual scraping tool"
 )
 
-tmp <- apply_manual_edits(coding_paper_clean, consistency_edits, log_df, step = "06a_consistency_CSS_in_method0")
-coding_paper_clean <- tmp$df
+tmp <- apply_manual_edits(coding_paper_clean_6a, consistency_edits, log_df, step = "06a_consistency_CSS_in_method0")
+coding_paper_clean_6a <- tmp$df
 log_df   <- tmp$log_df
 
 
@@ -256,7 +256,7 @@ log_df <- log_event(
 )
 ids_method_non_css <- c("ID2382")
 
-coding_paper_clean <- coding_paper_clean %>%
+coding_paper_clean_6a <- coding_paper_clean_6a %>%
   dplyr::mutate(
     method = dplyr::if_else(id_unique %in% ids_method_css, "1", method),
     method = dplyr::if_else(id_unique %in% ids_method_non_css, "0", method)
@@ -265,11 +265,11 @@ coding_paper_clean <- coding_paper_clean %>%
 # --- 6.11. Resampling for similar size CSS and non-CSS data ----------------------------------------------------
 
 # Check the number of counts per CSS/non-CSS method: 10 more CSS paper currently
-coding_paper_clean %>% 
+coding_paper_clean_6a %>% 
   count(method)
 
 #randomly choose ids to delete
-#ids_to_delete <- coding_paper_clean %>%
+#ids_to_delete <- coding_paper_clean_6a %>%
 #  dplyr::filter(method == "1") %>%
 #  dplyr::distinct(id_unique) %>%
 #  dplyr::slice_sample(n = 10) %>%
@@ -278,11 +278,11 @@ coding_paper_clean %>%
 ids_to_delete <- c("ID486", "ID871", "ID606", "ID1140", "ID765", "ID563", "ID1510", "ID275", "ID147", "ID983") 
 
 # for replicability: run with IDs drawn before
-coding_paper_clean <- coding_paper_clean %>%
+coding_paper_clean_6a <- coding_paper_clean_6a %>%
   filter(!id_unique %in% ids_to_delete)
 
 # Check the number of counts per CSS/non-CSS method: same amount
-coding_paper_clean %>% 
+coding_paper_clean_6a %>% 
   count(method)
 
 log_df <- log_event(
@@ -302,13 +302,13 @@ out_dir <- PATHS$int
 log_dir <- PATHS$logs
 stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 
-out_coding_paper_cleaned <- file.path(out_dir, paste0("06a_full_paper_sample_deduplicated_cleaned_", stamp, ".xlsx"))
-openxlsx::write.xlsx(coding_paper_clean, out_coding_paper_cleaned, overwrite = TRUE)
+out_coding_paper_cleaned_6a <- file.path(out_dir, paste0("06a_full_paper_sample_deduplicated_cleaned_", stamp, ".xlsx"))
+openxlsx::write.xlsx(coding_paper_clean_6a, out_coding_paper_cleaned_6a, overwrite = TRUE)
 
 log_file <- file.path(log_dir, paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
 write_log(log_df, log_file)
 
 message("06a completed.")
 message("- Randomly deleted IDs: ", paste(ids_to_delete, collapse = ", "))
-message("- Cleaned dataset at: ", out_coding_paper_cleaned)
+message("- Cleaned dataset at: ", out_coding_paper_cleaned_6a)
 message("- Log written to: ", log_file)
