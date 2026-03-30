@@ -1,6 +1,6 @@
 #
 # Main Script Systematic Literature Review "Online Protest"
-# Date: 2026-03-10
+# Date: 2026-03-30
 #
 # Setup ------------------------------------------------------------------------
 
@@ -44,7 +44,8 @@ RUN <- list(
   deduplication = TRUE,
   final_clean = TRUE,
   figures = TRUE,
-  tables = TRUE
+  tables = TRUE,
+  appendix = TRUE
 )
 
 # 01 WoS Import ----------------------------------------------------------------
@@ -57,7 +58,7 @@ if (RUN$wos_import) source(here::here("scripts/01.load.wos.data.R"))
 
 # Samples sample 1 (CSS) and sample 2 (non-CSS) based on search terms
 # Draws sample for intercoder tests & coding of abstracts
-if (RUN$abstract_screening) source(here("scripts/02.abstract.screening.R"))
+if (RUN$abstract_screening) source(here::here("scripts/02.abstract.screening.R"))
 
 # 03 Reliability Tests ---------------------------------------------------------
 
@@ -92,8 +93,12 @@ if (RUN$final_clean) source(here("scripts/06c.data.cleaning.codes.R"))
 
 # Generates Figures
 if (RUN$figures) source(here("scripts/07a.analysis.figures.R"))
+
 # Generates Tables
 if (RUN$tables)  source(here("scripts/07b.analysis.tables.R"))
+
+#Generated Information for Appendix
+if (RUN$appendix)  source(here("scripts/07c.analysis.appendix.R"))
 
 message("main completed: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
 message("---- SESSION INFO ----")
