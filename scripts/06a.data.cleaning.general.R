@@ -25,144 +25,6 @@ log_df <- log_event(log_df, "06a_start", "script_started")
 
 # Input data -------------------------------------------------------------------
 
-# Load data from 01, if necessary
-
-if (!exists("wos_abstracts", inherits = TRUE)) {
-  
-  # Directory
-  dir_path <- PATHS$int
-  
-  # List matching files
-  files <- list.files(
-    dir_path,
-    pattern = "^01_wos_abstracts_clean(_\\d{8}_\\d{4})?\\.rds$",
-    full.names = TRUE
-  )
-  
-  if (length(files) == 0) {
-    stop("No matching WoS abstracts files found, please run script 01.load.wos.data first.")
-  }
-  
-  # Extract timestamps (if present)
-  timestamps <- sub(
-    ".*_(\\d{8}_\\d{4})\\.rds$",
-    "\\1",
-    files
-  )
-  
-  # Convert to POSIXct
-  timestamps <- as.POSIXct(
-    timestamps,
-    format = "%Y%m%d_%H%M",
-    tz = "UTC"
-  )
-  
-  # Select latest file
-  latest_file <- files[which.max(timestamps)]
-  
-  message("Loading cleaned WoS abstracts from: ", timestamps[which.max(timestamps)])
-  
-  wos_abstracts <- readRDS(latest_file)
-  
-  #clean house
-  rm(timestamps, dir_path, files, latest_file)
-}
-
-# Load data from 02, if necessary
-
-objs <- c("icr_abstracts", "validation_abstracts", "coding_abstracts", "coding_abstracts_relevant")
-
-# run if at least one of these files is missing
-if (!all(sapply(objs, exists, inherits = TRUE))) {
-  
-  # Directory
-  dir_path <- PATHS$int
-  
-  # List matching files
-  files <- list.files(
-    dir_path,
-    pattern = "^02_abstract_screening_clean(_\\d{8}_\\d{4})?\\.rds$",
-    full.names = TRUE
-  )
-  
-  if (length(files) == 0) {
-    stop("No matching cleaned abstract coding found, please run script 02.abstract.screening first.")
-  }
-  
-  # Extract timestamps (if present)
-  timestamps <- sub(
-    ".*_(\\d{8}_\\d{4})\\.rds$",
-    "\\1",
-    files
-  )
-  
-  # Convert to POSIXct
-  timestamps <- as.POSIXct(
-    timestamps,
-    format = "%Y%m%d_%H%M",
-    tz = "UTC"
-  )
-  
-  # Select latest file
-  latest_file <- files[which.max(timestamps)]
-  
-  message("Loading abstract codings from: ", timestamps[which.max(timestamps)])
-  
-  data <- readRDS(latest_file)
-  
-  # separate objects
-  icr_abstracts <- data$intercoder_abstracts
-  validation_abstracts  <- data$validation_abstracts
-  coding_abstracts <- data$coding_abstracts
-  coding_abstracts_relevant <- data$coding_abstracts_relevant
-  
-  #clean house
-  rm(objs, timestamps, dir_path, files, latest_file, data)
-}
-
-# Load data from 03, if necessary
-
-if (!exists("icr", inherits = FALSE)) {
-  
-  # Directory
-  dir_path <- PATHS$int
-  
-  # List matching files
-  files <- list.files(
-    dir_path,
-    pattern = "^03b_reliability_values(_\\d{8}_\\d{4})?\\.rds$",
-    full.names = TRUE
-  )
-  
-  if (length(files) == 0) {
-    stop("No matching reliability values found, please run script 03b.reliability.testing first.")
-  }
-  
-  # Extract timestamps (if present)
-  timestamps <- sub(
-    ".*_(\\d{8}_\\d{4})\\.rds$",
-    "\\1",
-    files
-  )
-  
-  # Convert to POSIXct
-  timestamps <- as.POSIXct(
-    timestamps,
-    format = "%Y%m%d_%H%M",
-    tz = "UTC"
-  )
-  
-  # Select latest file
-  latest_file <- files[which.max(timestamps)]
-  
-  message("Loading reliability values for full paper coding from: ", timestamps[which.max(timestamps)])
-  
-  icr <- readRDS(latest_file)
-  
-  #clean house
-  rm(timestamps, dir_path, files, latest_file)
-}
-
 # Load data from 05, if necessary
 
 if (!exists("coding_paper", inherits = FALSE)) {
@@ -218,9 +80,7 @@ coding_paper_clean <- coding_paper %>%
 # Sanity check
 stopifnot(n_distinct(coding_paper_clean$id_unique) == nrow(coding_paper_clean))
 
-# Check Values -------------------------------------------------------------
-
-# --- V6 ----------------------------------------------------------------------
+# --- 6.1. Check: V6 ----------------------------------------------------------------------
 
 invalid_v6_ids <- find_invalid_token_ids(coding_paper_clean, "V6", max_tokens = 3, numeric_ok = c("1"))
 invalid_v6 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v6_ids$id_unique)
@@ -236,7 +96,7 @@ v6_edits <- tibble::tribble(
 tmp <- apply_manual_edits(coding_paper_clean, v6_edits, log_df, step = "06a_V6_value_fix", action = "manual_edit")
 coding_paper_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V7 ----------------------------------------------------------------------
+# --- 6.2. Check: V7 ----------------------------------------------------------------------
 
 allowed_v7 <- c(as.character(1:10), "NA")
 invalid_v7 <- find_invalid_codes(coding_paper_clean, "V7", allowed = allowed_v7)
@@ -250,7 +110,7 @@ v7_edits <- tibble::tribble(
 tmp <- apply_manual_edits(coding_paper_clean, v7_edits, log_df, step = "06a_V7_value_fix")
 coding_paper_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V8 ----------------------------------------------------------------------
+# --- 6.3. Check: V8 ----------------------------------------------------------------------
 
 invalid_v8_ids <- find_invalid_token_ids(coding_paper_clean, "V8", max_tokens = 3, numeric_ok = c("NA"))
 invalid_v8 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v8_ids$id_unique)
@@ -266,13 +126,13 @@ v8_edits <- tibble::tribble(
 tmp <- apply_manual_edits(coding_paper_clean, v8_edits, log_df, step = "06a_V8_value_fix", action = "manual_edit")
 coding_paper_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V9 ----------------------------------------------------------------------
+# --- 6.4. Check: V9 ----------------------------------------------------------------------
 
 invalid_v9_ids <- find_invalid_token_ids(coding_paper_clean, "V9", max_tokens = 3, numeric_ok = c("NA"))
 invalid_v9 <- coding_paper_clean %>% dplyr::filter(id_unique %in% invalid_v9_ids$id_unique)
 print(invalid_v9)
 
-# --- V10 ---------------------------------------------------------------------
+# --- 6.5. Check: V10 ---------------------------------------------------------------------
 
 allowed_v10 <- as.character(c(100, 110:114, 120:124, 130:134, 140:142, 150:153, 160:162, 200:204, 300, 400, "NA"))
 invalid_v10 <- find_invalid_codes(coding_paper_clean, "V10", allowed = allowed_v10)
@@ -288,7 +148,7 @@ v10_edits <- tibble::tribble(
 tmp <- apply_manual_edits(coding_paper_clean, v10_edits, log_df, step = "06a_V10_value_fix")
 coding_paper_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V11 ---------------------------------------------------------------------
+# --- 6.6. Check: V11 ---------------------------------------------------------------------
 
 allowed_v11 <- as.character(c(10:18, 20:26, 99, "NA"))
 invalid_v11 <- find_invalid_codes(coding_paper_clean, "V11", allowed = allowed_v11)
@@ -304,19 +164,19 @@ v11_edits <- tibble::tribble(
 tmp <- apply_manual_edits(coding_paper_clean, v11_edits, log_df, step = "06a_V11_value_fix")
 coding_paper_clean <- tmp$df; log_df <- tmp$log_df
 
-# --- V12 ------------------------------------
+# --- 6.7. Check: V12 ------------------------------------
 
 allowed_v12 <- as.character(c(0:1))
 invalid_v12 <- find_invalid_codes(coding_paper_clean, "V12", allowed = allowed_v12)
 print(invalid_v12)
 
-# --- V13 ------------------------------------
+# --- 6.8. Check: V13 ------------------------------------
 
 allowed_v13 <- as.character(c(0:1))
 invalid_v13 <- find_invalid_codes(coding_paper_clean, "V13", allowed = allowed_v13)
 print(invalid_v13)
 
-# --- Standardization ------------------------------------
+# --- 6.9. Standardization ------------------------------------
 
 coding_paper_clean <- coding_paper_clean %>%
   dplyr::mutate(
@@ -337,7 +197,7 @@ log_df <- log_event(
   note   = "Normalized delimiters to '; ' and trimmed whitespace/semicolons"
 )
 
-# Check Consistency ----------------------------------------------------
+# --- 6.10. Check Consistency ----------------------------------------------------
 
 # If method == "0", V11 must NOT contain any codes 10:18
 # If method == "1", V11 MUST contain at least one code 10:18
@@ -402,21 +262,26 @@ coding_paper_clean <- coding_paper_clean %>%
     method = dplyr::if_else(id_unique %in% ids_method_non_css, "0", method)
   )
 
-# Resampling ----------------------------------------------------
+# --- 6.11. Resampling for similar size CSS and non-CSS data ----------------------------------------------------
 
-set.seed(SEED)
+# Check the number of counts per CSS/non-CSS method: 10 more CSS paper currently
+coding_paper_clean %>% 
+  count(method)
 
-table(coding_paper_clean$method)
+#randomly choose ids to delete
+#ids_to_delete <- coding_paper_clean %>%
+#  dplyr::filter(method == "1") %>%
+#  dplyr::distinct(id_unique) %>%
+#  dplyr::slice_sample(n = 10) %>%
+#  dplyr::pull(id_unique)
 
-ids_to_delete <- coding_paper_clean %>%
-  dplyr::filter(method == "1") %>%
-  dplyr::distinct(id_unique) %>%
-  dplyr::slice_sample(n = 15) %>%
-  dplyr::pull(id_unique)
+ids_to_delete <- c("ID486", "ID871", "ID606", "ID1140", "ID765", "ID563", "ID1510", "ID275", "ID147", "ID983") 
 
+# for replicability: run with IDs drawn before
 coding_paper_clean <- coding_paper_clean %>%
   filter(!id_unique %in% ids_to_delete)
 
+# Check the number of counts per CSS/non-CSS method: same amount
 coding_paper_clean %>% 
   count(method)
 
@@ -425,18 +290,19 @@ log_df <- log_event(
   step   = "06a_consistency_correction",
   action = "random_deletion",
   note   = paste0(
-    "Randomly removed 15 cases from method == 1 to restore equal group sizes ",
-    "(n = 215 each). Draw reproducible via predefined seed. IDs removed: ",
+    "Randomly removed 10 cases from method == 1 to restore equal group sizes ",
+    "(n = 221 each). Draw reproducible via saved IDs. IDs removed: ",
     paste(ids_to_delete, collapse = ", ")
   )
 )
 
-# Output -----------------------------------------------------------------------
+# --- 6.12. Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$int
 log_dir <- PATHS$logs
+stamp <- format(Sys.time(), "%Y%m%d_%H%M")
 
-out_coding_paper_cleaned <- file.path(out_dir, "06a_full_paper_sample_deduplicated_cleaned.xlsx")
+out_coding_paper_cleaned <- file.path(out_dir, paste0("06a_full_paper_sample_deduplicated_cleaned_", stamp, ".xlsx"))
 openxlsx::write.xlsx(coding_paper_clean, out_coding_paper_cleaned, overwrite = TRUE)
 
 log_file <- file.path(log_dir, paste0("06a_cleaning_log_", format(Sys.time(), "%Y%m%d_%H%M"), ".tsv"))
@@ -446,4 +312,3 @@ message("06a completed.")
 message("- Randomly deleted IDs: ", paste(ids_to_delete, collapse = ", "))
 message("- Cleaned dataset at: ", out_coding_paper_cleaned)
 message("- Log written to: ", log_file)
-
