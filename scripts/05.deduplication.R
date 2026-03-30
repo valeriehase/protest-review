@@ -54,7 +54,7 @@ if (!exists("wos_abstracts", inherits = TRUE)) {
   wos_abstracts <- readRDS(latest_file)
   
   #clean house
-  rm(timestamps, dir_path, files, latest_file)
+  rm(timestamps, dir_path, files, latest_file, data)
 }
 
 # Load data from 02, if necessary
