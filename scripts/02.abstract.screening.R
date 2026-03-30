@@ -592,7 +592,7 @@ coding_abstracts_relevant <- coding_abstracts %>%
 
 out_dir <- PATHS$int
 stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
-out_file <- file.path(out_dir, paste0("02_abstract_screening_clean", stamp, ".rds"))
+out_file <- file.path(out_dir, paste0("02_abstract_screening_clean_", stamp, ".rds"))
 
 #save all relevant output as list object
 saveRDS(
