@@ -75,7 +75,7 @@ Scripts are loaded via `main.R` and stored in `/helper functions`.
 ### Required Input Data (important: subject to update)
 
 | File | Description | Used for |
-|------|------------|
+|------|------------||------------|
 | `01_wos_abstracts_2009_2023.xlsx` or, alternatively, `01_WoS_savedrecs_1-1000.xls`, `01_WoS_savedrecs_10001-2000.xls`, and `01_WoS_savedrecs_2000-2765.xls` | Web of Science abstract export | 01.load.wos.data |
 | `02_intercoder_abstract_R1.csv`, `02_intercoder_abstract_R2.csv`, `02_intercoder_abstract_R3.csv`, `02_intercoder_abstract_R4.csv`, `02_intercoder_abstract_R5.csv` | Reliability sheets for inclusion via abstracts | 02.abstract.screening |
 | `02_abstract_reli_R1.csv`, `02_abstract_reli_R2.csv` | Reliability codings for inclusion via abstracts | 02.abstract.screening |
