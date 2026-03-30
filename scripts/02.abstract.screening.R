@@ -1,14 +1,11 @@
 #
 # Sort into CSS/non-CSS sample & abstract screening
-# Date: 2025-01-10
+# Date: 2026-03-30
 #
 # Setup ------------------------------------------------------------------------
 
-if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
-if (!exists("IN")) source(here::here("helper functions/config.R"))
-if (!exists("require_file")) source(here::here("helper functions/helpers.R"))
-
 library(readxl)
+library(here)
 library(dplyr)
 library(tidyr)
 library(stringr)
@@ -18,25 +15,59 @@ library(ggpubr)
 library(tidycomm)
 library(caret)
 
+if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
+if (!exists("IN")) source(here::here("helper functions/config.R"))
+if (!exists("require_file")) source(here::here("helper functions/helpers.R"))
+
 `%!in%` <- Negate(`%in%`)
 
 # Input data -------------------------------------------------------------------
 
-if (!exists("wos.abstracts", inherits = TRUE)) {
+if (!exists("wos_abstracts", inherits = TRUE)) {
   
-  in_rds <- require_file(
-    file.path(PATHS$int, "01_wos_abstracts_clean.rds"),
-    "cleaned WoS abstracts (output of script 01)"
+  # Directory
+  dir_path <- PATHS$int
+  
+  # List matching files
+  files <- list.files(
+    dir_path,
+    pattern = "^01_wos_abstracts_clean(_\\d{8}_\\d{4})?\\.rds$",
+    full.names = TRUE
   )
   
-  message("Loading cleaned WoS abstracts from: ", in_rds)
-  wos.abstracts <- readRDS(in_rds)
+  if (length(files) == 0) {
+    stop("No matching WoS abstracts files found, please run script 01.load.wos.data first.")
+  }
+  
+  # Extract timestamps (if present)
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.rds$",
+    "\\1",
+    files
+  )
+  
+  # Convert to POSIXct
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  # Select latest file
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading cleaned WoS abstracts from: ", timestamps[which.max(timestamps)])
+  
+  wos_abstracts <- readRDS(latest_file)
+  
+  #clean house
+  rm(timestamps, dir_path, files, latest_file)
 }
 
 # 2.1 Sort sample into CSS/non-CSS samples -------------------------------------
 
 #inspect further keywords; based on all keywords
-keywords <- wos.abstracts %>%
+keywords <- wos_abstracts %>%
   dplyr::mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
   dplyr::pull(keywords.css) %>%
   strsplit(., split = ";") %>%
@@ -47,7 +78,7 @@ keywords <- wos.abstracts %>%
   tibble::as_tibble()
 
 #inspect further keywords; based on CSS keywords in abstract
-keywords <- wos.abstracts %>%
+keywords <- wos_abstracts %>%
   dplyr::filter(grepl("computational|CSS|big data|automated", abstract)) %>%
   dplyr::mutate(keywords.css = paste0(keywords, ";", keywords.plus)) %>%
   dplyr::pull(keywords.css) %>%
@@ -70,7 +101,7 @@ opinion mining|part of speech|part-of-speech|scraping|sensor data|sentiment anal
 text as data|text mining|topic model|track|transformer"
 
 #create CSS sample
-css.sample <- wos.abstracts %>%
+css.sample <- wos_abstracts %>%
   
   #text including title, abstracts, keywords
   dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
@@ -80,7 +111,7 @@ css.sample <- wos.abstracts %>%
   dplyr::filter(grepl(search.terms.CSS, search.text))
 
 #create non-CSS sample
-non.css.sample <- wos.abstracts %>%
+non.css.sample <- wos_abstracts %>%
   
   #text including title, abstracts, keywords
   dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
@@ -410,7 +441,7 @@ intercoder <- intercoder_cases %>%
   test_icr(id_unique, coder, protest, method, type, empirical, inclusion) %>%
   filter(Variable != "empirical" & Variable != "inclusion")
 
-# 2.7 Validate CSS keywords ----------------------------------------------------
+# 2.8 Validate CSS keywords ----------------------------------------------------
 
 #read in manual coding based on N = 60 cases from intercoder 4/5
 manual_coding <- read.csv2(file.path(PATHS$IN, "validation.1.csv")) %>%
@@ -447,10 +478,7 @@ validation <- confusionMatrix(data = validation$coding_automated,
                               mode = "prec_recall", 
                               positive = "1")
 
-#clean house
-rm(automated_coding, manual_coding)
-
-# 2.8 Draw samples for coding --------------------------------------------------
+# 2.9 Draw samples for coding --------------------------------------------------
 #random <- non.css.sample %>%
 #  slice_sample(n = nrow(css.sample)) 
 
@@ -478,9 +506,9 @@ rm(automated_coding, manual_coding)
 #                         rep(c("coder1", "coder2", "coder3"), 226)))
 
 
-# 2.9 Read in & clean initial abstract coding ----------------------------------
+# 2.10 Read in & clean abstract coding ----------------------------------
 
-#read in files by three coders, reduce to relevant variables and adapt data type
+#read in files by three coders plus additional coding for similar css/non-css size, reduce to relevant variables and adapt data type
 coding_abstracts <- read.csv2(file.path(PATHS$IN, "abstract_screening_coder1.csv")) %>%
   select(id_unique:type) %>%
   mutate(across(protest:type, as.numeric)) %>%
@@ -489,20 +517,23 @@ coding_abstracts <- read.csv2(file.path(PATHS$IN, "abstract_screening_coder1.csv
           mutate(across(protest:type, as.numeric))) %>%
   rbind(read.csv2(file.path(PATHS$IN, "abstract_screening_coder3.csv")) %>%
           select(id_unique:type) %>%
-          mutate(across(protest:type, as.numeric)))
-
-#clean
-coding_abstracts <- coding_abstracts %>%
+          mutate(across(protest:type, as.numeric))) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "abstract_screening_coder2_added.csv")) %>%
+          select(id_unique:type) %>%
+          mutate(across(protest:type, as.numeric)))  %>%
   
-  #mark inaccessible studies (paper not available)
+  #remove empty rows
+  filter(!is.na(id_unique) & id_unique != "" & !is.na(coder)) %>%
+  
+  #remove inaccessible studies (paper not available)
   mutate(protest = replace(protest,
-                           id_unique %in% c("ID2626", "ID1295", "ID2376"),
+                           id_unique %in% c("ID2626", "ID1295", "ID1854"),
                            NA),
          method = replace(method,
-                          id_unique %in% c("ID2626", "ID1295", "ID2376"),
+                          id_unique %in% c("ID2626", "ID1295", "ID1854"),
                           NA),
          type = replace(type,
-                        id_unique %in% c("ID2626", "ID1295", "ID2376"),
+                        id_unique %in% c("ID2626", "ID1295", "ID1854"),
                         NA)) %>%
   
   #correct coding error for method variable
@@ -527,79 +558,52 @@ coding_abstracts_relevant <- coding_abstracts %>%
   #identify relevance
   filter(inclusion == 1) %>%
   
+  #remove duplicates: coded by different coders twice (always with exactly the same codes)
+  filter(!(id_unique %in% c("ID1109", "ID1171", "ID1228", "ID1278", "ID1314",
+                            "ID1449", "ID173", "ID1863", "ID19", "ID2217", "ID1139",
+                            "ID2368", "ID41", "ID641", "ID873") & coder == 2)) %>%
+  filter(!(id_unique %in% c("ID1658") & coder == 3)) %>%
+  
+  #remove duplicates: coded by the same coder twice
+  group_by(id_unique, coder) %>%
+  filter(
+    !(id_unique == "ID1810" & coder == 2) | row_number() == 1
+  ) %>%
+  ungroup() %>%
+  
+  group_by(id_unique, coder) %>%
+  filter(
+    !(id_unique == "ID433" & coder == 2) | row_number() == 1
+  ) %>%
+  ungroup() %>%
+  
+  group_by(id_unique, coder) %>%
+  filter(
+    !(id_unique == "ID404" & coder == 3) | row_number() == 1
+  ) %>%
+  ungroup() %>%
+  
   #add other meta data
-  left_join(wos.abstracts %>%
+  left_join(wos_abstracts %>%
               select(id_unique, source.title, source.type, source.conference,
                      author.addresses, author.affiliations, year))
 
-# 2.10 Add files for second coding round to get similar sample size for CSS and non-CSS sample (N = 207 each) -------------------
+# 2.11 Export -----------------------------------------------------------------------
 
-#based on step 2.9 (initial coding of CSS sample, we have to add around N = 49 non-CSS pieces 
-# as well as a missing CSS file to get equal sample sizes for both CSS and non-CSS sample
+out_dir <- PATHS$int
+stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
+out_file <- file.path(out_dir, paste0("02_abstract_screening_clean", stamp, ".rds"))
 
-# coding_abstracts_added <- css.sample %>%
-# 
-#  #add missing CSS piece, likely coded as CSS, meaning that CSS sample: N = 207
-#  filter(id_unique %!in% coding_abstracts$id_unique & id_unique %!in% intercoder_cases$id_unique) %>%
-#  mutate(sample = "CSS") %>%
-#  
-#  #add around 250 non-CSS pieces (but only code until N = 207 "reached" so CSS size = non-CSS size)
-#  #we oversample once so we do not have to do it again
-#  full_join(non.css.sample %>%
-#              filter(id_unique %!in% coding_abstracts$id_unique) %>%
-#              slice_sample(n = 250) %>%
-#              mutate(sample = "non-CSS")) %>%
-#  
-#  # create link, replace with NA if doi missing
-#  mutate(link = paste0("https://doi.org/", doi),
-#         link = replace(link,
-#                        is.na(doi),
-#                        NA)) %>%
-#  
-#  #  select necessary variables
-#  select(id_unique, authors, title, abstract, keywords, link) %>%
-#  
-#  #  add empty coding variables
-#  mutate(coder = "MM",
-#         protest = NA,
-#         method = NA,
-#         type = NA)
+#save all relevant output as list object
+saveRDS(
+  list(
+    intercoder = intercoder,
+    validation  = validation,
+    coding_abstracts = coding_abstracts, 
+    coding_abstracts_relevant = coding_abstracts_relevant
+  ),
+  out_file
+)
 
-
-coding_abstracts_2 <- read.csv2(file.path(PATHS$IN, "abstract_screening_coder2_added.csv")) %>%
-  
-  #reduce to relevant variables & cases
-  select(id_unique:type) %>%
-  filter(coder != "NA") %>%
-  
-  #reformat
-  mutate_at(c("coder", "protest", "method", "type"), as.numeric) %>%
-  
-  #create overarching inclusion criterion
-  mutate(inclusion = 0,
-         inclusion = replace(inclusion,
-                             protest == 1 & type == 1,
-                             1))
-
-#identify relevant sample from additionally coded abstracts
-coding_abstracts_2_relevant <- coding_abstracts_2 %>%
-  
-  #identify relevance
-  filter(inclusion == 1) %>%
-  
-  #add other meta data
-  left_join(wos.abstracts %>%
-              select(id_unique, source.title, source.type, source.conference,
-                     author.addresses, author.affiliations, year))
-
-# 2.11 Create final sample -----------------------------------------------------
-
-sample_relevant <- rbind(coding_abstracts_relevant,
-                         coding_abstracts_2_relevant) %>%
-  
-  #remove by chance identified oversampled "0" (non-CSS observation)
-  #ToCheck
-  filter(id_unique != "ID2218") %>%
-  
-  #remove duplicates
-  distinct(id_unique, .keep_all = TRUE)
+message("02 completed.")
+message("- Results of abstract coding saved to: ", out_file)
