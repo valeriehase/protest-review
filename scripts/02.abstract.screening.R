@@ -155,7 +155,7 @@ non.css.sample <- wos_abstracts %>%
 #sample.abstracts.2 <- css.sample %>%
 
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 10 articles from CSS sample
@@ -165,7 +165,7 @@ non.css.sample <- wos_abstracts %>%
 #  rbind(non.css.sample %>%
 #          
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 10)) %>%
@@ -193,11 +193,11 @@ non.css.sample <- wos_abstracts %>%
 #sample.abstracts.3 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -207,11 +207,11 @@ non.css.sample <- wos_abstracts %>%
 #  rbind(non.css.sample %>%
 #          
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -239,15 +239,15 @@ non.css.sample <- wos_abstracts %>%
 #sample.abstracts.4 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 3
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.3.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R3.csv")) %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -257,15 +257,15 @@ non.css.sample <- wos_abstracts %>%
 #  rbind(non.css.sample %>%
 #                     
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 3
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.3.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R3.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -293,19 +293,19 @@ non.css.sample <- wos_abstracts %>%
 #sample.abstracts.5 <- css.sample %>%
 #  
 #  #filter by articles from intercoder test 1
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 2
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                            pull(id_unique))) %>%
 #  
 #  #filter by articles from intercoder test 3
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.3.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R3.csv")) %>%
 #                            pull(id_unique))) %>%
 #
 #  #filter by articles from intercoder test 4
-#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.4.csv")) %>%
+#  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R4.csv")) %>%
 #                            pull(id_unique))) %>%
 #
 #  #get 15 articles from CSS sample
@@ -315,19 +315,19 @@ non.css.sample <- wos_abstracts %>%
 #  rbind(non.css.sample %>%
 #                     
 #          #filter by articles from intercoder test 1
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.1.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 2
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.2.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R2.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          #filter by articles from intercoder test 3
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.3.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R3.csv")) %>%
 #                                      pull(id_unique))) %>%
 #
 #          #filter by articles from intercoder test 4
-#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "intercoder.4.csv")) %>%
+#          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R4.csv")) %>%
 #                                      pull(id_unique))) %>%
 #          
 #          slice_sample(n = 15)) %>%
@@ -351,7 +351,7 @@ non.css.sample <- wos_abstracts %>%
 
 # 2.7 Test reliability with latest coding after finalizing codebook (reli codings 4 and 5) ----------------------------
 
-intercoder_cases <- read.csv2(file.path(PATHS$IN, "comparison.4.csv")) %>%
+intercoder_cases <- read.csv2(file.path(PATHS$IN, "02_abstract_reli_R1.csv")) %>%
   
   #reduce to necessary variables
   select(id_unique, starts_with("protest"), 
@@ -389,7 +389,7 @@ intercoder_cases <- read.csv2(file.path(PATHS$IN, "comparison.4.csv")) %>%
                                 1)) %>%
   
   #bind coding 4
-  rbind(read.csv2(file.path(PATHS$IN, "comparison.5.csv")) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "02_abstract_reli_R2.csv")) %>%
           
           #reduce to necessary variables
           select(id_unique, starts_with("protest"), 
@@ -444,8 +444,8 @@ intercoder_abstracts <- intercoder_cases %>%
 # 2.8 Validate CSS keywords ----------------------------------------------------
 
 #read in manual coding based on N = 60 cases from intercoder 4/5
-manual_coding <- read.csv2(file.path(PATHS$IN, "validation.1.csv")) %>%
-  rbind(read.csv2(file.path(PATHS$IN, "validation.2.csv")) %>%
+manual_coding <- read.csv2(file.path(PATHS$IN, "02_validation_keywords_1.csv")) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "02_validation_keywords_2.csv")) %>%
           
           #reduce to relevant variables
           select(id_unique:type)) %>%
@@ -509,16 +509,16 @@ validation_abstracts <- confusionMatrix(data = validation$coding_automated,
 # 2.10 Read in & clean abstract coding ----------------------------------
 
 #read in files by three coders plus additional coding for similar css/non-css size, reduce to relevant variables and adapt data type
-coding_abstracts <- read.csv2(file.path(PATHS$IN, "abstract_screening_coder1.csv")) %>%
+coding_abstracts <- read.csv2(file.path(PATHS$IN, "02_abstract_screening_coder1.csv")) %>%
   select(id_unique:type) %>%
   mutate(across(protest:type, as.numeric)) %>%
-  rbind(read.csv2(file.path(PATHS$IN, "abstract_screening_coder2.csv")) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "02_abstract_screening_coder2.csv")) %>%
           select(id_unique:type) %>%
           mutate(across(protest:type, as.numeric))) %>%
-  rbind(read.csv2(file.path(PATHS$IN, "abstract_screening_coder3.csv")) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "02_abstract_screening_coder3.csv")) %>%
           select(id_unique:type) %>%
           mutate(across(protest:type, as.numeric))) %>%
-  rbind(read.csv2(file.path(PATHS$IN, "abstract_screening_coder2_added.csv")) %>%
+  rbind(read.csv2(file.path(PATHS$IN, "02_abstract_screening_coder2_added.csv")) %>%
           select(id_unique:type) %>%
           mutate(across(protest:type, as.numeric)))  %>%
   
