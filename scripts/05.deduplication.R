@@ -59,7 +59,7 @@ if (!exists("wos_abstracts", inherits = TRUE)) {
 
 # Load data from 02, if necessary
 
-objs <- c("intercoder_abstracts", "validation_abstracts", "coding_abstracts", "coding_abstracts_relevant")
+objs <- c("icr_abstracts", "validation_abstracts", "coding_abstracts", "coding_abstracts_relevant")
 
 # run if at least one of these files is missing
 if (!all(sapply(objs, exists, inherits = TRUE))) {
@@ -100,13 +100,13 @@ if (!all(sapply(objs, exists, inherits = TRUE))) {
   data <- readRDS(latest_file)
   
   # separate objects
-  intercoder_abstracts <- data$intercoder_abstracts
+  icr_abstracts <- data$intercoder_abstracts
   validation_abstracts  <- data$validation_abstracts
   coding_abstracts <- data$coding_abstracts
   coding_abstracts_relevant <- data$coding_abstracts_relevant
   
   #clean house
-  rm(objs, timestamps, dir_path, files, latest_file)
+  rm(objs, timestamps, dir_path, files, latest_file, data)
 }
 
 # Load input data from full paper coding

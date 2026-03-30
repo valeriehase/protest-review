@@ -597,7 +597,7 @@ out_file <- file.path(out_dir, paste0("02_abstract_screening_clean_", stamp, ".r
 #save all relevant output as list object
 saveRDS(
   list(
-    intercoder_abstracts = intercoder_abstracts,
+    icr_abstracts = intercoder_abstracts,
     validation_abstracts  = validation_abstracts,
     coding_abstracts = coding_abstracts, 
     coding_abstracts_relevant = coding_abstracts_relevant
