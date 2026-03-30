@@ -437,7 +437,7 @@ intercoder_cases <- read.csv2(file.path(PATHS$IN, "comparison.4.csv")) %>%
   pivot_wider(names_from = variable, values_from = c(value))
 
 #save relevant intercoder values
-intercoder <- intercoder_cases %>% 
+intercoder_abstracts <- intercoder_cases %>% 
   test_icr(id_unique, coder, protest, method, type, empirical, inclusion) %>%
   filter(Variable != "empirical" & Variable != "inclusion")
 
@@ -473,7 +473,7 @@ validation <- full_join(automated_coding, manual_coding) %>%
          coding_manual = as.factor(coding_manual))
 
 #get result of validation
-validation <- confusionMatrix(data = validation$coding_automated, 
+validation_abstracts <- confusionMatrix(data = validation$coding_automated, 
                               reference = validation$coding_manual, 
                               mode = "prec_recall", 
                               positive = "1")
@@ -597,8 +597,8 @@ out_file <- file.path(out_dir, paste0("02_abstract_screening_clean_", stamp, ".r
 #save all relevant output as list object
 saveRDS(
   list(
-    intercoder = intercoder,
-    validation  = validation,
+    intercoder = intercoder_abstracts,
+    validation  = validation_abstracts,
     coding_abstracts = coding_abstracts, 
     coding_abstracts_relevant = coding_abstracts_relevant
   ),
