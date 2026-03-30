@@ -8,8 +8,8 @@ library(readxl)
 library(dplyr)
 library(openxlsx)
 
-if (!exists("PATHS")) source(here::here("R/paths.R"))
-if (!exists("IN")) source(here::here("R/config.R"))
+if (!exists("PATHS")) source(here::here("helper functions/paths.R"))
+if (!exists("IN")) source(here::here("helper functions/config.R"))
 
 # Input data -------------------------------------------------------------------
 
@@ -203,15 +203,15 @@ out_dir <- PATHS$int
 stamp   <- format(Sys.time(), "%Y%m%d_%H%M")
 
 out_files <- c(
-  AZ = file.path(out_dir, paste0("04_final_coding_mask_AZ_", stamp, ".xlsx")),
-  VK = file.path(out_dir, paste0("04_final_coding_mask_VK_", stamp, ".xlsx")),
-  MM = file.path(out_dir, paste0("04_final_coding_mask_MM_", stamp, ".xlsx"))
+  coder1 = file.path(out_dir, paste0("04_final_coding_mask_coder1_", stamp, ".xlsx")),
+  coder2 = file.path(out_dir, paste0("04_final_coding_mask_coder2_", stamp, ".xlsx")),
+  coder3 = file.path(out_dir, paste0("04_final_coding_mask_coder3_", stamp, ".xlsx"))
 )
 
 #blocked for now, not necessary for replication
-#openxlsx::write.xlsx(coding_full_paper_sample1, out_files["AZ"], overwrite = TRUE)
-#openxlsx::write.xlsx(coding_full_paper_sample2, out_files["VK"], overwrite = TRUE)
-#openxlsx::write.xlsx(coding_full_paper_rest,    out_files["MM"], overwrite = TRUE)
+#openxlsx::write.xlsx(coding_full_paper_sample1, out_files["coder1"], overwrite = TRUE)
+#openxlsx::write.xlsx(coding_full_paper_sample2, out_files["coder2"], overwrite = TRUE)
+#openxlsx::write.xlsx(coding_full_paper_rest,    out_files["coder3"], overwrite = TRUE)
 
 message("04 completed. Final coding masks written to:")
 message("- ", paste(out_files, collapse = "\n- "))
