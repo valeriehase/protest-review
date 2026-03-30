@@ -101,7 +101,7 @@ opinion mining|part of speech|part-of-speech|scraping|sensor data|sentiment anal
 text as data|text mining|topic model|track|transformer"
 
 #create CSS sample
-css.sample <- wos_abstracts %>%
+css_sample <- wos_abstracts %>%
   
   #text including title, abstracts, keywords
   dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
@@ -111,7 +111,7 @@ css.sample <- wos_abstracts %>%
   dplyr::filter(grepl(search.terms.CSS, search.text))
 
 #create non-CSS sample
-non.css.sample <- wos_abstracts %>%
+non_css_sample <- wos_abstracts %>%
   
   #text including title, abstracts, keywords
   dplyr::mutate(search.text = paste0(title, " ", abstract, " ", keywords),
@@ -123,13 +123,13 @@ non.css.sample <- wos_abstracts %>%
 # 2.2 Intercodertest 1 Sample --------------------------------------------------
 # N = 20 articles, stratified by CSS vs. non-CSS (OLD ID)
 
-#sample.abstracts.1 <- css.sample %>%
+#sample.abstracts.1 <- css_sample %>%
 #  
 #  #get 10 articles from CSS sample
 #  slice_sample(n = 10) %>%
 #  
 #  #add non-CSS articles
-#  rbind(non.css.sample %>%
+#  rbind(non_css_sample %>%
 #          slice_sample(n = 10)) %>%
 #  
 #  #create link, replace with NA if doi missing
@@ -152,7 +152,7 @@ non.css.sample <- wos_abstracts %>%
 # 2.3 Intercodertest 2 Sample --------------------------------------------------
 # N = 20 articles, stratified by CSS vs. non-CSS (OLD ID)
 
-#sample.abstracts.2 <- css.sample %>%
+#sample.abstracts.2 <- css_sample %>%
 
 #  #filter by articles from intercoder test 1
 #  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -162,7 +162,7 @@ non.css.sample <- wos_abstracts %>%
 #  slice_sample(n = 10) %>%
 #  
 #  #add non-CSS articles
-#  rbind(non.css.sample %>%
+#  rbind(non_css_sample %>%
 #          
 #          #filter by articles from intercoder test 1
 #          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -190,7 +190,7 @@ non.css.sample <- wos_abstracts %>%
 # 2.4 Intercodertest 3 Sample --------------------------------------------------
 # N = 30 articles, stratified by CSS vs. non-CSS (OLD ID)
 
-#sample.abstracts.3 <- css.sample %>%
+#sample.abstracts.3 <- css_sample %>%
 #  
 #  #filter by articles from intercoder test 1
 #  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -204,7 +204,7 @@ non.css.sample <- wos_abstracts %>%
 #  slice_sample(n = 15) %>%
 #  
 #  #add non-CSS articles
-#  rbind(non.css.sample %>%
+#  rbind(non_css_sample %>%
 #          
 #          #filter by articles from intercoder test 1
 #          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -236,7 +236,7 @@ non.css.sample <- wos_abstracts %>%
 # 2.5 Intercodertest 4 Sample --------------------------------------------------
 # N = 30 articles, stratified by CSS vs. non-CSS (OLD ID)
 
-#sample.abstracts.4 <- css.sample %>%
+#sample.abstracts.4 <- css_sample %>%
 #  
 #  #filter by articles from intercoder test 1
 #  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -254,7 +254,7 @@ non.css.sample <- wos_abstracts %>%
 #  slice_sample(n = 15) %>%
 #  
 #  #add non-CSS articles
-#  rbind(non.css.sample %>%
+#  rbind(non_css_sample %>%
 #                     
 #          #filter by articles from intercoder test 1
 #          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -290,7 +290,7 @@ non.css.sample <- wos_abstracts %>%
 # 2.6 Intercodertest 5 Sample --------------------------------------------------
 # N = 30 articles, stratified by CSS vs. non-CSS 
 
-#sample.abstracts.5 <- css.sample %>%
+#sample.abstracts.5 <- css_sample %>%
 #  
 #  #filter by articles from intercoder test 1
 #  filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -312,7 +312,7 @@ non.css.sample <- wos_abstracts %>%
 #  slice_sample(n = 15) %>%
 #  
 #  #add non-CSS articles
-#  rbind(non.css.sample %>%
+#  rbind(non_css_sample %>%
 #                     
 #          #filter by articles from intercoder test 1
 #          filter(id_unique %!in% (read.csv2(file.path(PATHS$IN, "02_intercoder_abstract_R1.csv")) %>%
@@ -453,13 +453,13 @@ manual_coding <- read.csv2(file.path(PATHS$IN, "02_validation_keywords_1.csv")) 
   rename(coding_manual = method)
 
 #read in automated coding based on keyword search
-automated_coding <- css.sample %>%
+automated_coding <- css_sample %>%
   
   #create automated CSS coding
   mutate(method = 1) %>%
   
   #bind non-css sample
-  rbind(non.css.sample %>%
+  rbind(non_css_sample %>%
           mutate(method = 0)) %>%
   
   #reduce to necessary variables & cases
@@ -479,11 +479,11 @@ validation_abstracts <- confusionMatrix(data = validation$coding_automated,
                               positive = "1")
 
 # 2.9 Draw samples for coding --------------------------------------------------
-#random <- non.css.sample %>%
-#  slice_sample(n = nrow(css.sample)) 
+#random <- non_css_sample %>%
+#  slice_sample(n = nrow(css_sample)) 
 
 #create sample for coding
-#coding_abstracts <- css.sample %>%
+#coding_abstracts <- css_sample %>%
 #  mutate(sample = "CSS") %>%
 #  full_join(random %>%
 #              mutate(sample = "non-CSS")) %>%
@@ -494,7 +494,7 @@ validation_abstracts <- confusionMatrix(data = validation$coding_automated,
 #                        is.na(doi),
 #                        NA)) %>%
 #  #sort randomly
-#  slice_sample(n = nrow(random) + nrow(css.sample)) %>%
+#  slice_sample(n = nrow(random) + nrow(css_sample)) %>%
 #  
 #  #assign coder
 #  mutate(coder = NA,
@@ -600,7 +600,9 @@ saveRDS(
     icr_abstracts = intercoder_abstracts,
     validation_abstracts  = validation_abstracts,
     coding_abstracts = coding_abstracts, 
-    coding_abstracts_relevant = coding_abstracts_relevant
+    coding_abstracts_relevant = coding_abstracts_relevant,
+    non_css_sample = nrow(non_css_sample),
+    css_sample = nrow(css_sample)
   ),
   out_file
 )
