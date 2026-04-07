@@ -68,6 +68,8 @@ if (!exists("coding_full_paper_deduplicated", inherits = FALSE)) {
   rm(timestamps, dir_path, files, latest_file)
 }
 
+coding_full_paper_deduplicated <- coding_full_paper_deduplicated[, !grepl("^V9_", names(coding_full_paper_deduplicated))]
+
 # prepare for analysis
 coding_paper_clean_6a <- coding_full_paper_deduplicated %>%
   rename_with(~ str_extract(.x, "^V\\d+"), starts_with("V"))%>%
