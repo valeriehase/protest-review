@@ -246,7 +246,32 @@ appendix_2_2 <- tibble(
 
 # Appendix 3
 
-# to do, Miriams add info here; add appendix 3 to export below as well
+
+# Appendix 3
+
+appendix_3 <- icr_paper %>%
+  dplyr::mutate(
+    variable_label = dplyr::case_when(
+      Variable == "V7"  ~ "Protest",
+      Variable == "V8"  ~ "Type",
+      Variable == "V10" ~ "Platform",
+      Variable == "V11" ~ "Methods",
+      Variable == "V12" ~ "Measurement",
+      Variable == "V13" ~ "Cross-National",
+      Variable == "V14" ~ "Longitudinal",
+      Variable == "V15" ~ "Experiment",
+      Variable == "V16" ~ "Level",
+      TRUE ~ Variable
+    ),
+    Holstis_CR = round(Holstis_CR, 2),
+    Krippendorffs_Alpha = round(Krippendorffs_Alpha, 2)
+  ) %>%
+  dplyr::select(
+    variable_label,
+    n_Units,
+    Holstis_CR,
+    Krippendorffs_Alpha
+  )
 
 # Export -----------------------------------------------------------------------
 
@@ -258,7 +283,8 @@ out_file <- file.path(out_dir, paste0("07c.analysis.appendix.R", stamp, ".rds"))
 saveRDS(
   list(
     appendix_2_1 = appendix_2_1,
-    appendix_2_2 = appendix_2_2
+    appendix_2_2 = appendix_2_2,
+    appendix_3 = appendix_3
   ),
   out_file
 )
