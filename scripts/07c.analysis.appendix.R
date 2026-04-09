@@ -246,32 +246,65 @@ appendix_2_2 <- tibble(
 
 # Appendix 3
 
-
-# Appendix 3
-
-appendix_3 <- icr_paper %>%
-  dplyr::mutate(
-    variable_label = dplyr::case_when(
-      Variable == "V7"  ~ "Protest",
-      Variable == "V8"  ~ "Type",
-      Variable == "V10" ~ "Platform",
-      Variable == "V11" ~ "Methods",
-      Variable == "V12" ~ "Measurement",
-      Variable == "V13" ~ "Cross-National",
-      Variable == "V14" ~ "Longitudinal",
-      Variable == "V15" ~ "Experiment",
-      Variable == "V16" ~ "Level",
-      TRUE ~ Variable
-    ),
-    Holstis_CR = round(Holstis_CR, 2),
-    Krippendorffs_Alpha = round(Krippendorffs_Alpha, 2)
-  ) %>%
-  dplyr::select(
-    variable_label,
-    n_Units,
-    Holstis_CR,
-    Krippendorffs_Alpha
+appendix_3 <- tibble(
+  
+  # general information on full-paper reliability test
+  intercoder_paper_N = paste0(
+    "between N = ", min(icr_paper$n_Units),
+    " and N = ", max(icr_paper$n_Units),
+    " cases"
+  ),
+  
+  intercoder_paper_reli_measures = "Holsti, Krippendorff, and Brennan-Prediger",
+  
+  intercoder_paper_protest_region = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V7"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V7"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V7"], 2)
+  ),
+  
+  intercoder_paper_platform = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V10"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V10"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V10"], 2)
+  ),
+  
+  intercoder_paper_method = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V11"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V11"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V11"], 2)
+  ),
+  
+  intercoder_paper_measurement = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V12"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V12"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V12"], 2)
+  ),
+  
+  intercoder_paper_cross_national = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V13"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V13"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V13"], 2)
+  ),
+  
+  intercoder_paper_longitudinal = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V14"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V14"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V14"], 2)
+  ),
+  
+  intercoder_paper_experiment = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V15"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V15"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V15"], 2)
+  ),
+  
+  intercoder_paper_level = paste0(
+    "Holsti = ", round(icr_paper$Holstis_CR[icr_paper$Variable == "V16"], 2),
+    " and Krippendorff = ", round(icr_paper$Krippendorffs_Alpha[icr_paper$Variable == "V16"], 2),
+    " and Brennan-Prediger = ", round(icr_paper$Brennan_Predigers_Kappa[icr_paper$Variable == "V16"], 2)
   )
+)
 
 # Export -----------------------------------------------------------------------
 
