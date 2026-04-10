@@ -574,6 +574,223 @@ doc <- doc %>%
   body_add_gg(value = p_methodcombo, width = 9, height = 5) %>%
   body_add_break()
 
+
+
+# 7.6 Over Time ----------------------------------------------------------------
+
+# Load publication year from script 01 output
+if (!exists("wos_abstracts_clean", inherits = FALSE)) {
+  
+  dir_path <- PATHS$int
+  
+  files <- list.files(
+    dir_path,
+    pattern = "^01_wos_abstracts_clean(_\\d{8}_\\d{4})?\\.rds$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No cleaned WoS file found, please run script 01 first.")
+  }
+  
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.rds$",
+    "\\1",
+    files
+  )
+  
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading cleaned WoS data from: ", timestamps[which.max(timestamps)])
+  
+  wos_abstracts_clean <- readRDS(latest_file)
+  
+  rm(dir_path, files, timestamps, latest_file)
+}
+
+
+df_time <- final_sample %>%
+  rename_with(
+    ~ str_extract(.x, "^V\\d+"),
+    starts_with("V")
+  ) %>%
+  mutate(id_unique = as.character(id_unique)) %>%
+  left_join(
+    wos_abstracts_clean %>%
+      transmute(
+        id_unique = as.character(id_unique),
+        year = as.integer(year)
+      ),
+    by = "id_unique"
+  )
+
+df_time %>%
+  count(id_unique) %>%
+  filter(n > 1)
+
+df_time <- df_time %>%
+  mutate(year = as.integer(year)) %>%
+  filter(!is.na(year))
+
+df_time <- df_time %>%
+  mutate(
+    year = as.integer(year),
+    period = case_when(
+      year %in% 2009:2013 ~ "2009-2013",
+      year %in% 2014:2016 ~ "2014-2016",
+      year %in% 2017:2019 ~ "2017-2019",
+      year %in% 2020:2021 ~ "2020-2021",
+      year %in% 2022:2023 ~ "2022-2023",
+      TRUE ~ NA_character_
+    ),
+    period = factor(
+      period,
+      levels = c("2009-2013", "2014-2016", "2017-2019", "2020-2021", "2022-2023")
+    )
+  ) %>%
+  filter(!is.na(period))
+
+# Method combinations over time
+
+mc_time <- df_method_combo %>%
+  left_join(df_time %>% select(id_unique, period), by = "id_unique") %>%
+  count(period, MethodCombo, name = "n") %>%
+  group_by(period) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup() %>%
+  left_join(levels_MethodCombo, by = "MethodCombo") %>%
+  filter(MethodCombo_label != "Not mentioned") %>%
+  mutate(
+    MethodCombo_label = factor(MethodCombo_label, levels = levels_MethodCombo$MethodCombo_label),
+    y_lab = if_else(pct == 0, 0.5, pct)
+  )
+
+p_mc_time <- ggplot(mc_time, aes(x = period, y = pct, fill = MethodCombo_label)) +
+  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
+  geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)),
+            position = position_dodge(0.8), vjust = -0.2, size = 3) +
+  labs(x = NULL, y = "Percentage", fill = "Method Combination") +
+  coord_cartesian(ylim = c(0, max(mc_time$y_lab, na.rm = TRUE) + 5)) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 0)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: Method combinations over time", style = "Normal") %>%
+  body_add_par("Distribution of method-combination types across time periods.", style = "Normal") %>%
+  body_add_gg(value = p_mc_time, width = 9, height = 5) %>%
+  body_add_break()
+
+# CSS vs Non-CSS over time
+
+css_time <- df_time %>%
+  mutate(Method = recode(method, "0" = "Non-CSS", "1" = "CSS")) %>%
+  count(period, Method, name = "n") %>%
+  group_by(period) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup() %>%
+  mutate(y_lab = if_else(pct == 0, 0.5, pct))
+
+p_css_time <- ggplot(css_time, aes(x = period, y = pct, fill = Method)) +
+  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
+  geom_text(aes(y = y_lab, label = sprintf("%.1f%%", pct)),
+            position = position_dodge(0.8), vjust = -0.2, size = 3) +
+  scale_fill_manual(values = c("grey70","white")) +
+  labs(x = NULL, y = "Percentage", fill = "Method Group") +
+  coord_cartesian(ylim = c(0, max(css_time$y_lab, na.rm = TRUE) + 5)) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top"
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: CSS vs. Non-CSS over time", style = "Normal") %>%
+  body_add_par("Share of CSS vs. non-CSS studies across time periods.", style = "Normal") %>%
+  body_add_gg(value = p_css_time, width = 9, height = 5) %>%
+  body_add_break()
+
+# Platforms over time
+
+selected_platforms <- c("100","110","130","140")
+
+v10_time <- df_V10agg %>%
+  left_join(df_time %>% select(id_unique, period), by = "id_unique") %>%
+  filter(V10_agg %in% selected_platforms) %>%
+  count(period, V10_agg, name = "n") %>%
+  group_by(period) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup() %>%
+  left_join(levels_V10_agg, by = "V10_agg") %>%
+  mutate(
+    V10_agg_label = factor(V10_agg_label,
+                           levels = levels_V10_agg %>%
+                             filter(V10_agg %in% selected_platforms) %>%
+                             pull(V10_agg_label))
+  )
+
+p_v10_time <- ggplot(v10_time, aes(x = period, y = pct, fill = V10_agg_label)) +
+  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
+  labs(x = NULL, y = "Percentage", fill = "Platform") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    legend.position = "top",
+    axis.text.x = element_text(angle = 0)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: Platforms over time", style = "Normal") %>%
+  body_add_par("Distribution of selected platforms across time periods.", style = "Normal") %>%
+  body_add_gg(value = p_v10_time, width = 9, height = 5) %>%
+  body_add_break()
+
+# Methods over time
+
+top_v11 <- c("21","22","23","24","25","26")
+
+v11_time <- df_time %>%
+  mutate(V11 = as.character(V11)) %>%
+  separate_rows(V11, sep = ";") %>%
+  mutate(V11 = str_trim(V11)) %>%
+  filter(V11 %in% top_v11) %>%
+  count(period, V11, name = "n") %>%
+  group_by(period) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup() %>%
+  left_join(levels_V11, by = "V11") %>%
+  mutate(
+    V11_label = factor(V11_label, levels = levels_V11$V11_label),
+    y_lab = if_else(pct == 0, 0.5, pct)
+  )
+
+p_v11_time <- ggplot(v11_time, aes(x = period, y = pct, fill = V11_label)) +
+  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
+  labs(x = NULL, y = "Percentage", fill = "Method") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    legend.position = "top",
+    axis.text.x = element_text(angle = 0)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: Analysis methods over time", style = "Normal") %>%
+  body_add_par("Distribution of selected analysis methods (V11) across time periods.", style = "Normal") %>%
+  body_add_gg(value = p_v11_time, width = 9, height = 5) %>%
+  body_add_break()
+
 # Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$final
