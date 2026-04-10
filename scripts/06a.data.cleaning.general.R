@@ -274,10 +274,10 @@ coding_paper_clean_6a %>%
 #ids_to_delete <- coding_paper_clean_6a %>%
 #  dplyr::filter(method == "1") %>%
 #  dplyr::distinct(id_unique) %>%
-#  dplyr::slice_sample(n = 10) %>%
+#  dplyr::slice_sample(n = 15) %>%
 #  dplyr::pull(id_unique)
 
-ids_to_delete <- c("ID486", "ID871", "ID606", "ID1140", "ID765", "ID563", "ID1510", "ID275", "ID147", "ID983") 
+ids_to_delete <- c("ID227", "ID737", "ID2271", "ID395", "ID237", "ID1884", "ID129", "ID1092", "ID588", "ID98", "ID560", "ID202", "ID2040", "ID1476", "ID2400") 
 
 # for replicability: run with IDs drawn before
 coding_paper_clean_6a <- coding_paper_clean_6a %>%
