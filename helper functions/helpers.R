@@ -256,7 +256,7 @@ apa_table <- function(doc, number, title, ft) {
   doc %>%
     officer::body_add_par(paste0("Table ", number), style = "Normal") %>%
     officer::body_add_par(title, style = "Normal") %>%
-    officer::body_add_flextable(ft) %>%
+    flextable::body_add_flextable(ft) %>%
     officer::body_add_break()
 }
 

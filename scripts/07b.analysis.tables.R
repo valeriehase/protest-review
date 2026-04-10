@@ -4,30 +4,69 @@
 #
 # Setup ------------------------------------------------------------------------
 
-source(here::here("R/paths.R"))
-source(here::here("R/config.R"))
-source(here::here("R/helpers.R"))
-source(here::here("R/codebook.R"))
-
 library(readxl)
 library(tidyverse)
 library(tidycomm)
 library(janitor)
 library(stringr)
+library(here)
 library(openxlsx)
 library(flextable)
 library(officer)
 
+source(here::here("helper functions/paths.R"))
+source(here::here("helper functions/config.R"))
+source(here::here("helper functions/helpers.R"))
+source(here::here("helper functions/codebook.R"))
+
 # Load Input -------------------------------------------------------------------
 
-input_file <- require_file(file.path(PATHS$final, "full_paper_sample_final.xlsx"), "analysis input dataset (output of 06 steps)")
+# Load data from 06c, if necessary
 
-message("Reading analysis dataset from: ", input_file)
-df <- readxl::read_excel(input_file)
+if (!exists("coding_paper_clean_6c", inherits = FALSE)) {
+  
+  # Directory
+  dir_path <- PATHS$final
+  
+  # List matching files
+  files <- list.files(
+    dir_path,
+    pattern = "^full_paper_sample_final(_\\d{8}_\\d{4})?\\.xlsx$",
+    full.names = TRUE
+  )
+  
+  if (length(files) == 0) {
+    stop("No final data set found, please run script 06c.cleaning.codes first.")
+  }
+  
+  # Extract timestamps (if present)
+  timestamps <- sub(
+    ".*_(\\d{8}_\\d{4})\\.xlsx$",
+    "\\1",
+    files
+  )
+  
+  # Convert to POSIXct
+  timestamps <- as.POSIXct(
+    timestamps,
+    format = "%Y%m%d_%H%M",
+    tz = "UTC"
+  )
+  
+  # Select latest file
+  latest_file <- files[which.max(timestamps)]
+  
+  message("Loading final sample from: ", timestamps[which.max(timestamps)])
+  
+  final_sample <- readxl::read_excel(latest_file)
+  
+  #clean house
+  rm(timestamps, dir_path, files, latest_file)
+}
 
 # 7.1 Prepare Data -----------------------------------------------------------------
 
-df <- df %>%
+df <- final_sample %>%
   rename_with(
     ~ str_extract(.x, "^V\\d+"),  # anpassung variablennamen
     starts_with("V")) 
@@ -304,7 +343,7 @@ for (i in seq_along(apa_tables)) {
   
   if (var %in% names(chi_tables)) {
     doc <- doc %>%
-      officer::body_add_flextable(chi_tables[[var]]) %>%
+      flextable::body_add_flextable(chi_tables[[var]]) %>%
       officer::body_add_break()
   }
 }
