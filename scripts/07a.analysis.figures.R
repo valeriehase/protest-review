@@ -1,6 +1,6 @@
 #
 # Final Analysis - Figures
-# Date: 2026-30-03
+# Date: 2026-04-10
 #
 # Setup ------------------------------------------------------------------------
 
@@ -639,6 +639,36 @@ df_time <- df_time %>%
   mutate(year = as.integer(year)) %>%
   filter(!is.na(year))
 
+# Integrate graph for N publications over time
+n_time <- df_time %>%
+  group_by(year) %>%
+  count(method) %>%
+  ungroup() %>%
+  mutate(method = factor(method,
+                         levels = c(0, 1),
+                         labels = c("Non-CSS", "CSS")))
+
+p_n_time <- ggplot(n_time, aes(x = year, y = n, color = method, group = method)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("Non-CSS" = "gray70",
+                                "CSS"     = "gray30")) +
+  labs(x = NULL, y = "Number of studies", color = "Method for Studying Online Protest") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 0)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: N Publications over time", style = "Normal") %>%
+  body_add_par("Distribution of number of publications by method across time.", style = "Normal") %>%
+  body_add_gg(value = p_n_time, width = 9, height = 5) %>%
+  body_add_break()
+
+# Switch to categorical time periods
 df_time <- df_time %>%
   mutate(
     year = as.integer(year),
