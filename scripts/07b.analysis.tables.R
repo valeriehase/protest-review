@@ -88,7 +88,7 @@ df_V10agg <- make_df_V10agg(df)
 N_total <- nrow(df)
 apa_note <- paste0(
   "Note. CSS = computational social science; n = frequency; % = percentage.\n",
-  "Percentages are calculated within each method group.\n",
+  "Percentages are calculated within each method group (can be larger than 100%, as multiple values per variable could be coded).\n",
   "N = ", N_total, " studies."
 )
 
@@ -402,5 +402,3 @@ doc <- doc %>%
  
  message("07 tables completed.")
  message("- Word document saved to: ", out_file)
- 
- 
