@@ -115,8 +115,8 @@ names(apa_tables) <- names(table_specs)
 # Studying different regions with CSS vs. non-CSS
 
 res_V7 <- df %>%
-  #prepare for analysis: several countries to "several countries"
-  mutate(V7 = replace(V7, str_detect(V7, ";"), "several countries"))
+  #prepare for analysis: several regions to "several regions"
+  mutate(V7 = replace(V7, str_detect(V7, ";"), "several regions"))
 
 res_V7  <- chi_method_table(
   dataset = df, dep_var = "V7",
