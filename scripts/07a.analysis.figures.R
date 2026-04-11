@@ -194,7 +194,25 @@ worldmap_data <- df %>%
   count(CSS, region)
 
 world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf") %>%
-  dplyr::select(iso_a3, name, region_un, subregion, continent, geometry)
+  dplyr::select(iso_a3, name, region_un, subregion, continent, geometry) %>%
+  
+  #correct some missing countries
+  mutate(iso_a3 = replace(iso_a3,
+                          name == "France",
+                          "FRANCE"),
+         
+         iso_a3 = replace(iso_a3,
+                          name == "Kosovo",
+                          "KOSOVO"),
+         
+         iso_a3 = replace(iso_a3,
+                          name == "Norway",
+                          "NORWAY"),
+         
+         iso_a3 = replace(iso_a3,
+                          name == "Somaliland",
+                          "SOMALILAND"))
+
 
 #assign countries to region for mapping (in line with codebook)
 region_map <- bind_rows(
@@ -202,7 +220,11 @@ region_map <- bind_rows(
   tibble(
     iso_a3 = c(
       "ATG","BHS","BRB","BLZ","CAN","CRI","CUB","DMA","SLV","GRD","GTM","HTI",
-      "HND","JAM","MEX","NIC","PAN","KNA","LCA","VCT","TTO","USA"
+      "HND","JAM","MEX","NIC","PAN","KNA","LCA","VCT","TTO","USA",
+      
+      #added later-on, as missing iso-codes in our codebook
+      "VIR", "PRI", "AIA", "CYM", "BMU", "VGB", "TCA", "MSR", "ABW", "CUW",
+      "SPM", "MAF", "BLM", "DOM", "GRL", "SXM"
     ),
     region = "North America"
   ),
@@ -222,7 +244,13 @@ region_map <- bind_rows(
       "ALB","AND","AUT","BEL","BIH","BGR","HRV","CYP","CZE","DNK","EST",
       "FIN","FRA","DEU","GRC","HUN","ISL","IRL","ITA","LIE","LTU","LUX",
       "LVA","MLT","MCO","MNE","NLD","MKD","NOR","POL","PRT","ROU","SMR",
-      "SRB","SVK","SVN","ESP","SWE","CHE","TUR","GBR","VAT","ARM"
+      "SRB","SVK","SVN","ESP","SWE","CHE","TUR","GBR","VAT","ARM",
+      
+      #added later-on, as missing iso-codes in our codebook
+      "JEY", "GGY", "IMN", "MDA", "ALA", "FRO",
+      
+      #added later-on, as missing iso-codes in the data
+      "FRANCE", "KOSOVO", "NORWAY"
     ),
     region = "Europe"
   ),
@@ -230,7 +258,10 @@ region_map <- bind_rows(
   # (4) Russia and former Soviet Republics
   tibble(
     iso_a3 = c(
-      "RUS","UKR","BLR","AZE","KAZ","KGZ","TJK","TKM","UZB","EST","LVA","LTU"
+      "RUS","UKR","BLR","AZE","KAZ","KGZ","TJK","TKM","UZB","EST","LVA","LTU",
+      
+      #added later-on, as missing iso-codes in our codebook
+      "GEO"
     ),
     region = "Russia and former Soviet Republics"
   ),
@@ -239,14 +270,21 @@ region_map <- bind_rows(
   tibble(
     iso_a3 = c(
       "DZA","BHR","EGY","IRN","IRQ","ISR","JOR","KWT","LBN","LBY",
-      "MAR","OMN","QAT","SAU","SYR","TUN","ARE","YEM"
+      "MAR","OMN","QAT","SAU","SYR","TUN","ARE","YEM",
+      
+      #added later-on, as missing iso-codes in our codebook
+      "ESH", "PSE"
     ),
     region = "Middle East and North Africa"
   ),
   
   # (6) East Asia
   tibble(
-    iso_a3 = c("CHN","JPN","MNG","PRK","KOR","HKG","TWN"),
+    iso_a3 = c("CHN","JPN","MNG","PRK","KOR","HKG","TWN",
+               
+               #added later-on, as missing iso-codes in our codebook
+               "MAC"
+   ),
     region = "East Asia"
   ),
   
@@ -266,7 +304,10 @@ region_map <- bind_rows(
       "COG","DJI","GNQ","ERI","SWZ","ETH","GAB","GMB","GHA","GIN","GNB",
       "CIV","KEN","LSO","LBR","MDG","MWI","MLI","MRT","MUS","MOZ","NAM",
       "NER","NGA","RWA","STP","SEN","SYC","SLE","SOM","ZAF","SSD","SDN",
-      "TZA","TGO","UGA","ZMB","ZWE"
+      "TZA","TGO","UGA","ZMB","ZWE",
+      
+      #added later-on, as missing iso-codes in the data
+      "SOMALILAND"
     ),
     region = "Sub-Saharan Africa"
   ),
@@ -275,7 +316,10 @@ region_map <- bind_rows(
   tibble(
     iso_a3 = c(
       "AUS","FJI","KIR","MHL","FSM","NRU","NZL","PLW","PNG",
-      "WSM","SLB","TON","TUV","VUT"
+      "WSM","SLB","TON","TUV","VUT", 
+      
+      #added later-on, as missing iso-codes in our codebook
+      "MNP", "GUM", "ASM", "PCN", "NIU", "COK", "WLF", "PYF", "NCL", "NFK"
     ),
     region = "Oceania"
   )
