@@ -1,6 +1,6 @@
 #
 # Final Analysis - Tables
-# Date: 2025-10-24
+# Date: 2026-04-11
 #
 # Setup ------------------------------------------------------------------------
 
@@ -112,20 +112,33 @@ names(apa_tables) <- names(table_specs)
 
 # 7.3 Chi-Square ------------------------------------------------------
 
+# Studying different regions with CSS vs. non-CSS
+
+res_V7 <- df %>%
+  #prepare for analysis: several countries to "several countries"
+  mutate(V7 = replace(V7, str_detect(V7, ";"), "several countries"))
+
 res_V7  <- chi_method_table(
   dataset = df, dep_var = "V7",
   table_caption = "Chi-square Test: Method (CSS vs. non-CSS) × V7 (Regions)",
-  note_text = "Note. Expanded rows after splitting multi-coded V7; N counts region mentions (not unique studies). Excluding NA. Method: 0 = Non-CSS, 1 = CSS.",
-  multi = TRUE
+  note_text = "Note. N counts unique studies, with studies studying several regions being sorted into 'several regions'. Excluding NA. Method: 0 = Non-CSS, 1 = CSS."
 )
 ft_chi_v7  <- res_V7$ft
 
+# Studying different platforms with CSS vs. non-CSS
+
+res_V10 <- df %>%
+  #prepare for analysis: several countries to "several countries"
+  mutate(V10 = replace(V10, str_detect(V10, ";"), "several platforms"))
+
 res_V10 <- chi_method_table(
-  dataset = df_V10agg, dep_var = "V10_agg",
-  table_caption = "Chi-square Test: Method (CSS vs. non-CSS) × V10_agg (Aggregated Platforms)",
-  note_text = "Note. Expanded rows after splitting multi-coded V10; N counts platform mentions (not unique studies). Excluding NA. Method: 0 = Non-CSS, 1 = CSS."
+  dataset = res_V10, dep_var = "V10",
+  table_caption = "Chi-square Test: Method (CSS vs. non-CSS) × V10_agg (Platforms)",
+  note_text = "Note. N counts unique studies, with studies studying several platforms being sorted into 'several platforms'. Excluding NA. Method: 0 = Non-CSS, 1 = CSS."
 )
 ft_chi_v10 <- res_V10$ft
+
+# Taking a cross-national perspective with CSS vs. non-CSS
 
 res_V12 <- chi_method_table(
   dataset = df, dep_var = "V12",
@@ -133,6 +146,8 @@ res_V12 <- chi_method_table(
   note_text = "Note. V12: 1 = cross-national, 0 = not cross-national. Excluding NA. Method: 0 = Non-CSS, 1 = CSS."
 )
 ft_chi_v12 <- res_V12$ft
+
+# Taking an experimental perspective with CSS vs. non-CSS
 
 res_V13 <- chi_method_table(
   dataset = df, dep_var = "V13",
@@ -311,8 +326,7 @@ res_scope <- chi_method_table(
   dataset       = df_platform_scope,
   dep_var       = "PlatformScope",
   table_caption = "Chi-square Test: Method (CSS vs. non-CSS) × Platform Scope",
-  note_text     = "Note. Platform scope derived from V10. Method: 0 = Non-CSS, 1 = CSS.",
-  multi         = FALSE
+  note_text     = "Note. Platform scope derived from V10. Method: 0 = Non-CSS, 1 = CSS."
 )
 ft_chi_scope <- res_scope$ft
 
