@@ -36,7 +36,7 @@ make_df_V10agg <- function(df) {
     stop("make_df_V10agg(): df has no column 'V10'.")
   }
   
-  df %>%
+  df_v10_agg <- df %>%
     tidyr::separate_rows(V10, sep = ";") %>%
     dplyr::mutate(V10 = stringr::str_trim(as.character(V10))) %>%
     dplyr::mutate(
@@ -51,11 +51,18 @@ make_df_V10agg <- function(df) {
         V10 %in% c("200","201","202","203","204") ~ "200",
         V10 == "300" ~ "300",
         V10 == "400" ~ "400",
-        V10 %in% c("NA", NA) ~ "NA",
+        is.na(V10) | V10 == "NA" ~ NA_character_,
         TRUE ~ "Other"
       )
     ) %>%
-    dplyr::mutate(V10_agg = as.character(V10_agg))
+    dplyr::filter(!is.na(V10_agg)) %>%
+    dplyr::distinct(id_unique, V10_agg) %>%
+    dplyr::group_by(id_unique) %>%
+    dplyr::summarise(
+      V10_agg = paste(sort(unique(V10_agg)), collapse = ";"),
+      .groups = "drop"
+    ) %>%
+    left_join(df)
 }
 
 explode_codes <- function(data, var, coder_col) {
