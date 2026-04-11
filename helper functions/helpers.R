@@ -146,31 +146,49 @@ apply_manual_edits <- function(df, edits, log_df, step, action = "manual_edit") 
 # 3) Tables (frequency tables, APA export)
 # ------------------------------------------------------------------------------
 
-make_complete_table_table <- make_complete_table <- function(df, var, levels_df, 
-                                                             apa = FALSE, title = NULL, note = NULL) {
+make_complete_table <- function(df, var, levels_df,
+                                apa = FALSE, title = NULL, note = NULL) {
   var_sym <- rlang::sym(var)
   lab_col <- paste0(var, "_label")
   
-  df <- df %>% dplyr::mutate(!!var_sym := as.character(.data[[var]]))
-  levels_df <- levels_df %>% dplyr::mutate(!!var_sym := as.character(.data[[var]]))
+  df <- df %>%
+    dplyr::mutate(
+      study_id = dplyr::row_number(),
+      method = as.character(method),
+      !!var_sym := as.character(.data[[var]])
+    )
   
-  tab <- df %>%
-    tidyr::separate_rows(!!var_sym, sep = ";") %>%
-    dplyr::mutate(!!var_sym := dplyr::coalesce(trimws(!!var_sym), "Missing")) %>%
-    dplyr::count(method, !!var_sym, name = "n") %>%
-    dplyr::group_by(method) %>%
-    dplyr::mutate(pct = round(100 * n / sum(n), 1)) %>%
-    dplyr::ungroup()
+  levels_df <- levels_df %>%
+    dplyr::mutate(!!var_sym := as.character(.data[[var]]))
   
-  totals <- tab %>%
-    dplyr::group_by(method) %>%
-    dplyr::summarise(N = sum(n), .groups = "drop") %>%
+  # Total number of studies per method (denominator for percentages)
+  totals <- df %>%
+    dplyr::count(method, name = "N") %>%
     tidyr::pivot_wider(names_from = method, values_from = N, names_prefix = "N_")
   
   n0 <- totals$N_0 %||% 0
   n1 <- totals$N_1 %||% 0
-
-  tab_complete <- tidyr::expand_grid(!!var_sym := levels_df[[var]], method = c("0", "1")) %>%
+  
+  totals_long <- df %>%
+    dplyr::count(method, name = "N_total")
+  
+  # Split multi-response variable, trim whitespace, and deduplicate within study
+  tab <- df %>%
+    tidyr::separate_rows(!!var_sym, sep = ";") %>%
+    dplyr::mutate(
+      !!var_sym := trimws(!!var_sym),
+      !!var_sym := dplyr::if_else(is.na(!!var_sym) | !!var_sym == "", "Missing", !!var_sym)
+    ) %>%
+    dplyr::distinct(study_id, method, !!var_sym) %>%
+    dplyr::count(method, !!var_sym, name = "n") %>%
+    dplyr::left_join(totals_long, by = "method") %>%
+    dplyr::mutate(pct = round(100 * n / N_total, 1)) %>%
+    dplyr::select(-N_total)
+  
+  tab_complete <- tidyr::expand_grid(
+    !!var_sym := levels_df[[var]],
+    method = c("0", "1")
+  ) %>%
     dplyr::left_join(tab, by = c(var, "method")) %>%
     dplyr::mutate(dplyr::across(c(n, pct), ~ tidyr::replace_na(.x, 0))) %>%
     dplyr::left_join(levels_df, by = var) %>%
@@ -202,9 +220,9 @@ make_complete_table_table <- make_complete_table <- function(df, var, levels_df,
   if (!is.null(note)) {
     ft <- flextable::add_footer_lines(ft, values = note)
   }
+  
   ft
 }
-
 
 apa_table <- function(doc, number, title, ft) {
   ft <- ft %>% flextable::autofit() %>% flextable::width(width = 1)
@@ -380,20 +398,9 @@ build_crosstab_pct <- function(
 # 4) Statistics helpers
 # ------------------------------------------------------------------------------
 
-chi_method_table <- function(dataset, dep_var, table_caption, note_text, multi = FALSE) {
+chi_method_table <- function(dataset, dep_var, table_caption, note_text) {
   dep_sym <- rlang::sym(dep_var)
   data_use <- dataset
-  
-  if (multi) {
-    data_use <- data_use %>%
-      tidyr::separate_rows(!!dep_sym, sep = ";") %>%
-      dplyr::mutate(
-        !!dep_sym := stringr::str_trim(as.character(!!dep_sym)),
-        !!dep_sym := dplyr::case_when(is.na(!!dep_sym) ~ "NA", !!dep_sym == "" ~ "NA", TRUE ~ !!dep_sym),
-        method = as.character(method)
-      ) %>%
-      dplyr::filter(.data[[dep_var]] != "NA")
-  }
   
   chi_obj <- data_use %>%
     dplyr::mutate(
