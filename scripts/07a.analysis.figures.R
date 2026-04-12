@@ -119,7 +119,7 @@ for (var in names(table_specs)) {
   fig_idx <- fig_idx + 1
 }
 
-# Method Overall ohne split
+# Method Overall without CSS- vs. non-CSS split
 
 v11_overall <- df %>%
   mutate(V11 = as.character(V11)) %>%
@@ -168,6 +168,142 @@ doc <- doc %>%
   body_add_par("Figure (supplement): Analysis Methods — % overall (no split)", style = "Normal") %>%
   body_add_par("Overall distribution of analysis methods (V11) across the full sample.", style = "Normal") %>%
   body_add_gg(value = p_v11_overall, width = 9, height = 5) %>%
+  body_add_break()
+
+# Method Overall by collection vs. analysis without CSS- vs. non-CSS split
+
+v11_overall_type <- df %>%
+  mutate(V11 = as.character(V11)) %>%
+  tidyr::separate_rows(V11, sep = ";") %>%
+  mutate(V11 = stringr::str_trim(V11)) %>%
+  
+  #count unique method per unique study
+  distinct(id_unique, V11) %>%
+  
+  #create sum
+  count(V11, name = "n") %>%
+  
+  # add label
+  mutate(type = "data collection",
+         type = replace(type,
+                        V11 %!in% c("12", "14", "15", "17", "18", "22", "23", "25", "26"),
+                        "data analysis"),
+         type = replace(type,
+                        V11 %in% c("99", "20", "10"),
+                        NA)) %>%
+  
+  # % per unique studies
+  mutate(
+    total_studies = n_distinct(df$id_unique),
+    pct = round(100 * n / total_studies, 1)
+  ) %>%
+  
+  # add method names as labels
+  left_join(levels_V11, by = "V11") %>%
+  
+  #only keep relevant ones
+  filter(!is.na(type)) %>%
+  mutate(
+    V11_label = factor(V11_label, levels = levels_V11$V11_label),
+    y_lab = if_else(pct == 0, 0.5, pct)
+  ) %>%
+  
+  #sort by type for order in plot
+  mutate(
+    type = factor(type, levels = c("data collection", "data analysis"))
+  ) %>%
+  arrange(type, V11_label) %>%
+  mutate(
+    V11_label = factor(V11_label, levels = unique(V11_label))
+  )
+
+p_v11_overall_type <- ggplot(v11_overall_type, aes(x = V11_label, y = pct)) +
+  geom_col(aes(fill = type), width = 0.7, color = "black") +
+  scale_fill_manual(
+    values = c(
+      "data collection" = "gray30",
+      "data analysis"   = "gray70"
+    ),
+    name = NULL
+  ) +
+  geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)), vjust = -0.2, size = 3) +
+  labs(x = NULL, y = "Percentage") +
+  scale_x_discrete(expand = expansion(add = 0.6)) +
+  coord_cartesian(ylim = c(0, max(v11_overall$y_lab, na.rm = TRUE) + 5),
+                  clip = "off") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 35, hjust = 1),
+    plot.margin        = margin(10, 50, 10, 30)  # mehr linker Rand
+  )
+
+doc <- doc %>%
+  body_add_par("Figure (supplement): Analysis Methods — % overall (split by data collection & analysis)", style = "Normal") %>%
+  body_add_par("Overall distribution of analysis methods (V11) across the full sample, by type of method.", style = "Normal") %>%
+  body_add_gg(value = p_v11_overall_type, width = 9, height = 5) %>%
+  body_add_break()
+
+# Get frequent pairs of method combinations
+
+pair_pct <- count_method_combinations(df, combo_sizes = c(2, 3, 4), var = "V11", top_n = 10) %>%
+  
+  #add labels
+  mutate(
+    label = case_when(
+      combo  == "21;22" ~ "qual. interviews/focus groups &\nqual. content analysis/discourse analysis",
+      combo  == "12;13" ~ "API access &\nautomated content analysis",
+      combo  == "12;16" ~ "API access &\nnetwork analysis",
+      combo  == "13;16" ~ "automated content analysis &\nnetwork analysis",
+      combo  == "13;21" ~ "automated content analysis &\nqual. content analysis/discourse analysis",
+      combo  == "16;21" ~ "qual. content analysis/discourse analysis &\nnetwork analysis",
+      combo  == "12;21" ~ "API access &\nqual. content analysis/discourse analysis",
+      combo  == "22;23" ~ "qual. interviews/focus groups &\nqual. observation",
+      combo  == "12;13;16" ~ "API access, automated content analysis &\nnetwork analysis",
+      combo  == "16;18" ~ "web scraping &\nnetwork analysis"
+    )
+  ) %>%
+  
+  #only keep those used in more than 10% of studies
+  filter(pct >= 10)
+
+#visualize
+p_pairs <- ggplot(pair_pct, aes(x = reorder(label, pct), y = pct)) +
+  geom_col(fill = "gray35", color = "black", width = 0.65) +
+  
+  geom_text(
+    aes(label = sprintf("%.1f", pct)),
+    hjust = -0.15,
+    size = 3.2
+  ) +
+  
+  coord_flip(clip = "off") +
+  
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.1))
+  ) +
+  
+  labs(
+    x = NULL,
+    y = "Percentage of studies"
+  ) +
+  
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_line(color = "gray85"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    plot.margin = margin(10, 40, 10, 10)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure (supplement): Combinations of methods — % overall", style = "Normal") %>%
+  body_add_par("Overall combination of methods (V11) across the full sample, all above 10%", style = "Normal") %>%
+  body_add_gg(value = p_v11_overall_type, width = 9, height = 5) %>%
   body_add_break()
 
 
@@ -721,7 +857,7 @@ mc_time <- df_method_combo %>%
   mutate(pct = round(100 * n / sum(n), 1)) %>%
   ungroup() %>%
   left_join(levels_MethodCombo, by = "MethodCombo") %>%
-  filter(MethodCombo_label != "Not mentioned") %>%
+  filter(MethodCombo_label != "Other") %>%
   mutate(
     MethodCombo_label = factor(MethodCombo_label, levels = levels_MethodCombo$MethodCombo_label),
     y_lab = if_else(pct == 0, 0.5, pct)

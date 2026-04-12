@@ -504,3 +504,48 @@ apa_figure <- function(doc, number, title, df, category_var, levels_vec = NULL) 
     officer::body_add_gg(value = p, width = 9, height = 6) %>%
     officer::body_add_break()
 }
+
+# count unique combinations of methods
+count_method_combinations <- function(df, combo_sizes = c(2:4), top_n = 10, var, id_var = "id_unique") {
+  var_sym <- rlang::sym(var)
+  id_sym  <- rlang::sym(id_var)
+  
+  df_study <- df %>%
+    dplyr::mutate(!!var_sym := as.character(.data[[var]])) %>%
+    dplyr::filter(!is.na(.data[[var]]), .data[[var]] != "") %>%
+    dplyr::group_by(!!id_sym) %>%
+    dplyr::summarise(
+      vals = list(
+        .data[[var]] %>%
+          stringr::str_split(";") %>%
+          unlist() %>%
+          stringr::str_trim() %>%
+          purrr::discard(~ .x == "") %>%
+          as.numeric() %>%
+          unique() %>%
+          sort()
+      ),
+      .groups = "drop"
+    )
+  
+  purrr::map_dfr(combo_sizes, \(k) {
+    df_study %>%
+      dplyr::mutate(
+        combo = purrr::map(vals, \(x) {
+          if (length(x) < k) return(character(0))
+          combn(x, k, FUN = \(y) paste(y, collapse = ";"))
+        })
+      ) %>%
+      dplyr::select(!!id_sym, combo) %>%
+      tidyr::unnest(combo) %>%
+      dplyr::distinct(!!id_sym, combo) %>%
+      dplyr::count(combo, name = "n") %>%
+      dplyr::mutate(size = k)
+  }) %>%
+    dplyr::mutate(
+      total_studies = dplyr::n_distinct(df[[id_var]]),
+      pct = 100 * n / total_studies
+    ) %>%
+    dplyr::arrange(dplyr::desc(pct), dplyr::desc(n)) %>%
+    dplyr::slice_head(n = top_n)
+}
