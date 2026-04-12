@@ -125,9 +125,23 @@ v11_overall <- df %>%
   mutate(V11 = as.character(V11)) %>%
   tidyr::separate_rows(V11, sep = ";") %>%
   mutate(V11 = stringr::str_trim(V11)) %>%
+  
+  #count unique method per unique study
+  distinct(id_unique, V11) %>%
+  
+  #create sum
   count(V11, name = "n") %>%
-  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  
+  # % per unique studies
+  mutate(
+    total_studies = n_distinct(df$id_unique),
+    pct = round(100 * n / total_studies, 1)
+  ) %>%
+  
+  # add method names as labels
   left_join(levels_V11, by = "V11") %>%
+  
+  #only keep relevant ones
   filter(!V11_label %in% c("Other","Not mentioned")) %>%
   mutate(
     V11_label = factor(V11_label, levels = levels_V11$V11_label),
@@ -392,6 +406,7 @@ doc <- doc %>%
 
 # 7.3 Combined: Cross-national / Cross-Platform/ Experimental --------------------------------
 
+# Amount of cross-platform studies across methods
 df_platform_scope <- df %>%
   mutate(V10 = as.character(V10), method = as.character(method)) %>%
   tidyr::separate_rows(V10, sep = ";") %>%
@@ -407,8 +422,13 @@ df_platform_scope <- df %>%
     TRUE ~ "NA"
   ))
 
-v12_share <- share_one(df, "V12") %>% mutate(Design = "Cross-national")
-v13_share <- share_one(df, "V13") %>% mutate(Design = "Experimental")
+# Amount of cross-national studies across methods
+v12_share <- share_one(df, "V12") %>% 
+  mutate(Design = "Cross-national")
+
+# Amount of experimental studies across methods
+v13_share <- share_one(df, "V13") %>% 
+  mutate(Design = "Experimental")
 
 ps_share <- df_platform_scope %>%
   mutate(method = as.character(method)) %>%
@@ -458,7 +478,7 @@ selected_platforms <- c("100","110","130","140")
 levels_V11_subset <- levels_V11 %>%
   filter(V11 %in% c("21","22","23","24","25","26"))
 
-# Cross-national (V12==1) pro Methode (V11)
+# Cross-national (V12==1) per method (V11)
 cross_counts <- df %>%
   mutate(V11 = as.character(V11), V12 = as.character(V12), method = as.character(method)) %>%
   tidyr::separate_rows(V11, sep = ";") %>%
