@@ -303,7 +303,7 @@ p_pairs <- ggplot(pair_pct, aes(x = reorder(label, pct), y = pct)) +
 doc <- doc %>%
   body_add_par("Figure (supplement): Combinations of methods — % overall", style = "Normal") %>%
   body_add_par("Overall combination of methods (V11) across the full sample, all above 10%", style = "Normal") %>%
-  body_add_gg(value = p_v11_overall_type, width = 9, height = 5) %>%
+  body_add_gg(value = p_pairs, width = 9, height = 5) %>%
   body_add_break()
 
 
