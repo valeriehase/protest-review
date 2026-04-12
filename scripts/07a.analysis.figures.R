@@ -550,35 +550,28 @@ df_method_combo <- df %>%
       !has_qual &  has_quant & !has_css ~ "QT_ONLY",
       !has_qual & !has_quant &  has_css ~ "CSS_ONLY",
       has_qual  &  has_quant & !has_css ~ "MIX_QUAL_QUANT",
-      !has_qual &  has_quant &  has_css ~ "MIX_QUANT_CSS",
-      has_qual  & !has_quant &  has_css ~ "MIX_QUAL_CSS",
-      has_qual  &  has_quant &  has_css ~ "MIX_ALL",
-      TRUE ~ "Uncoded"
+      has_css & (has_qual | has_quant) ~ "MIX_QUANT_QUAL_CSS",
+      TRUE ~ "Other"
     )
   )
 
 levels_MethodCombo <- tibble::tibble(
   MethodCombo = c(
     "Q_ONLY","QT_ONLY","CSS_ONLY",
-    "MIX_QUAL_QUANT","MIX_QUANT_CSS","MIX_QUAL_CSS","MIX_ALL","Uncoded"
+    "MIX_QUAL_QUANT","MIX_QUANT_QUAL_CSS","Other"
   ),
   MethodCombo_label = c(
     "Qualitative only","Quantitative only","CSS only",
-    "Mixed Qual + Quant","Mixed Quant + CSS","Mixed Qual + CSS","Fully Mixed (Qual + Quant + CSS)",
-    "Not mentioned"
+    "Mixed, not including CSS","Mixed, including CSS",
+    "Other"
   )
 )
 
 mc_share <- df_method_combo %>%
   count(MethodCombo, name = "n") %>%
   mutate(pct = round(100 * n / sum(n), 1)) %>%
-  right_join(
-    expand_grid(MethodCombo = levels_MethodCombo$MethodCombo),
-    by = c("MethodCombo")
-  ) %>%
-  mutate(n = replace_na(n, 0), pct = replace_na(pct, 0)) %>%
   left_join(levels_MethodCombo, by = "MethodCombo") %>%
-  filter(MethodCombo_label != "Not mentioned") %>%  # wie bei exclude()
+  filter(MethodCombo_label != "Other") %>%  # wie bei exclude()
   mutate(
     MethodCombo_label = factor(MethodCombo_label, levels = levels_MethodCombo$MethodCombo_label),
     y_lab = if_else(pct == 0, 0.5, pct)
@@ -662,6 +655,7 @@ df_time <- final_sample %>%
     by = "id_unique"
   )
 
+#sanity check
 df_time %>%
   count(id_unique) %>%
   filter(n > 1)
