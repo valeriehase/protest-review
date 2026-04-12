@@ -106,6 +106,17 @@ print(sessionInfo())
 message("---- RENV STATUS ----")
 renv::status()
 
+# 08 Print results for appendix/method section -----------------------------------------------------------
 
+# Validation search string
+appendix_2_1
 
+# Manual inclusion coding
+appendix_2_2
 
+# Manual coding full papers
+appendix_3$intercoder_paper_protest_region
+appendix_3$intercoder_paper_platform
+appendix_3$intercoder_paper_method
+appendix_3$intercoder_paper_cross_national
+appendix_3$intercoder_paper_experiment
