@@ -472,25 +472,34 @@ doc <- doc %>%
   body_add_break()
 
 # 7.4 Cross Tables Figures ----------------------------------------------------------------
-method_levels_vec <- c("0","1")  # Non-CSS, CSS
-selected_platforms <- c("100","110","130","140")
 
+# Cross-national (V12==1) per method (V11)
+
+#define relevant methods
 levels_V11_subset <- levels_V11 %>%
   filter(V11 %in% c("21","22","23","24","25","26"))
 
-# Cross-national (V12==1) per method (V11)
+method_levels_vec <- c("0","1")  # Non-CSS, CSS
+
+# number of cross-national designs in CSS- vs. non-CSS studies that employ specific method
 cross_counts <- df %>%
-  mutate(V11 = as.character(V11), V12 = as.character(V12), method = as.character(method)) %>%
+  mutate(V11 = as.character(V11), V12 = as.character(V12)) %>%
   tidyr::separate_rows(V11, sep = ";") %>%
   mutate(V11 = str_trim(V11)) %>%
-  filter(method %in% method_levels_vec, V12 == "1", V11 %in% levels_V11_subset$V11) %>%
+  filter(V12 == "1", V11 %in% levels_V11_subset$V11) %>%
   count(method, V11, name = "n")
 
-totals <- cross_counts %>% group_by(method) %>% summarise(total = sum(n), .groups = "drop")
+# out of all studies that employ specific method in CSS vs. non-CSS studies
+totals <- df %>%
+  mutate(V11 = as.character(V11), V12 = as.character(V12)) %>%
+  tidyr::separate_rows(V11, sep = ";") %>%
+  mutate(V11 = str_trim(V11)) %>%
+  filter(V11 %in% levels_V11_subset$V11) %>%
+  count(method, V11, name = "total")
 
-v11_cross_share <- tidyr::expand_grid(method = method_levels_vec, V11 = levels_V11_subset$V11) %>%
-  left_join(cross_counts, by = c("method","V11")) %>%
-  left_join(totals, by = "method") %>%
+v11_cross_share <- tidyr::expand_grid(V11 = levels_V11_subset$V11, method = method_levels_vec) %>%
+  left_join(cross_counts, by = c("V11", "method")) %>%
+  left_join(totals, by = c("method", "V11")) %>%
   mutate(n = tidyr::replace_na(n, 0), total = tidyr::replace_na(total, 0),
          pct = if_else(total > 0, round(100 * n / total, 1), 0)) %>%
   left_join(levels_V11_subset, by = "V11") %>%
@@ -513,12 +522,13 @@ p_v11_cross <- ggplot(v11_cross_share, aes(x = V11_label, y = pct, fill = Method
         axis.text.x        = element_text(angle = 35, hjust = 1))
 
 doc <- doc %>%
-  body_add_par("Figure (supplement): Analysis Methods — % within design (cross-national only)", style = "Normal") %>%
-  body_add_par("Bar chart of cross-national design by analysis method, split by CSS vs. Non-CSS. Matches the left block of the V11 × V12 table.", style = "Normal") %>%
+  body_add_par("Figure (supplement): Analysis Methods — % cross-national per method", style = "Normal") %>%
+  body_add_par("Bar chart of cross-national designs by analysis method, split by CSS vs. Non-CSS.", style = "Normal") %>%
   body_add_gg(value = p_v11_cross, width = 9, height = 5) %>%
   body_add_break()
 
 # Cross-national (V12==1) pro Plattform (V10_agg)
+selected_platforms <- c("100","110","130","140")
 platform_cross_counts <- df_V10agg %>%
   mutate(V10_agg = as.character(V10_agg), V12 = as.character(V12), method = as.character(method)) %>%
   filter(method %in% method_levels_vec, V12 == "1", V10_agg %in% selected_platforms) %>%
