@@ -527,49 +527,6 @@ doc <- doc %>%
   body_add_gg(value = p_v11_cross, width = 9, height = 5) %>%
   body_add_break()
 
-# Cross-national (V12==1) pro Plattform (V10_agg)
-selected_platforms <- c("100","110","130","140")
-platform_cross_counts <- df_V10agg %>%
-  mutate(V10_agg = as.character(V10_agg), V12 = as.character(V12), method = as.character(method)) %>%
-  filter(method %in% method_levels_vec, V12 == "1", V10_agg %in% selected_platforms) %>%
-  count(method, V10_agg, name = "n")
-
-platform_totals <- platform_cross_counts %>% group_by(method) %>% summarise(total = sum(n), .groups = "drop")
-
-v10_cross_share <- tidyr::expand_grid(method = method_levels_vec, V10_agg = selected_platforms) %>%
-  left_join(platform_cross_counts, by = c("method","V10_agg")) %>%
-  left_join(platform_totals, by = "method") %>%
-  mutate(n = tidyr::replace_na(n, 0), total = tidyr::replace_na(total, 0),
-         pct = if_else(total > 0, round(100 * n / total, 1), 0)) %>%
-  left_join(levels_V10_agg, by = "V10_agg") %>%
-  mutate(MethodGrp = recode(method, "0" = "Non-CSS", "1" = "CSS"),
-         V10_agg_label = factor(
-           V10_agg_label,
-           levels = levels_V10_agg %>% filter(V10_agg %in% selected_platforms) %>% pull(V10_agg_label)
-         ),
-         y_lab = if_else(pct == 0, 0.5, pct))
-
-p_v10_cross <- ggplot(v10_cross_share, aes(x = V10_agg_label, y = pct, fill = MethodGrp)) +
-  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-  geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)),
-            position = position_dodge(0.8), vjust = -0.2, size = 3) +
-  scale_fill_manual(values = c("grey70", "white")) +
-  labs(x = NULL, y = "% within design (cross-national)", fill = "Method Group") +
-  coord_cartesian(ylim = c(0, max(v10_cross_share$y_lab, na.rm = TRUE) + 5)) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor   = element_blank(),
-        legend.position    = "top",
-        legend.title       = element_text(face = "bold"),
-        axis.text.x        = element_text(angle = 45, hjust = 1, vjust = 1),
-        plot.margin        = margin(10, 30, 10, 30))
-
-doc <- doc %>%
-  body_add_par("Figure (supplement): Platforms — % within design (cross-national only)", style = "Normal") %>%
-  body_add_par("Bar chart of cross-national design by platform type (V10_agg), split by CSS vs. Non-CSS. Matches the left block of the V12 × V10_agg logic.", style = "Normal") %>%
-  body_add_gg(value = p_v10_cross, width = 9, height = 5) %>%
-  body_add_break()
-
 # 7.5 MethodCombo ------------------------------------------------------------------------
 
 qual_codes  <- c("21","22","23")
