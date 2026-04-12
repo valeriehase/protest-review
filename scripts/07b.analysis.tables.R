@@ -229,11 +229,14 @@ df_platform_scope <- df %>%
       n_platforms  > 1 ~ "CROSS",
       TRUE ~ "NA"
     )
-  )
+  ) %>%
+  
+  #exclude NA not mentioned
+  filter(n_platforms != 0)
 
 levels_PlatformScope <- tibble::tibble(
-  PlatformScope        = c("SINGLE", "CROSS", "NA"),
-  PlatformScope_label  = c("Single platform", "Cross platform", "Not mentioned")
+  PlatformScope        = c("SINGLE", "CROSS"),
+  PlatformScope_label  = c("Single platform", "Cross platform")
 )
 
 N_scope <- nrow(df_platform_scope)
@@ -302,15 +305,6 @@ doc <- doc %>%
   body_add_break() %>%
   body_add_par("Table (supplement): V11 × V12 (Non-CSS/CSS %)", style = "Normal") %>%
   body_add_flextable(ft_V11_V12) %>%
-  body_add_break()
-
-# Supplement: MethodCombo
-doc <- doc %>%
-  body_add_par("Table: Frequencies of Method Combination Types", style = "Normal") %>%
-  body_add_flextable(ft_methodcombo) %>%
-  body_add_break() %>%
-  body_add_par("Table (supplement): Method × Method Combination (Chi-square)", style = "Normal") %>%
-  body_add_flextable(ft_chi_methodcombo) %>%
   body_add_break()
 
 # Supplement: CrossPlatform
