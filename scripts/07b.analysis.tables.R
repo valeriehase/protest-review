@@ -165,6 +165,8 @@ note_platforms <- "Note. Table limited to the four most frequently used platform
 note_designs   <- "Note. Columns show cross-national research design. Percentages are calculated within each design column, separately for CSS and Non-CSS studies."
 
 # V11 × V10_agg (CSS split; nur 6 V11 & 4 Plattformen)
+#to check: do we need to adjust this table as well?
+
 ft_V11_platforms <- build_crosstab_pct(
   df_rows = df_V10agg,
   row_var = "V11", levels_row_df = levels_V11_subset,
@@ -179,6 +181,7 @@ ft_V11_platforms <- build_crosstab_pct(
 )
 
 # V11 × V12 (CSS split; gleiche V11-Auswahl)
+#to check: do we need to adjust this table as well?
 ft_V11_V12 <- build_crosstab_pct(
   df_rows = df,
   row_var = "V11", levels_row_df = levels_V11_subset,
@@ -203,80 +206,7 @@ ft_V12_platforms <- build_crosstab_pct(
   note  = "Note. Column percentages are computed overall (CSS and Non-CSS combined)."
 )
 
-# 7.5 MethodCombination Table ----------------------------------------------------------------
-
-qual_codes  <- c("21","22","23")
-quant_codes <- c("24","25","26")
-css_codes   <- c("10","11","12","13","14","15","16","17","18")
-
-df_method_combo <- df %>%
-  mutate(V11 = as.character(V11),
-         method = as.character(method)) %>%
-  tidyr::separate_rows(V11, sep = ";") %>%
-  mutate(V11 = stringr::str_trim(V11)) %>%
-  group_by(id_unique, method) %>%
-  summarise(
-    has_qual  = any(V11 %in% qual_codes,  na.rm = TRUE),
-    has_quant = any(V11 %in% quant_codes, na.rm = TRUE),
-    has_css   = any(V11 %in% css_codes,   na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    MethodCombo = dplyr::case_when(
-      has_qual  & !has_quant & !has_css ~ "Q_ONLY",
-      !has_qual &  has_quant & !has_css ~ "QT_ONLY",
-      !has_qual & !has_quant &  has_css ~ "CSS_ONLY",
-      has_qual  &  has_quant & !has_css ~ "MIX_QUAL_QUANT",
-      !has_qual &  has_quant &  has_css ~ "MIX_QUANT_CSS",
-      has_qual  & !has_quant &  has_css ~ "MIX_QUAL_CSS",
-      has_qual  &  has_quant &  has_css ~ "MIX_ALL",
-      TRUE ~ "Uncoded"
-    )
-  )
-
-levels_MethodCombo <- tibble::tibble(
-  MethodCombo = c(
-    "Q_ONLY","QT_ONLY","CSS_ONLY",
-    "MIX_QUAL_QUANT","MIX_QUANT_CSS","MIX_QUAL_CSS","MIX_ALL",
-    "Uncoded"
-  ),
-  MethodCombo_label = c(
-    "Qualitative only",
-    "Quantitative only",
-    "CSS only",
-    "Mixed Qual + Quant",
-    "Mixed Quant + CSS",
-    "Mixed Qual + CSS",
-    "Fully Mixed (Qual + Quant + CSS)",
-    "Not mentioned"
-  )
-)
-
-N_combo <- nrow(df_method_combo)
-apa_note_combo <- paste0(
-  "Note. CSS = computational social science; n = frequency; % = percentage.\n",
-  "Percentages are calculated within each method group.\n",
-  "N = ", N_combo, " studies."
-)
-
-ft_methodcombo <- make_complete_table(
-  df         = df_method_combo,
-  var        = "MethodCombo",
-  levels_df  = levels_MethodCombo,
-  apa        = TRUE,
-  title      = "Frequencies of Method Combination Types",
-  note       = apa_note_combo
-)
-
-res_combo <- chi_method_table(
-  dataset       = df_method_combo,
-  dep_var       = "MethodCombo",
-  table_caption = "Chi-square Test: Method (CSS vs. non-CSS) × Method Combination Type",
-  note_text     = "Note. One combination per study. Method: 0 = Non-CSS, 1 = CSS."
-)
-ft_chi_methodcombo <- res_combo$ft
-
-# 7.6 CrossPlatform Table ----------------------------------------------------------------
+# 7.5 CrossPlatform Table ----------------------------------------------------------------
 
 df_platform_scope <- df %>%
   dplyr::mutate(V10 = as.character(V10),
