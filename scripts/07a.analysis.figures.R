@@ -775,7 +775,6 @@ if (!exists("wos_abstracts_clean", inherits = FALSE)) {
   rm(dir_path, files, timestamps, latest_file)
 }
 
-
 df_time <- final_sample %>%
   rename_with(
     ~ str_extract(.x, "^V\\d+"),
@@ -791,164 +790,198 @@ df_time <- final_sample %>%
     by = "id_unique"
   )
 
-#sanity check
+# sanity check
 df_time %>%
   count(id_unique) %>%
   filter(n > 1)
 
 df_time <- df_time %>%
   mutate(year = as.integer(year)) %>%
-  filter(!is.na(year))
+  filter(!is.na(year)) %>%
+  distinct(id_unique, .keep_all = TRUE)
 
-# Integrate graph for N publications over time
+years_vec <- sort(unique(df_time$year))
+
+# 1) Number of studies over time -----------------------------------------------
+
 n_time <- df_time %>%
-  group_by(year) %>%
-  count(method) %>%
-  ungroup() %>%
-  mutate(method = factor(method,
-                         levels = c(0, 1),
-                         labels = c("Non-CSS", "CSS")))
+  count(year, method, name = "n") %>%
+  mutate(
+    Method = factor(
+      method,
+      levels = c("0", "1"),
+      labels = c("Non-CSS", "CSS")
+    )
+  )
 
-p_n_time <- ggplot(n_time, aes(x = year, y = n, color = method, group = method)) +
+p_n_time <- ggplot(n_time, aes(x = year, y = n, color = Method, group = Method)) +
   geom_line(linewidth = 1) +
   geom_point(size = 2) +
-  scale_color_manual(values = c("Non-CSS" = "gray70",
-                                "CSS"     = "gray30")) +
-  labs(x = NULL, y = "Number of studies", color = "Method for Studying Online Protest") +
+  scale_color_manual(values = c("Non-CSS" = "gray70", "CSS" = "gray30")) +
+  scale_x_continuous(breaks = years_vec) +
+  labs(
+    x = NULL,
+    y = "Number of studies",
+    color = "Method group"
+  ) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
     panel.grid.minor   = element_blank(),
     legend.position    = "top",
-    axis.text.x        = element_text(angle = 0)
+    axis.text.x        = element_text(angle = 45, hjust = 1)
   )
 
 doc <- doc %>%
-  body_add_par("Figure: N Publications over time", style = "Normal") %>%
-  body_add_par("Distribution of number of publications by method across time.", style = "Normal") %>%
+  body_add_par("Figure: Number of studies over time", style = "Normal") %>%
+  body_add_par(
+    "Annual number of studies by method group (CSS vs. non-CSS).",
+    style = "Normal"
+  ) %>%
   body_add_gg(value = p_n_time, width = 9, height = 5) %>%
   body_add_break()
 
-# Switch to categorical time periods
-df_time <- df_time %>%
-  mutate(
-    year = as.integer(year),
-    period = case_when(
-      year %in% 2009:2013 ~ "2009-2013",
-      year %in% 2014:2016 ~ "2014-2016",
-      year %in% 2017:2019 ~ "2017-2019",
-      year %in% 2020:2021 ~ "2020-2021",
-      year %in% 2022:2023 ~ "2022-2023",
-      TRUE ~ NA_character_
-    ),
-    period = factor(
-      period,
-      levels = c("2009-2013", "2014-2016", "2017-2019", "2020-2021", "2022-2023")
-    )
-  ) %>%
-  filter(!is.na(period))
 
-# Method combinations over time
+# 2) CSS vs. Non-CSS over time ------------------------------------------------
+
+css_time <- df_time %>%
+  mutate(
+    Method = recode(as.character(method), "0" = "Non-CSS", "1" = "CSS")
+  ) %>%
+  count(year, Method, name = "n") %>%
+  group_by(year) %>%
+  mutate(pct = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+
+p_css_time <- ggplot(css_time, aes(x = year, y = pct, color = Method, group = Method)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c("Non-CSS" = "gray70", "CSS" = "gray30")) +
+  scale_x_continuous(breaks = years_vec) +
+  scale_y_continuous(limits = c(0, 100)) +
+  labs(
+    x = NULL,
+    y = "Share of studies within year (%)",
+    color = "Method group"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 45, hjust = 1)
+  )
+
+doc <- doc %>%
+  body_add_par("Figure: CSS vs. non-CSS over time", style = "Normal") %>%
+  body_add_par(
+    "Annual share of CSS and non-CSS studies. Percentages are calculated within each publication year.",
+    style = "Normal"
+  ) %>%
+  body_add_gg(value = p_css_time, width = 9, height = 5) %>%
+  body_add_break()
+
+
+# 3) Method combinations over time ---------------------------------------------
 
 mc_time <- df_method_combo %>%
-  left_join(df_time %>% select(id_unique, period), by = "id_unique") %>%
-  count(period, MethodCombo, name = "n") %>%
-  group_by(period) %>%
+  left_join(df_time %>% select(id_unique, year), by = "id_unique") %>%
+  filter(!is.na(year)) %>%
+  count(year, MethodCombo, name = "n") %>%
+  group_by(year) %>%
   mutate(pct = round(100 * n / sum(n), 1)) %>%
   ungroup() %>%
   left_join(levels_MethodCombo, by = "MethodCombo") %>%
   filter(MethodCombo_label != "Other") %>%
   mutate(
-    MethodCombo_label = factor(MethodCombo_label, levels = levels_MethodCombo$MethodCombo_label),
-    y_lab = if_else(pct == 0, 0.5, pct)
+    MethodCombo_label = factor(
+      MethodCombo_label,
+      levels = levels_MethodCombo$MethodCombo_label[levels_MethodCombo$MethodCombo_label != "Other"]
+    )
   )
 
-p_mc_time <- ggplot(mc_time, aes(x = period, y = pct, fill = MethodCombo_label)) +
-  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-  geom_text(aes(y = y_lab, label = sprintf("%.1f", pct)),
-            position = position_dodge(0.8), vjust = -0.2, size = 3) +
-  labs(x = NULL, y = "Percentage", fill = "Method Combination") +
-  coord_cartesian(ylim = c(0, max(mc_time$y_lab, na.rm = TRUE) + 5)) +
+p_mc_time <- ggplot(mc_time, aes(x = year, y = pct, color = MethodCombo_label, group = MethodCombo_label)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = years_vec) +
+  scale_y_continuous(limits = c(0, 100)) +
+  labs(
+    x = NULL,
+    y = "Share of studies within year (%)",
+    color = "Method combination"
+  ) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
     panel.grid.minor   = element_blank(),
     legend.position    = "top",
-    axis.text.x        = element_text(angle = 0)
+    axis.text.x        = element_text(angle = 45, hjust = 1)
   )
 
 doc <- doc %>%
   body_add_par("Figure: Method combinations over time", style = "Normal") %>%
-  body_add_par("Distribution of method-combination types across time periods.", style = "Normal") %>%
+  body_add_par(
+    "Annual share of method-combination types. Percentages are calculated within each publication year.",
+    style = "Normal"
+  ) %>%
   body_add_gg(value = p_mc_time, width = 9, height = 5) %>%
   body_add_break()
 
-# CSS vs Non-CSS over time
 
-css_time <- df_time %>%
-  mutate(Method = recode(method, "0" = "Non-CSS", "1" = "CSS")) %>%
-  count(period, Method, name = "n") %>%
-  group_by(period) %>%
-  mutate(pct = round(100 * n / sum(n), 1)) %>%
-  ungroup() %>%
-  mutate(y_lab = if_else(pct == 0, 0.5, pct))
-
-p_css_time <- ggplot(css_time, aes(x = period, y = pct, fill = Method)) +
-  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-  geom_text(aes(y = y_lab, label = sprintf("%.1f%%", pct)),
-            position = position_dodge(0.8), vjust = -0.2, size = 3) +
-  scale_fill_manual(values = c("grey70","white")) +
-  labs(x = NULL, y = "Percentage", fill = "Method Group") +
-  coord_cartesian(ylim = c(0, max(css_time$y_lab, na.rm = TRUE) + 5)) +
-  theme_minimal(base_size = 12) +
-  theme(
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor   = element_blank(),
-    legend.position    = "top"
-  )
-
-doc <- doc %>%
-  body_add_par("Figure: CSS vs. Non-CSS over time", style = "Normal") %>%
-  body_add_par("Share of CSS vs. non-CSS studies across time periods.", style = "Normal") %>%
-  body_add_gg(value = p_css_time, width = 9, height = 5) %>%
-  body_add_break()
-
-# Platforms over time
+# 4) Platforms over time -------------------------------------------------------
 
 selected_platforms <- c("100","110","130","140")
 
 v10_time <- df_V10agg %>%
-  left_join(df_time %>% select(id_unique, period), by = "id_unique") %>%
+  left_join(df_time %>% select(id_unique, year), by = "id_unique") %>%
+  filter(!is.na(year)) %>%
   filter(V10_agg %in% selected_platforms) %>%
-  count(period, V10_agg, name = "n") %>%
-  group_by(period) %>%
-  mutate(pct = round(100 * n / sum(n), 1)) %>%
-  ungroup() %>%
+  distinct(id_unique, year, V10_agg) %>%
+  count(year, V10_agg, name = "n") %>%
+  left_join(
+    df_time %>%
+      count(year, name = "n_studies_year"),
+    by = "year"
+  ) %>%
+  mutate(pct = round(100 * n / n_studies_year, 1)) %>%
   left_join(levels_V10_agg, by = "V10_agg") %>%
   mutate(
-    V10_agg_label = factor(V10_agg_label,
-                           levels = levels_V10_agg %>%
-                             filter(V10_agg %in% selected_platforms) %>%
-                             pull(V10_agg_label))
+    V10_agg_label = factor(
+      V10_agg_label,
+      levels = levels_V10_agg %>%
+        filter(V10_agg %in% selected_platforms) %>%
+        pull(V10_agg_label)
+    )
   )
 
-p_v10_time <- ggplot(v10_time, aes(x = period, y = pct, fill = V10_agg_label)) +
-  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-  labs(x = NULL, y = "Percentage", fill = "Platform") +
+p_v10_time <- ggplot(v10_time, aes(x = year, y = pct, color = V10_agg_label, group = V10_agg_label)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = years_vec) +
+  labs(
+    x = NULL,
+    y = "Share of studies using platform (%)",
+    color = "Platform"
+  ) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
-    legend.position = "top",
-    axis.text.x = element_text(angle = 0)
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 45, hjust = 1)
   )
 
 doc <- doc %>%
   body_add_par("Figure: Platforms over time", style = "Normal") %>%
-  body_add_par("Distribution of selected platforms across time periods.", style = "Normal") %>%
+  body_add_par(
+    "Annual share of studies using selected platforms. Studies may contribute to more than one platform category.",
+    style = "Normal"
+  ) %>%
   body_add_gg(value = p_v10_time, width = 9, height = 5) %>%
   body_add_break()
 
-# Methods over time
+
+# 5) Analysis methods over time ------------------------------------------------
 
 top_v11 <- c("21","22","23","24","25","26")
 
@@ -957,29 +990,47 @@ v11_time <- df_time %>%
   separate_rows(V11, sep = ";") %>%
   mutate(V11 = str_trim(V11)) %>%
   filter(V11 %in% top_v11) %>%
-  count(period, V11, name = "n") %>%
-  group_by(period) %>%
-  mutate(pct = round(100 * n / sum(n), 1)) %>%
-  ungroup() %>%
+  distinct(id_unique, year, V11) %>%
+  count(year, V11, name = "n") %>%
+  left_join(
+    df_time %>%
+      count(year, name = "n_studies_year"),
+    by = "year"
+  ) %>%
+  mutate(pct = round(100 * n / n_studies_year, 1)) %>%
   left_join(levels_V11, by = "V11") %>%
   mutate(
-    V11_label = factor(V11_label, levels = levels_V11$V11_label),
-    y_lab = if_else(pct == 0, 0.5, pct)
+    V11_label = factor(
+      V11_label,
+      levels = levels_V11 %>%
+        filter(V11 %in% top_v11) %>%
+        pull(V11_label)
+    )
   )
 
-p_v11_time <- ggplot(v11_time, aes(x = period, y = pct, fill = V11_label)) +
-  geom_col(position = position_dodge(0.8), width = 0.7, color = "black") +
-  labs(x = NULL, y = "Percentage", fill = "Method") +
+p_v11_time <- ggplot(v11_time, aes(x = year, y = pct, color = V11_label, group = V11_label)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = years_vec) +
+  labs(
+    x = NULL,
+    y = "Share of studies using method (%)",
+    color = "Method"
+  ) +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid.major.x = element_blank(),
-    legend.position = "top",
-    axis.text.x = element_text(angle = 0)
+    panel.grid.minor   = element_blank(),
+    legend.position    = "top",
+    axis.text.x        = element_text(angle = 45, hjust = 1)
   )
 
 doc <- doc %>%
   body_add_par("Figure: Analysis methods over time", style = "Normal") %>%
-  body_add_par("Distribution of selected analysis methods (V11) across time periods.", style = "Normal") %>%
+  body_add_par(
+    "Annual share of studies using selected analysis methods (V11). Studies may contribute to more than one method category.",
+    style = "Normal"
+  ) %>%
   body_add_gg(value = p_v11_time, width = 9, height = 5) %>%
   body_add_break()
 
