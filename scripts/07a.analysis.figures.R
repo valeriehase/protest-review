@@ -1148,6 +1148,230 @@ doc <- add_figure_apa(
   p_v11_time
 )
 
+# 6) Cross-national / Cross-platform / Experimental over time -------------------
+
+# Cross-platform indicator at study level
+df_platform_scope_time <- df_time %>%
+  mutate(V10 = as.character(V10), method = as.character(method)) %>%
+  tidyr::separate_rows(V10, sep = ";") %>%
+  mutate(
+    V10 = stringr::str_trim(V10),
+    V10 = na_if(V10, ""),
+    V10 = if_else(V10 == "NA", NA_character_, V10)
+  ) %>%
+  group_by(id_unique, year, method) %>%
+  summarise(
+    n_platforms = n_distinct(V10, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    cross_platform = if_else(n_platforms > 1, 1, 0)
+  )
+
+# Cross-national
+v12_time_design <- df_time %>%
+  mutate(
+    method = as.character(method),
+    V12 = as.character(V12)
+  ) %>%
+  filter(!is.na(method), !is.na(year)) %>%
+  group_by(year, method) %>%
+  summarise(
+    n_total = n(),
+    n_one   = sum(V12 == "1", na.rm = TRUE),
+    pct     = 100 * n_one / n_total,
+    .groups = "drop"
+  ) %>%
+  mutate(Design = "Cross-national")
+
+# Experimental
+v13_time_design <- df_time %>%
+  mutate(
+    method = as.character(method),
+    V13 = as.character(V13)
+  ) %>%
+  filter(!is.na(method), !is.na(year)) %>%
+  group_by(year, method) %>%
+  summarise(
+    n_total = n(),
+    n_one   = sum(V13 == "1", na.rm = TRUE),
+    pct     = 100 * n_one / n_total,
+    .groups = "drop"
+  ) %>%
+  mutate(Design = "Experimental")
+
+# Cross-platform
+ps_time_design <- df_platform_scope_time %>%
+  filter(!is.na(method), !is.na(year)) %>%
+  group_by(year, method) %>%
+  summarise(
+    n_total = n(),
+    n_one   = sum(cross_platform == 1, na.rm = TRUE),
+    pct     = 100 * n_one / n_total,
+    .groups = "drop"
+  ) %>%
+  mutate(Design = "Cross-platform")
+
+design_time <- bind_rows(
+  v12_time_design,
+  v13_time_design,
+  ps_time_design
+) %>%
+  mutate(
+    Method = recode(method, "0" = "Non-CSS", "1" = "CSS"),
+    Method = factor(Method, levels = c("Non-CSS", "CSS")),
+    Design = factor(Design, levels = c("Cross-national", "Cross-platform", "Experimental"))
+  )
+
+p_design_time <- ggplot(
+  design_time,
+  aes(
+    year,
+    pct,
+    color = Method,
+    linetype = Method,
+    group = Method
+  )
+) +
+  geom_line(linewidth = 1, show.legend = TRUE) +
+  geom_point(size = 2, show.legend = FALSE) +
+  scale_color_manual(
+    name = "Method",
+    values = c(
+      "Non-CSS" = unname(pal_apa["darkgray"]),
+      "CSS"     = unname(pal_apa["blue"])
+    )
+  ) +
+  scale_linetype_manual(
+    name = "Method",
+    values = c(
+      "Non-CSS" = "dashed",
+      "CSS"     = "solid"
+    )
+  ) +
+  scale_x_years +
+  scale_y_pct +
+  labs(
+    x = "Year",
+    y = "Studies with design feature (%)"
+  ) +
+  facet_wrap(~ Design, ncol = 1) +
+  theme_apa_time()
+
+p_design_time
+doc <- add_figure_apa(
+  doc,
+  6,
+  "Cross-national, cross-platform, and experimental designs over time",
+  "Percentages are calculated within each year and method group.",
+  p_design_time
+)
+
+# 7) Complexity over time ------------------------------------------------------
+
+# Number of analysis methods per study
+df_methods_complexity <- df_time %>%
+  mutate(
+    V11 = as.character(V11),
+    method = as.character(method)
+  ) %>%
+  tidyr::separate_rows(V11, sep = ";") %>%
+  mutate(
+    V11 = stringr::str_trim(V11),
+    V11 = na_if(V11, ""),
+    V11 = if_else(V11 == "NA", NA_character_, V11)
+  ) %>%
+  group_by(id_unique, year, method) %>%
+  summarise(
+    n_methods = n_distinct(V11, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Complexity = "Analysis methods",
+    mean_value = n_methods
+  )
+
+# Number of platforms per study
+df_platforms_complexity <- df_time %>%
+  mutate(
+    V10 = as.character(V10),
+    method = as.character(method)
+  ) %>%
+  tidyr::separate_rows(V10, sep = ";") %>%
+  mutate(
+    V10 = stringr::str_trim(V10),
+    V10 = na_if(V10, ""),
+    V10 = if_else(V10 == "NA", NA_character_, V10)
+  ) %>%
+  group_by(id_unique, year, method) %>%
+  summarise(
+    n_platforms = n_distinct(V10, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Complexity = "Platforms",
+    mean_value = n_platforms
+  )
+
+complexity_time <- bind_rows(
+  df_methods_complexity %>% select(id_unique, year, method, Complexity, mean_value),
+  df_platforms_complexity %>% select(id_unique, year, method, Complexity, mean_value)
+) %>%
+  group_by(year, method, Complexity) %>%
+  summarise(
+    mean_value = mean(mean_value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Method = recode(method, "0" = "Non-CSS", "1" = "CSS"),
+    Method = factor(Method, levels = c("Non-CSS", "CSS")),
+    Complexity = factor(Complexity, levels = c("Analysis methods", "Platforms"))
+  )
+
+p_complexity_time <- ggplot(
+  complexity_time,
+  aes(
+    year,
+    mean_value,
+    color = Method,
+    linetype = Method,
+    group = Method
+  )
+) +
+  geom_line(linewidth = 1, show.legend = TRUE) +
+  geom_point(size = 2, show.legend = FALSE) +
+  scale_color_manual(
+    name = "Method",
+    values = c(
+      "Non-CSS" = unname(pal_apa["darkgray"]),
+      "CSS"     = unname(pal_apa["blue"])
+    )
+  ) +
+  scale_linetype_manual(
+    name = "Method",
+    values = c(
+      "Non-CSS" = "dashed",
+      "CSS"     = "solid"
+    )
+  ) +
+  scale_x_years +
+  labs(
+    x = "Year",
+    y = "Mean number per study"
+  ) +
+  facet_wrap(~ Complexity, ncol = 1, scales = "free_y") +
+  theme_apa_time()
+
+p_complexity_time
+
+doc <- add_figure_apa(
+  doc,
+  7,
+  "Study complexity over time",
+  "Lines show the mean number of analysis methods and platforms per study within each year and method group.",
+  p_complexity_time
+)
+
 # Export -----------------------------------------------------------------------
 
 out_dir <- PATHS$final
