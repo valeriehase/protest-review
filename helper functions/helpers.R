@@ -549,3 +549,47 @@ count_method_combinations <- function(df, combo_sizes = c(2:4), top_n = 10, var,
     dplyr::arrange(dplyr::desc(pct), dplyr::desc(n)) %>%
     dplyr::slice_head(n = top_n)
 }
+
+# Palette ----------------------------------------------------------------------
+
+pal_apa <- c(
+  "black"    = "#1A1A1A",
+  "darkgray" = "#4D4D4D",
+  "blue"     = "#3B6FB6",
+  "teal"     = "#2C7F7B",
+  "green"    = "#4E9F3D",
+  "olive"    = "#8C9440",
+  "purple"   = "#7A5C9E",
+  "rose"     = "#C05A7A",
+  "orange"   = "#D98C2B",
+  "red"      = "#C94C4C"
+)
+
+# Theme ------------------------------------------------------------------------
+
+theme_apa_time <- function() {
+  theme_classic(base_size = 11) +
+    theme(
+      legend.position = "right",
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9),
+      axis.text.x = element_text(angle = 0),
+      plot.margin = margin(10, 15, 10, 10)
+    )
+}
+
+add_figure_apa <- function(doc, figure_number, title, note = NULL, plot,
+                           width = 10, height = 5) {
+  doc <- doc %>%
+    body_add_par(paste0("Figure ", figure_number), style = "Normal") %>%
+    body_add_par(title, style = "Normal") %>%
+    body_add_gg(plot, width = width, height = height)
+  
+  if (!is.null(note) && nzchar(note)) {
+    doc <- doc %>%
+      body_add_par(paste0("Note. ", note), style = "Normal")
+  }
+  
+  doc %>%
+    body_add_break()
+}
