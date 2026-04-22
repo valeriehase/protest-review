@@ -898,93 +898,160 @@ doc <- add_figure_apa(
 
 # 3) Method combinations -------------------------------------------------------
 
-mc_time <- df_method_combo %>%
-  left_join(df_time %>% select(id_unique, year), by = "id_unique") %>%
-  filter(!is.na(year)) %>%
-  count(year, MethodCombo, name = "n") %>%
-  group_by(year) %>%
-  mutate(pct = 100 * n / sum(n)) %>%
-  ungroup() %>%
-  left_join(levels_MethodCombo, by = "MethodCombo") %>%
-  filter(MethodCombo_label != "Other") %>%
-  filter(!is.na(MethodCombo_label)) %>%
-  mutate(
-    MethodCombo_label = factor(
-      MethodCombo_label,
-      levels = levels_MethodCombo$MethodCombo_label[
-        levels_MethodCombo$MethodCombo_label != "Other"
-      ]
+# helper: build grouped bar chart for method combinations in custom time blocks
+make_methodcombo_timeplot <- function(df_method_combo, df_time, levels_MethodCombo,
+                                      start_year, block_size, n_blocks,
+                                      x_lab, note_text) {
+  
+  block_labels <- tibble(
+    block_id = 1:n_blocks,
+    block_start = start_year + (0:(n_blocks - 1)) * block_size,
+    block_end   = start_year + (0:(n_blocks - 1)) * block_size + (block_size - 1)
+  ) %>%
+    mutate(
+      year_block = paste0(block_start, "\u2013", block_end)
     )
+  
+  all_method_combos <- levels_MethodCombo %>%
+    filter(MethodCombo != "Other") %>%
+    pull(MethodCombo)
+  
+  mc_time <- df_method_combo %>%
+    left_join(df_time %>% select(id_unique, year), by = "id_unique") %>%
+    filter(!is.na(year)) %>%
+    mutate(
+      block_id = floor((year - start_year) / block_size) + 1
+    ) %>%
+    filter(block_id >= 1, block_id <= n_blocks) %>%
+    count(block_id, MethodCombo, name = "n") %>%
+    tidyr::complete(
+      block_id = 1:n_blocks,
+      MethodCombo = c(all_method_combos, "Other"),
+      fill = list(n = 0)
+    ) %>%
+    left_join(block_labels %>% select(block_id, year_block), by = "block_id") %>%
+    group_by(year_block) %>%
+    mutate(
+      pct = 100 * n / sum(n)   # Other stays in denominator
+    ) %>%
+    ungroup() %>%
+    left_join(levels_MethodCombo, by = "MethodCombo") %>%
+    filter(MethodCombo_label != "Other") %>%
+    filter(!is.na(MethodCombo_label)) %>%
+    mutate(
+      year_block = factor(year_block, levels = block_labels$year_block),
+      MethodCombo_label = factor(
+        MethodCombo_label,
+        levels = levels_MethodCombo$MethodCombo_label[
+          levels_MethodCombo$MethodCombo_label != "Other"
+        ]
+      ),
+      y_lab = if_else(pct == 0, 0.5, pct)
+    )
+  
+  mc_levels <- levels(droplevels(mc_time$MethodCombo_label))
+  
+  mc_color_values <- setNames(
+    unname(c(
+      pal_apa["blue"],
+      pal_apa["teal"],
+      pal_apa["green"],
+      pal_apa["purple"],
+      pal_apa["orange"],
+      pal_apa["rose"],
+      pal_apa["olive"],
+      pal_apa["red"]
+    )[seq_along(mc_levels)]),
+    mc_levels
   )
-
-mc_levels <- levels(droplevels(mc_time$MethodCombo_label))
-
-mc_color_values <- setNames(
-  unname(c(
-    pal_apa["blue"],
-    pal_apa["teal"],
-    pal_apa["green"],
-    pal_apa["purple"],
-    pal_apa["orange"],
-    pal_apa["rose"],
-    pal_apa["olive"],
-    pal_apa["red"]
-  )[seq_along(mc_levels)]),
-  mc_levels
-)
-
-mc_linetype_values <- setNames(
-  c(
-    "solid",
-    "dashed",
-    "dotted",
-    "dotdash",
-    "longdash",
-    "twodash",
-    "solid",
-    "dashed"
-  )[seq_along(mc_levels)],
-  mc_levels
-)
-
-p_mc_time <- ggplot(
-  mc_time,
-  aes(
-    year,
-    pct,
-    color = MethodCombo_label,
-    linetype = MethodCombo_label,
-    group = MethodCombo_label
+  
+  p_mc_time <- ggplot(
+    mc_time,
+    aes(
+      x = year_block,
+      y = pct,
+      fill = MethodCombo_label
+    )
+  ) +
+    geom_col(
+      position = position_dodge(width = 0.85),
+      width = 0.75,
+      color = "black"
+    ) +
+    geom_text(
+      aes(y = y_lab, label = sprintf("%.1f", pct)),
+      position = position_dodge(width = 0.85),
+      vjust = -0.2,
+      size = 3
+    ) +
+    scale_fill_manual(
+      name = "Method combination",
+      values = mc_color_values
+    ) +
+    scale_y_continuous(
+      limits = c(0, max(mc_time$y_lab, na.rm = TRUE) + 5),
+      breaks = seq(0, 100, 20)
+    ) +
+    labs(
+      x = x_lab,
+      y = "Studies using method combination (%)"
+    ) +
+    theme_apa_time() +
+    theme(
+      axis.text.x = element_text(angle = 0, hjust = 0.5),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor   = element_blank(),
+      panel.grid.major.y = element_line(linewidth = 0.3, color = "gray80")
+    )
+  
+  list(
+    plot = p_mc_time,
+    note = note_text
   )
-) +
-  geom_line(linewidth = 1, show.legend = TRUE) +
-  geom_point(size = 2, show.legend = FALSE) +
-  scale_color_manual(
-    name = "Method combination",
-    values = mc_color_values
-  ) +
-  scale_linetype_manual(
-    name = "Method combination",
-    values = mc_linetype_values
-  ) +
-  scale_x_years +
-  scale_y_pct +
-  labs(
-    x = "Year",
-    y = "Studies using method combination (%)"
-  ) +
-  guides(
-    color = guide_legend(order = 1),
-    linetype = guide_legend(order = 1)
-  ) +
-  theme_apa_time()
+}
+
+start_year <- min(df_time$year, na.rm = TRUE)
+
+# 3a) Method combinations over time: 5 x 3-year periods -----------------------
+
+mc_plot_3year <- make_methodcombo_timeplot(
+  df_method_combo = df_method_combo,
+  df_time = df_time,
+  levels_MethodCombo = levels_MethodCombo,
+  start_year = start_year,
+  block_size = 3,
+  n_blocks = 5,
+  x_lab = "3-year periods",
+  note_text = "Percentages are calculated within each 3-year period."
+)
 
 doc <- add_figure_apa(
   doc,
   3,
-  "Method combinations over time",
-  "Percentages are calculated within each year.",
-  p_mc_time
+  "Method combinations over time (5 × 3-year periods)",
+  mc_plot_3year$note,
+  mc_plot_3year$plot
+)
+
+# 3b) Method combinations over time: 3 x 5-year periods -----------------------
+
+mc_plot_5year <- make_methodcombo_timeplot(
+  df_method_combo = df_method_combo,
+  df_time = df_time,
+  levels_MethodCombo = levels_MethodCombo,
+  start_year = start_year,
+  block_size = 5,
+  n_blocks = 3,
+  x_lab = "5-year periods",
+  note_text = "Percentages are calculated within each 5-year period."
+)
+
+doc <- add_figure_apa(
+  doc,
+  4,
+  "Method combinations over time (3 × 5-year periods)",
+  mc_plot_5year$note,
+  mc_plot_5year$plot
 )
 
 # 4) Platforms -----------------------------------------------------------------
